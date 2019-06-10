@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<!-- saved from url=(0056)http://www.emulator101.com/reference/8080-by-opcode.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        
+        <title>Emulator 101 - 8080 By Opcode</title>
+        <link rel="stylesheet" href="./Emulator 101 - 8080 By Opcode_files/minimal.css">
+    </head>
+    <body>
+    <div class="container">
+    <header>
+        <a class="logo" href="http://www.emulator101.com/welcome.html">Emulator 101</a>
+        <nav class="float-right">
+        <a href="http://www.emulator101.com/reference/8080-by-opcode.html">8080 reference</a>
+        &nbsp;
+        <a href="http://www.emulator101.com/reference/6502-reference.html">6502 reference</a>
+        </nav>
+
+    </header>
+<h1>8080 By Opcode</h1><p>I constructed this table specifically for examining raw code and to aid in writing a disassembler.</p>
+<table>
+
+<tbody><tr><th width="80">Opcode</th><th width="100">Instruction</th><th width="50">size</th><th width="120">flags</th><th>function</th></tr>
+
+<tr><td> 0x00 </td><td>NOP</td><td>1</td><td></td><td></td></tr>
+
+<tr><td> 0x01 </td><td>LXI B,D16</td><td>3</td><td></td><td>B &lt;- byte 3, C &lt;- byte 2</td></tr>
+
+<tr><td> 0x02 </td><td>STAX B</td><td>1</td><td></td><td>(BC) &lt;- A</td></tr>
+
+<tr><td> 0x03 </td><td>INX B</td><td>1</td><td></td><td>BC &lt;- BC+1</td></tr>
+
+<tr><td> 0x04 </td><td>INR B</td><td>1</td><td>Z, S, P, AC</td><td>B &lt;- B+1</td></tr>
+
+<tr><td> 0x05 </td><td>DCR B</td><td>1</td><td>Z, S, P, AC</td><td>B &lt;- B-1</td></tr>
+
+<tr><td> 0x06 </td><td>MVI B, D8</td><td>2</td><td></td><td>B &lt;- byte 2</td></tr>
+
+<tr><td> 0x07 </td><td>RLC</td><td>1</td><td>CY</td><td>A = A &lt;&lt; 1; bit 0 = prev bit 7; CY = prev bit 7</td></tr>
+
+<tr><td> 0x08 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x09 </td><td>DAD B</td><td>1</td><td>CY</td><td>HL = HL + BC</td></tr>
+
+<tr><td> 0x0a </td><td>LDAX B</td><td>1</td><td></td><td>A &lt;- (BC)</td></tr>
+
+<tr><td> 0x0b </td><td>DCX B</td><td>1</td><td></td><td>BC = BC-1</td></tr>
+
+<tr><td> 0x0c </td><td>INR C</td><td>1</td><td>Z, S, P, AC</td><td>C &lt;- C+1</td></tr>
+
+<tr><td> 0x0d </td><td>DCR C</td><td>1</td><td>Z, S, P, AC</td><td>C &lt;-C-1</td></tr>
+
+<tr><td> 0x0e </td><td>MVI C,D8</td><td>2</td><td></td><td>C &lt;- byte 2</td></tr>
+
+<tr><td> 0x0f </td><td>RRC</td><td>1</td><td>CY</td><td>A = A &gt;&gt; 1; bit 7 = prev bit 0; CY = prev bit 0</td></tr>
+
+<tr><td> 0x10 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x11 </td><td>LXI D,D16</td><td>3</td><td></td><td>D &lt;- byte 3, E &lt;- byte 2</td></tr>
+
+<tr><td> 0x12 </td><td>STAX D</td><td>1</td><td></td><td>(DE) &lt;- A</td></tr>
+
+<tr><td> 0x13 </td><td>INX D</td><td>1</td><td></td><td>DE &lt;- DE + 1</td></tr>
+
+<tr><td> 0x14 </td><td>INR D</td><td>1</td><td>Z, S, P, AC</td><td>D &lt;- D+1</td></tr>
+
+<tr><td> 0x15 </td><td>DCR D</td><td>1</td><td>Z, S, P, AC</td><td>D &lt;- D-1</td></tr>
+
+<tr><td> 0x16 </td><td>MVI D, D8</td><td>2</td><td></td><td>D &lt;- byte 2</td></tr>
+
+<tr><td> 0x17 </td><td>RAL</td><td>1</td><td>CY</td><td>A = A &lt;&lt; 1; bit 0 = prev CY; CY = prev bit 7</td></tr>
+
+<tr><td> 0x18 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x19 </td><td>DAD D</td><td>1</td><td>CY</td><td>HL = HL + DE</td></tr>
+
+<tr><td> 0x1a </td><td>LDAX D</td><td>1</td><td></td><td>A &lt;- (DE)</td></tr>
+
+<tr><td> 0x1b </td><td>DCX D</td><td>1</td><td></td><td>DE = DE-1</td></tr>
+
+<tr><td> 0x1c </td><td>INR E</td><td>1</td><td>Z, S, P, AC</td><td>E &lt;-E+1</td></tr>
+
+<tr><td> 0x1d </td><td>DCR E</td><td>1</td><td>Z, S, P, AC</td><td>E &lt;- E-1</td></tr>
+
+<tr><td> 0x1e </td><td>MVI E,D8</td><td>2</td><td></td><td>E &lt;- byte 2</td></tr>
+
+<tr><td> 0x1f </td><td>RAR</td><td>1</td><td>CY</td><td>A = A &gt;&gt; 1; bit 7 = prev bit 7; CY = prev bit 0</td></tr>
+
+<tr><td> 0x20 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x21 </td><td>LXI H,D16</td><td>3</td><td></td><td>H &lt;- byte 3, L &lt;- byte 2</td></tr>
+
+<tr><td> 0x22 </td><td>SHLD adr</td><td>3</td><td></td><td>(adr) &lt;-L; (adr+1)&lt;-H</td></tr>
+
+<tr><td> 0x23 </td><td>INX H</td><td>1</td><td></td><td>HL &lt;- HL + 1</td></tr>
+
+<tr><td> 0x24 </td><td>INR H</td><td>1</td><td>Z, S, P, AC</td><td>H &lt;- H+1</td></tr>
+
+<tr><td> 0x25 </td><td>DCR H</td><td>1</td><td>Z, S, P, AC</td><td>H &lt;- H-1</td></tr>
+
+<tr><td> 0x26 </td><td>MVI H,D8</td><td>2</td><td></td><td>H &lt;- byte 2</td></tr>
+
+<tr><td> 0x27 </td><td>DAA</td><td>1</td><td></td><td>special</td></tr>
+
+<tr><td> 0x28 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x29 </td><td>DAD H</td><td>1</td><td>CY</td><td>HL = HL + HI</td></tr>
+
+<tr><td> 0x2a </td><td>LHLD adr</td><td>3</td><td></td><td>L &lt;- (adr); H&lt;-(adr+1)</td></tr>
+
+<tr><td> 0x2b </td><td>DCX H</td><td>1</td><td></td><td>HL = HL-1</td></tr>
+
+<tr><td> 0x2c </td><td>INR L</td><td>1</td><td>Z, S, P, AC</td><td>L &lt;- L+1</td></tr>
+
+<tr><td> 0x2d </td><td>DCR L</td><td>1</td><td>Z, S, P, AC</td><td>L &lt;- L-1</td></tr>
+
+<tr><td> 0x2e </td><td>MVI L, D8</td><td>2</td><td></td><td>L &lt;- byte 2</td></tr>
+
+<tr><td> 0x2f </td><td>CMA</td><td>1</td><td></td><td>A &lt;- !A</td></tr>
+
+<tr><td> 0x30 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x31 </td><td>LXI SP, D16</td><td>3</td><td></td><td>SP.hi &lt;- byte 3, SP.lo &lt;- byte 2</td></tr>
+
+<tr><td> 0x32 </td><td>STA adr</td><td>3</td><td></td><td>(adr) &lt;- A</td></tr>
+
+<tr><td> 0x33 </td><td>INX SP</td><td>1</td><td></td><td>SP = SP + 1</td></tr>
+
+<tr><td> 0x34 </td><td>INR M</td><td>1</td><td>Z, S, P, AC</td><td>(HL) &lt;- (HL)+1</td></tr>
+
+<tr><td> 0x35 </td><td>DCR M</td><td>1</td><td>Z, S, P, AC</td><td>(HL) &lt;- (HL)-1</td></tr>
+
+<tr><td> 0x36 </td><td>MVI M,D8</td><td>2</td><td></td><td>(HL) &lt;- byte 2</td></tr>
+
+<tr><td> 0x37 </td><td>STC</td><td>1</td><td>CY</td><td>CY = 1</td></tr>
+
+<tr><td> 0x38 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0x39 </td><td>DAD SP</td><td>1</td><td>CY</td><td>HL = HL + SP</td></tr>
+
+<tr><td> 0x3a </td><td>LDA adr</td><td>3</td><td></td><td>A &lt;- (adr)</td></tr>
+
+<tr><td> 0x3b </td><td>DCX SP</td><td>1</td><td></td><td>SP = SP-1</td></tr>
+
+<tr><td> 0x3c </td><td>INR A</td><td>1</td><td>Z, S, P, AC</td><td>A &lt;- A+1</td></tr>
+
+<tr><td> 0x3d </td><td>DCR A</td><td>1</td><td>Z, S, P, AC</td><td>A &lt;- A-1</td></tr>
+
+<tr><td> 0x3e </td><td>MVI A,D8</td><td>2</td><td></td><td>A &lt;- byte 2</td></tr>
+
+<tr><td> 0x3f </td><td>CMC</td><td>1</td><td>CY</td><td>CY=!CY</td></tr>
+
+<tr><td> 0x40 </td><td>MOV B,B</td><td>1</td><td></td><td>B &lt;- B</td></tr>
+
+<tr><td> 0x41 </td><td>MOV B,C</td><td>1</td><td></td><td>B &lt;- C</td></tr>
+
+<tr><td> 0x42 </td><td>MOV B,D</td><td>1</td><td></td><td>B &lt;- D</td></tr>
+
+<tr><td> 0x43 </td><td>MOV B,E</td><td>1</td><td></td><td>B &lt;- E</td></tr>
+
+<tr><td> 0x44 </td><td>MOV B,H</td><td>1</td><td></td><td>B &lt;- H</td></tr>
+
+<tr><td> 0x45 </td><td>MOV B,L</td><td>1</td><td></td><td>B &lt;- L</td></tr>
+
+<tr><td> 0x46 </td><td>MOV B,M</td><td>1</td><td></td><td>B &lt;- (HL)</td></tr>
+
+<tr><td> 0x47 </td><td>MOV B,A</td><td>1</td><td></td><td>B &lt;- A</td></tr>
+
+<tr><td> 0x48 </td><td>MOV C,B</td><td>1</td><td></td><td>C &lt;- B</td></tr>
+
+<tr><td> 0x49 </td><td>MOV C,C</td><td>1</td><td></td><td>C &lt;- C</td></tr>
+
+<tr><td> 0x4a </td><td>MOV C,D</td><td>1</td><td></td><td>C &lt;- D</td></tr>
+
+<tr><td> 0x4b </td><td>MOV C,E</td><td>1</td><td></td><td>C &lt;- E</td></tr>
+
+<tr><td> 0x4c </td><td>MOV C,H</td><td>1</td><td></td><td>C &lt;- H</td></tr>
+
+<tr><td> 0x4d </td><td>MOV C,L</td><td>1</td><td></td><td>C &lt;- L</td></tr>
+
+<tr><td> 0x4e </td><td>MOV C,M</td><td>1</td><td></td><td>C &lt;- (HL)</td></tr>
+
+<tr><td> 0x4f </td><td>MOV C,A</td><td>1</td><td></td><td>C &lt;- A</td></tr>
+
+<tr><td> 0x50 </td><td>MOV D,B</td><td>1</td><td></td><td>D &lt;- B</td></tr>
+
+<tr><td> 0x51 </td><td>MOV D,C</td><td>1</td><td></td><td>D &lt;- C</td></tr>
+
+<tr><td> 0x52 </td><td>MOV D,D</td><td>1</td><td></td><td>D &lt;- D</td></tr>
+
+<tr><td> 0x53 </td><td>MOV D,E</td><td>1</td><td></td><td>D &lt;- E</td></tr>
+
+<tr><td> 0x54 </td><td>MOV D,H</td><td>1</td><td></td><td>D &lt;- H</td></tr>
+
+<tr><td> 0x55 </td><td>MOV D,L</td><td>1</td><td></td><td>D &lt;- L</td></tr>
+
+<tr><td> 0x56 </td><td>MOV D,M</td><td>1</td><td></td><td>D &lt;- (HL)</td></tr>
+
+<tr><td> 0x57 </td><td>MOV D,A</td><td>1</td><td></td><td>D &lt;- A</td></tr>
+
+<tr><td> 0x58 </td><td>MOV E,B</td><td>1</td><td> </td><td>E &lt;- B</td></tr>
+
+<tr><td> 0x59 </td><td>MOV E,C</td><td>1</td><td></td><td>E &lt;- C</td></tr>
+
+<tr><td> 0x5a </td><td>MOV E,D</td><td>1</td><td></td><td>E &lt;- D</td></tr>
+
+<tr><td> 0x5b </td><td>MOV E,E</td><td>1</td><td></td><td>E &lt;- E</td></tr>
+
+<tr><td> 0x5c </td><td>MOV E,H</td><td>1</td><td></td><td>E &lt;- H</td></tr>
+
+<tr><td> 0x5d </td><td>MOV E,L</td><td>1</td><td></td><td>E &lt;- L</td></tr>
+
+<tr><td> 0x5e </td><td>MOV E,M</td><td>1</td><td></td><td>E &lt;- (HL)</td></tr>
+
+<tr><td> 0x5f </td><td>MOV E,A</td><td>1</td><td></td><td>E &lt;- A</td></tr>
+
+<tr><td> 0x60 </td><td>MOV H,B</td><td>1</td><td></td><td>H &lt;- B</td></tr>
+
+<tr><td> 0x61 </td><td>MOV H,C</td><td>1</td><td></td><td>H &lt;- C</td></tr>
+
+<tr><td> 0x62 </td><td>MOV H,D</td><td>1</td><td></td><td>H &lt;- D</td></tr>
+
+<tr><td> 0x63 </td><td>MOV H,E</td><td>1</td><td></td><td>H &lt;- E</td></tr>
+
+<tr><td> 0x64 </td><td>MOV H,H</td><td>1</td><td></td><td>H &lt;- H</td></tr>
+
+<tr><td> 0x65 </td><td>MOV H,L</td><td>1</td><td></td><td>H &lt;- L</td></tr>
+
+<tr><td> 0x66 </td><td>MOV H,M</td><td>1</td><td></td><td>H &lt;- (HL)</td></tr>
+
+<tr><td> 0x67 </td><td>MOV H,A</td><td>1</td><td></td><td>H &lt;- A</td></tr>
+
+<tr><td> 0x68 </td><td>MOV L,B</td><td>1</td><td></td><td>L &lt;- B</td></tr>
+
+<tr><td> 0x69 </td><td>MOV L,C</td><td>1</td><td></td><td>L &lt;- C</td></tr>
+
+<tr><td> 0x6a </td><td>MOV L,D</td><td>1</td><td></td><td>L &lt;- D</td></tr>
+
+<tr><td> 0x6b </td><td>MOV L,E</td><td>1</td><td></td><td>L &lt;- E</td></tr>
+
+<tr><td> 0x6c </td><td>MOV L,H</td><td>1</td><td></td><td>L &lt;- H</td></tr>
+
+<tr><td> 0x6d </td><td>MOV L,L</td><td>1</td><td></td><td>L &lt;- L</td></tr>
+
+<tr><td> 0x6e </td><td>MOV L,M</td><td>1</td><td></td><td>L &lt;- (HL)</td></tr>
+
+<tr><td> 0x6f </td><td>MOV L,A</td><td>1</td><td></td><td>L &lt;- A</td></tr>
+
+<tr><td> 0x70 </td><td>MOV M,B</td><td>1</td><td></td><td>(HL) &lt;- B</td></tr>
+
+<tr><td> 0x71 </td><td>MOV M,C</td><td>1</td><td></td><td>(HL) &lt;- C</td></tr>
+
+<tr><td> 0x72 </td><td>MOV M,D</td><td>1</td><td></td><td>(HL) &lt;- D</td></tr>
+
+<tr><td> 0x73 </td><td>MOV M,E</td><td>1</td><td></td><td>(HL) &lt;- E</td></tr>
+
+<tr><td> 0x74 </td><td>MOV M,H</td><td>1</td><td></td><td>(HL) &lt;- H</td></tr>
+
+<tr><td> 0x75 </td><td>MOV M,L</td><td>1</td><td></td><td>(HL) &lt;- L</td></tr>
+
+<tr><td> 0x76 </td><td>HLT</td><td>1</td><td></td><td>special</td></tr>
+
+<tr><td> 0x77 </td><td>MOV M,A</td><td>1</td><td></td><td>(HL) &lt;- A</td></tr>
+
+<tr><td> 0x78 </td><td>MOV A,B</td><td>1</td><td></td><td>A &lt;- B</td></tr>
+
+<tr><td> 0x79 </td><td>MOV A,C</td><td>1</td><td></td><td>A &lt;- C</td></tr>
+
+<tr><td> 0x7a </td><td>MOV A,D</td><td>1</td><td></td><td>A &lt;- D</td></tr>
+
+<tr><td> 0x7b </td><td>MOV A,E</td><td>1</td><td></td><td>A &lt;- E</td></tr>
+
+<tr><td> 0x7c </td><td>MOV A,H</td><td>1</td><td></td><td>A &lt;- H</td></tr>
+
+<tr><td> 0x7d </td><td>MOV A,L</td><td>1</td><td></td><td>A &lt;- L</td></tr>
+
+<tr><td> 0x7e </td><td>MOV A,M</td><td>1</td><td></td><td>A &lt;- (HL)</td></tr>
+
+<tr><td> 0x7f </td><td>MOV A,A</td><td>1</td><td></td><td>A &lt;- A</td></tr>
+
+<tr><td> 0x80 </td><td>ADD B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + B</td></tr>
+
+<tr><td> 0x81 </td><td>ADD C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + C</td></tr>
+
+<tr><td> 0x82 </td><td>ADD D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + D</td></tr>
+
+<tr><td> 0x83 </td><td>ADD E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + E</td></tr>
+
+<tr><td> 0x84 </td><td>ADD H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + H</td></tr>
+
+<tr><td> 0x85 </td><td>ADD L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + L</td></tr>
+
+<tr><td> 0x86 </td><td>ADD M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + (HL)</td></tr>
+
+<tr><td> 0x87 </td><td>ADD A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + A</td></tr>
+
+<tr><td> 0x88 </td><td>ADC B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + B + CY</td></tr>
+
+<tr><td> 0x89 </td><td>ADC C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + C + CY</td></tr>
+
+<tr><td> 0x8a </td><td>ADC D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + D + CY</td></tr>
+
+<tr><td> 0x8b </td><td>ADC E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + E + CY</td></tr>
+
+<tr><td> 0x8c </td><td>ADC H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + H + CY</td></tr>
+
+<tr><td> 0x8d </td><td>ADC L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + L + CY</td></tr>
+
+<tr><td> 0x8e </td><td>ADC M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + (HL) + CY</td></tr>
+
+<tr><td> 0x8f </td><td>ADC A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + A + CY</td></tr>
+
+<tr><td> 0x90 </td><td>SUB B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - B</td></tr>
+
+<tr><td> 0x91 </td><td>SUB C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - C</td></tr>
+
+<tr><td> 0x92 </td><td>SUB D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + D</td></tr>
+
+<tr><td> 0x93 </td><td>SUB E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - E</td></tr>
+
+<tr><td> 0x94 </td><td>SUB H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + H</td></tr>
+
+<tr><td> 0x95 </td><td>SUB L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - L</td></tr>
+
+<tr><td> 0x96 </td><td>SUB M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + (HL)</td></tr>
+
+<tr><td> 0x97 </td><td>SUB A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - A</td></tr>
+
+<tr><td> 0x98 </td><td>SBB B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - B - CY</td></tr>
+
+<tr><td> 0x99 </td><td>SBB C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - C - CY</td></tr>
+
+<tr><td> 0x9a </td><td>SBB D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - D - CY</td></tr>
+
+<tr><td> 0x9b </td><td>SBB E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - E - CY</td></tr>
+
+<tr><td> 0x9c </td><td>SBB H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - H - CY</td></tr>
+
+<tr><td> 0x9d </td><td>SBB L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - L - CY</td></tr>
+
+<tr><td> 0x9e </td><td>SBB M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - (HL) - CY</td></tr>
+
+<tr><td> 0x9f </td><td>SBB A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - A - CY</td></tr>
+
+<tr><td> 0xa0 </td><td>ANA B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; B</td></tr>
+
+<tr><td> 0xa1 </td><td>ANA C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; C</td></tr>
+
+<tr><td> 0xa2 </td><td>ANA D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; D</td></tr>
+
+<tr><td> 0xa3 </td><td>ANA E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; E</td></tr>
+
+<tr><td> 0xa4 </td><td>ANA H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; H</td></tr>
+
+<tr><td> 0xa5 </td><td>ANA L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; L</td></tr>
+
+<tr><td> 0xa6 </td><td>ANA M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; (HL)</td></tr>
+
+<tr><td> 0xa7 </td><td>ANA A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; A</td></tr>
+
+<tr><td> 0xa8 </td><td>XRA B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ B</td></tr>
+
+<tr><td> 0xa9 </td><td>XRA C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ C</td></tr>
+
+<tr><td> 0xaa </td><td>XRA D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ D</td></tr>
+
+<tr><td> 0xab </td><td>XRA E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ E</td></tr>
+
+<tr><td> 0xac </td><td>XRA H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ H</td></tr>
+
+<tr><td> 0xad </td><td>XRA L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ L</td></tr>
+
+<tr><td> 0xae </td><td>XRA M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ (HL)</td></tr>
+
+<tr><td> 0xaf </td><td>XRA A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ A</td></tr>
+
+<tr><td> 0xb0 </td><td>ORA B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | B</td></tr>
+
+<tr><td> 0xb1 </td><td>ORA C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | C</td></tr>
+
+<tr><td> 0xb2 </td><td>ORA D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | D</td></tr>
+
+<tr><td> 0xb3 </td><td>ORA E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | E</td></tr>
+
+<tr><td> 0xb4 </td><td>ORA H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | H</td></tr>
+
+<tr><td> 0xb5 </td><td>ORA L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | L</td></tr>
+
+<tr><td> 0xb6 </td><td>ORA M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | (HL)</td></tr>
+
+<tr><td> 0xb7 </td><td>ORA A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | A</td></tr>
+
+<tr><td> 0xb8 </td><td>CMP B</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - B</td></tr>
+
+<tr><td> 0xb9 </td><td>CMP C</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - C</td></tr>
+
+<tr><td> 0xba </td><td>CMP D</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - D</td></tr>
+
+<tr><td> 0xbb </td><td>CMP E</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - E</td></tr>
+
+<tr><td> 0xbc </td><td>CMP H</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - H</td></tr>
+
+<tr><td> 0xbd </td><td>CMP L</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - L</td></tr>
+
+<tr><td> 0xbe </td><td>CMP M</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - (HL)</td></tr>
+
+<tr><td> 0xbf </td><td>CMP A</td><td>1</td><td>Z, S, P, CY, AC</td><td>A - A</td></tr>
+
+<tr><td> 0xc0 </td><td>RNZ</td><td>1</td><td></td><td>if NZ, RET</td></tr>
+
+<tr><td> 0xc1 </td><td>POP B</td><td>1</td><td></td><td>C &lt;- (sp); B &lt;- (sp+1); sp &lt;- sp+2</td></tr>
+
+<tr><td> 0xc2 </td><td>JNZ adr</td><td>3</td><td></td><td>if NZ, PC &lt;- adr</td></tr>
+
+<tr><td> 0xc3 </td><td>JMP adr</td><td>3</td><td></td><td>PC &lt;= adr</td></tr>
+
+<tr><td> 0xc4 </td><td>CNZ adr</td><td>3</td><td></td><td>if NZ, CALL adr</td></tr>
+
+<tr><td> 0xc5 </td><td>PUSH B</td><td>1</td><td></td><td>(sp-2)&lt;-C; (sp-1)&lt;-B; sp &lt;- sp - 2</td></tr>
+
+<tr><td> 0xc6 </td><td>ADI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + byte</td></tr>
+
+<tr><td> 0xc7 </td><td>RST 0</td><td>1</td><td></td><td>CALL $0</td></tr>
+
+<tr><td> 0xc8 </td><td>RZ</td><td>1</td><td></td><td>if Z, RET</td></tr>
+
+<tr><td> 0xc9 </td><td>RET</td><td>1</td><td></td><td>PC.lo &lt;- (sp); PC.hi&lt;-(sp+1); SP &lt;- SP+2</td></tr>
+
+<tr><td> 0xca </td><td>JZ adr</td><td>3</td><td></td><td>if Z, PC &lt;- adr</td></tr>
+
+<tr><td> 0xcb </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0xcc </td><td>CZ adr</td><td>3</td><td></td><td>if Z, CALL adr</td></tr>
+
+<tr><td> 0xcd </td><td>CALL adr</td><td>3</td><td></td><td>(SP-1)&lt;-PC.hi;(SP-2)&lt;-PC.lo;SP&lt;-SP-2;PC=adr</td></tr>
+
+<tr><td> 0xce </td><td>ACI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A + data + CY</td></tr>
+
+<tr><td> 0xcf </td><td>RST 1</td><td>1</td><td></td><td>CALL $8</td></tr>
+
+<tr><td> 0xd0 </td><td>RNC</td><td>1</td><td></td><td>if NCY, RET</td></tr>
+
+<tr><td> 0xd1 </td><td>POP D</td><td>1</td><td></td><td>E &lt;- (sp); D &lt;- (sp+1); sp &lt;- sp+2</td></tr>
+
+<tr><td> 0xd2 </td><td>JNC adr</td><td>3</td><td></td><td>if NCY, PC&lt;-adr</td></tr>
+
+<tr><td> 0xd3 </td><td>OUT D8</td><td>2</td><td></td><td>special</td></tr>
+
+<tr><td> 0xd4 </td><td>CNC adr</td><td>3</td><td></td><td>if NCY, CALL adr</td></tr>
+
+<tr><td> 0xd5 </td><td>PUSH D</td><td>1</td><td></td><td>(sp-2)&lt;-E; (sp-1)&lt;-D; sp &lt;- sp - 2</td></tr>
+
+<tr><td> 0xd6 </td><td>SUI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - data</td></tr>
+
+<tr><td> 0xd7 </td><td>RST 2</td><td>1</td><td></td><td>CALL $10</td></tr>
+
+<tr><td> 0xd8 </td><td>RC</td><td>1</td><td></td><td>if CY, RET</td></tr>
+
+<tr><td> 0xd9 </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0xda </td><td>JC adr</td><td>3</td><td></td><td>if CY, PC&lt;-adr</td></tr>
+
+<tr><td> 0xdb </td><td>IN D8</td><td>2</td><td></td><td>special</td></tr>
+
+<tr><td> 0xdc </td><td>CC adr</td><td>3</td><td></td><td>if CY, CALL adr</td></tr>
+
+<tr><td> 0xdd </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0xde </td><td>SBI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A - data - CY</td></tr>
+
+<tr><td> 0xdf </td><td>RST 3</td><td>1</td><td></td><td>CALL $18</td></tr>
+
+<tr><td> 0xe0 </td><td>RPO</td><td>1</td><td></td><td>if PO, RET</td></tr>
+
+<tr><td> 0xe1 </td><td>POP H</td><td>1</td><td></td><td>L &lt;- (sp); H &lt;- (sp+1); sp &lt;- sp+2</td></tr>
+
+<tr><td> 0xe2 </td><td>JPO adr</td><td>3</td><td></td><td>if PO, PC &lt;- adr</td></tr>
+
+<tr><td> 0xe3 </td><td>XTHL</td><td>1</td><td></td><td>L &lt;-&gt; (SP); H &lt;-&gt; (SP+1) </td></tr>
+
+<tr><td> 0xe4 </td><td>CPO adr</td><td>3</td><td></td><td>if PO, CALL adr</td></tr>
+
+<tr><td> 0xe5 </td><td>PUSH H</td><td>1</td><td></td><td>(sp-2)&lt;-L; (sp-1)&lt;-H; sp &lt;- sp - 2</td></tr>
+
+<tr><td> 0xe6 </td><td>ANI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A &amp; data</td></tr>
+
+<tr><td> 0xe7 </td><td>RST 4</td><td>1</td><td></td><td>CALL $20</td></tr>
+
+<tr><td> 0xe8 </td><td>RPE</td><td>1</td><td></td><td>if PE, RET</td></tr>
+
+<tr><td> 0xe9 </td><td>PCHL</td><td>1</td><td></td><td>PC.hi &lt;- H; PC.lo &lt;- L</td></tr>
+
+<tr><td> 0xea </td><td>JPE adr</td><td>3</td><td></td><td>if PE, PC &lt;- adr</td></tr>
+
+<tr><td> 0xeb </td><td>XCHG</td><td>1</td><td></td><td>H &lt;-&gt; D; L &lt;-&gt; E</td></tr>
+
+<tr><td> 0xec </td><td>CPE adr</td><td>3</td><td></td><td>if PE, CALL adr</td></tr>
+
+<tr><td> 0xed </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0xee </td><td>XRI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A ^ data</td></tr>
+
+<tr><td> 0xef </td><td>RST 5</td><td>1</td><td></td><td>CALL $28</td></tr>
+
+<tr><td> 0xf0 </td><td>RP</td><td>1</td><td></td><td>if P, RET</td></tr>
+
+<tr><td> 0xf1 </td><td>POP PSW</td><td>1</td><td></td><td>flags &lt;- (sp); A &lt;- (sp+1); sp &lt;- sp+2</td></tr>
+
+<tr><td> 0xf2 </td><td>JP adr</td><td>3</td><td></td><td>if P=1 PC &lt;- adr</td></tr>
+
+<tr><td> 0xf3 </td><td>DI</td><td>1</td><td></td><td>special</td></tr>
+
+<tr><td> 0xf4 </td><td>CP adr</td><td>3</td><td></td><td>if P, PC &lt;- adr</td></tr>
+
+<tr><td> 0xf5 </td><td>PUSH PSW</td><td>1</td><td></td><td>(sp-2)&lt;-flags; (sp-1)&lt;-A; sp &lt;- sp - 2</td></tr>
+
+<tr><td> 0xf6 </td><td>ORI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A &lt;- A | data</td></tr>
+
+<tr><td> 0xf7 </td><td>RST 6</td><td>1</td><td></td><td>CALL $30</td></tr>
+
+<tr><td> 0xf8 </td><td>RM</td><td>1</td><td></td><td>if M, RET</td></tr>
+
+<tr><td> 0xf9 </td><td>SPHL</td><td>1</td><td></td><td>SP=HL</td></tr>
+
+<tr><td> 0xfa </td><td>JM adr</td><td>3</td><td></td><td>if M, PC &lt;- adr</td></tr>
+
+<tr><td> 0xfb </td><td>EI</td><td>1</td><td></td><td>special</td></tr>
+
+<tr><td> 0xfc </td><td>CM adr</td><td>3</td><td></td><td>if M, CALL adr</td></tr>
+
+<tr><td> 0xfd </td><td>-</td><td></td><td></td><td></td></tr>
+
+<tr><td> 0xfe </td><td>CPI D8</td><td>2</td><td>Z, S, P, CY, AC</td><td>A - data</td></tr>
+
+<tr><td> 0xff </td><td>RST 7</td><td>1</td><td></td><td>CALL $38</td></tr>
+
+</tbody></table><br><br><br><p>Post questions or comments on Twitter @realemulator101, or if you find issues in the code, file them on
+the github repository.</p><br><br>
+<footer>
+<br>
+<br>
+<br>
+    © 2011-2018 emulator101.com
+<br>
+<br>
+<p></p>
+</footer>
+
+</div>
+
+
+</body></html>
