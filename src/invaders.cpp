@@ -70,6 +70,8 @@ int main()
 
 		fseek(pFile, 0, SEEK_END);
 		size_t fileSizeBytes = ftell(pFile);
+		printf("Opened file \"%s\" size %u (0x%X)\n", fileName, (unsigned int)fileSizeBytes, (unsigned int)fileSizeBytes);
+
 		if(fileSizeBytes != rom.fileSizeBytes)
 		{
 			fprintf(stderr, "ROM file \"%s\" is incorrect size. Expected %u, got %u\n", fileName, rom.fileSizeBytes, fileSizeBytes);
