@@ -12,9 +12,13 @@ http://www.emutalk.net/threads/38177-Space-Invaders
 
 ## TODO
 
-- Emulator
-- Instruction cycle count
-- "Machine" i.e. invaders hardware
-- Interrupts
+- Emulation loop
+  - Don't blindly implement all instructions; only as required.
+- Timing
+  - Instruction cycle count
+  - Interrupts
 - Debugger
+  - ImGui and/or command line
+- Display
+  - SDL2
 - Test on Linux/Mac
