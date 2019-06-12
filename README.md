@@ -9,3 +9,10 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 ## Links
 
 http://www.emutalk.net/threads/38177-Space-Invaders
+
+## TODO
+
+- Emulator
+- "Machine" i.e. invaders hardware
+- Debugger
+- Test on Linux/Mac
