@@ -55,7 +55,9 @@ solution "invaders-emulator"
 		language "C++"
 		files {
 			"../src/invaders.cpp",
-			"../src/8080.*"
+			"../src/8080.*",
+			"../src/Assert.*",
+			"../src/Helpers.*"
 		}
 		includedirs {
 			"../src/**"
