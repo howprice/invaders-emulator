@@ -13,6 +13,8 @@ http://www.emutalk.net/threads/38177-Space-Invaders
 ## TODO
 
 - Emulator
+- Instruction cycle count
 - "Machine" i.e. invaders hardware
+- Interrupts
 - Debugger
 - Test on Linux/Mac
