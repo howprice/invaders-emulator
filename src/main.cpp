@@ -307,7 +307,9 @@ static unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSi
 	}
 	else if(instruction.size == 3)
 	{
-		uint16_t val = *(uint16_t*)(pPC + 1); // assume host is little endian
+		uint8_t lsb = *(pPC + 1);
+		uint8_t msb = *(pPC + 2);
+		uint16_t val = (msb << 8) | lsb;
 		char text[64];
 		sprintf(text, instruction.mnemonic, val);
 		printf(" %s\n", text);
