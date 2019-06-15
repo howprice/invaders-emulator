@@ -16,19 +16,57 @@ struct Instruction
 	ExecuteInstruction executeInstruction;
 };
 
+static uint8_t getInstructionD8(State8080& state)
+{
+	// #TODO: Assert PC+1 in range
+	uint8_t d8 = state.pMemory[state.PC + 1];
+	return d8;
+}
+
+static uint16_t getInstructionAddress(State8080& state)
+{
+	// #TODO: Assert PC+1 and PC+2 in range
+	uint8_t lsb = state.pMemory[state.PC + 1];
+	uint8_t msb = state.pMemory[state.PC + 2];
+	uint16_t address = (msb << 8) | lsb;
+	return address;
+}
+
 // 0x00 NOP
 static void execute00(State8080& state, uint16_t instructionSize)
 {
 	state.PC += instructionSize;
 }
 
-// 0xC3 JMP
+// 0x06 MVI B, <d8>
+static void execute06(State8080& state, uint16_t instructionSize)
+{
+	state.B = getInstructionD8(state);
+	state.PC += instructionSize;
+}
+
+// 0x31 LXI SP,<address>
+static void execute31(State8080& state, uint16_t instructionSize)
+{
+	state.SP = getInstructionAddress(state);
+	state.PC += instructionSize;
+}
+
+// 0xC3 JMP <address>
 static void executeC3(State8080& state, uint16_t /*instructionSize*/)
 {
-	uint8_t lsb = state.pMemory[state.PC + 1]; // #TODO: Wrap this in accessor for safety
-	uint8_t msb = state.pMemory[state.PC + 2];
-	uint16_t address = (msb << 8) | lsb;
-	state.PC = address;
+	state.PC = getInstructionAddress(state);
+}
+
+// 0xCD CALL <address>
+static void executeCD(State8080& state, uint16_t instructionSize)
+{
+	// push return address onto stack
+	HP_ASSERT(state.SP >= 2);
+	uint16_t returnAddress = state.PC + instructionSize;
+	state.pMemory[--state.SP] = (uint8_t)(returnAddress >> 8); // push msb
+	state.pMemory[--state.SP] = (uint8_t)(returnAddress & 0xff); // push lsb
+	state.PC = getInstructionAddress(state); //  PC = <address>
 }
 
 static const Instruction s_instructions[] =
@@ -38,8 +76,8 @@ static const Instruction s_instructions[] =
 	{ 0x02, "STAX B", 1, nullptr }, //		(BC) < -A
 	{ 0x03, "INX B", 1, nullptr }, //		BC < -BC + 1
 	{ 0x04, "INR B", 1, nullptr }, //	Z, S, P, AC	B < -B + 1
-	{ 0x05, "DCR B", 1, nullptr }, //	Z, S, P, AC	B < -B - 1
-	{ 0x06, "MVI B, %02X", 2, nullptr }, //		B < -byte 2
+	{ 0x05, "DCR B", 1, nullptr },         // Z, S, P, AC	B < -B - 1
+	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
 	{ 0x07, "RLC",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev bit 7; CY = prev bit 7
 	{ 0x08, "-", 1, nullptr },
 	{ 0x09, "DAD B",	1, nullptr }, //		CY	HL = HL + BC
@@ -82,7 +120,7 @@ static const Instruction s_instructions[] =
 	{ 0x2e, "MVI L, %02X", 2, nullptr }, //			L < -byte 2
 	{ 0x2f, "CMA", 1, nullptr }, //			A < -!A
 	{ 0x30, "-", 1, nullptr }, //	
-	{ 0x31, "LXI SP, %04X",	3, nullptr }, //			SP.hi < -byte 3, SP.lo < -byte 2
+	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
 	{ 0x32, "STA %04X",	3, nullptr }, //			(adr) < -A
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
 	{ 0x34, "INR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)+1
@@ -238,9 +276,9 @@ static const Instruction s_instructions[] =
 	{ 0xca, "JZ %04X", 3, nullptr }, //			if Z, PC < -adr
 	{ 0xcb, "-", 1, nullptr }, //	
 	{ 0xcc, "CZ %04X",	3, nullptr }, //			if Z, CALL adr
-	{ 0xcd, "CALL %04X",	3, nullptr }, //			(SP - 1) < -PC.hi; (SP - 2) < -PC.lo; SP < -SP - 2; PC = adr
+	{ 0xcd, "CALL %04X", 3, executeCD }, // (SP - 1) <- PC.hi; (SP - 2) <- PC.lo; SP <- SP - 2; PC = adr
 	{ 0xce, "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
-	{ 0xcf, "RST 1",	1, nullptr }, //			CALL $8
+	{ 0xcf, "RST 1", 1, nullptr }, //			CALL $8
 	{ 0xd0, "RNC",	1, nullptr }, //			if NCY, RET
 	{ 0xd1, "POP D",	1, nullptr }, //			E < -(sp); D < -(sp + 1); sp < -sp + 2
 	{ 0xd2, "JNC %04X", 3, nullptr }, //			if NCY, PC < -adr
@@ -346,7 +384,7 @@ void Emulate8080Op(State8080& state)
 	HP_ASSERT(instruction.opcode == opcode);
 	HP_ASSERT(instruction.size > 0 && instruction.size <= kMaxInstructionSize);
 
-	HP_ASSERT(instruction.executeInstruction, "Unimplemented instruction");
+	HP_ASSERT(instruction.executeInstruction, "Unimplemented instruction 0x%02X", instruction.opcode);
 	if(instruction.executeInstruction)
 	{
 		instruction.executeInstruction(state, instruction.size);
