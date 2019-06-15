@@ -9,6 +9,7 @@ solution "invaders-emulator"
 		language "C++"
 		files {
 			"../src/disassemble.cpp",
+			"../src/8080.*",
 			"../src/Assert.*",
 			"../src/Helpers.*"
 		}
@@ -56,6 +57,7 @@ solution "invaders-emulator"
 		files {
 			"../src/invaders.cpp",
 			"../src/8080.*",
+			"../src/debugger.*",
 			"../src/Assert.*",
 			"../src/Helpers.*"
 		}

@@ -1,11 +1,15 @@
+// #TODO: Implement basic command line debugger
+//        - 
 // #TODO: Is RAM mirror at $4000 required by invaders roms??
 
 #include "Assert.h"
 #include "Helpers.h"
+#include "debugger.h"
 #include "8080.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum class MemoryType
 {
@@ -47,6 +51,8 @@ static const Chunk kChunks[] =
 static const size_t kRomPhysicalSizeBytes = 0x2000;
 static const size_t kRamPhysicalSizeBytes = 0x2000;
 static const size_t kPhysicalMemorySizeBytes = kRomPhysicalSizeBytes + kRamPhysicalSizeBytes;
+
+static bool s_debug = false;
 
 static bool WriteByteToMemory(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail = false)
 {
@@ -144,9 +150,42 @@ static const Rom kRoms[] =
 	{"invaders.e", 0x800},
 };
 
-int main()
+static void printUsage()
 {
-	printf("invaders\n");
+	puts("Usage: invaders [OPTIONS]");
+	puts("Options:\n\n"
+		"  --help                       Shows this message\n"
+		"  -d <filename>                Use debugger\n"
+	);
+}
+
+static void parseCommandLine(int argc, char** argv)
+{
+	for(int i = 1; i < argc; i++)
+	{
+		const char* arg = argv[i];
+
+		if(strcmp(arg, "--help") == 0)
+		{
+			printUsage();
+			exit(EXIT_SUCCESS);
+		}
+		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
+		{
+			s_debug = true;
+		}
+		else
+		{
+			fprintf(stderr, "Unrecognised command line arg: %s\n", arg);
+			printUsage();
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+int main(int argc, char** argv)
+{
+	parseCommandLine(argc, argv);
 
 	State8080 state = {};
 
@@ -154,6 +193,7 @@ int main()
 	// #TODO: Should really assert that address space regions don't overlap, or if they do that
 	//        they are of the same type? 
 	state.pMemory = new uint8_t[kPhysicalMemorySizeBytes];
+	state.memorySizeBytes = kPhysicalMemorySizeBytes;
 
 	TestMemory(state.pMemory);
 
@@ -197,7 +237,24 @@ int main()
 		address += fileSizeBytes;
 	}
 
-	// #TODO: Emulation loop here
+	if(s_debug)
+	{
+		bool active = true; // #TODO: Is this CPU state?
+		while(active)
+		{
+			PrintState(state);
+			Disassemble8080(state.pMemory, kPhysicalMemorySizeBytes, state.PC);
+			Emulate8080Op(state);
+		}
+	}
+	else
+	{
+		bool active = true; // #TODO: Is this CPU state?
+		while(active)
+		{
+			Emulate8080Op(state);
+		}
+	}
 
 	delete[] state.pMemory;
 	state.pMemory = nullptr;
