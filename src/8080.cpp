@@ -184,7 +184,16 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xC2 JNZ <address>
+// if NZ, PC <- adr
+static void executeC2(State8080& state)
+{
+	if(state.flags.Z == 0)
+		state.PC = getInstructionAddress(state);
+}
+
 // 0xC3 JMP <address>
+// PC <- adr
 static void executeC3(State8080& state)
 {
 	state.PC = getInstructionAddress(state);
@@ -402,7 +411,7 @@ static const Instruction s_instructions[] =
 	{ 0xbf, "CMP A", 1, nullptr }, //		Z, S, P, CY, AC	A - A
 	{ 0xc0, "RNZ", 1, nullptr }, //			if NZ, RET
 	{ 0xc1, "POP B", 1, nullptr }, //			C < -(sp); B < -(sp + 1); sp < -sp + 2
-	{ 0xc2, "JNZ %04X", 3, nullptr }, //			if NZ, PC < -adr
+	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
 	{ 0xc4, "CNZ %04X", 3, nullptr }, //			if NZ, CALL adr
 	{ 0xc5, "PUSH B", 1, nullptr }, //			(sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
