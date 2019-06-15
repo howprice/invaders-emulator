@@ -8,6 +8,9 @@
 // #TODO: What is the correct initial value of registers? Zero or garbage?
 // #TODO: How to represent flags?
 
+typedef uint8_t(*ReadByteFromMemoryFuncPtr)(uint8_t* pMemory, size_t address, bool fatalOnFail);
+typedef bool(*WriteByteToMemoryFuncPtr)(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail);
+
 struct State8080
 {
 	uint8_t A;         // A and Flags are the Program Status Word (PSW)
@@ -29,6 +32,9 @@ struct State8080
 	uint32_t memorySizeBytes;
 
 	// #TODO: interrupts enabled state
+
+	ReadByteFromMemoryFuncPtr readByteFromMemory;
+	WriteByteToMemoryFuncPtr writeByteToMemory;
 };
 
 // returns instruction size in bytes
