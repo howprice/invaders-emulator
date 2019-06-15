@@ -1,3 +1,6 @@
+#ifndef HP_8080_H
+#define HP_8080_H
+
 #include <stdint.h>
 
 // https://en.wikipedia.org/wiki/Intel_8080#Registers
@@ -23,6 +26,14 @@ struct State8080
 	uint16_t PC;
 
 	uint8_t* pMemory;
+	uint32_t memorySizeBytes;
 
 	// #TODO: interrupts enabled state
 };
+
+// returns instruction size in bytes
+unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, unsigned int pc);
+
+void Emulate8080Op(State8080& state);
+
+#endif
