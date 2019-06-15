@@ -1,3 +1,4 @@
+// #TODO: Fix up Disassemble8080 column formatting
 // #TODO: Implement basic command line debugger
 //        - 
 // #TODO: Is RAM mirror at $4000 required by invaders roms??
@@ -244,8 +245,9 @@ int main(int argc, char** argv)
 		bool active = true; // #TODO: Is this CPU state?
 		while(active)
 		{
-			PrintState(state);
 			Disassemble8080(state.pMemory, kPhysicalMemorySizeBytes, state.PC);
+			printf("    ");
+			PrintState(state);
 			Emulate8080Instruction(state);
 		}
 	}

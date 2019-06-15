@@ -65,6 +65,7 @@ int main(int argc, char** argv)
 	while(pc < bufferSizeBytes)
 	{
 		pc += Disassemble8080(buffer, bufferSizeBytes, pc);
+		printf("\n");
 	}
 
 	delete[] buffer;

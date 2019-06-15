@@ -11,10 +11,24 @@
 typedef uint8_t(*ReadByteFromMemoryFuncPtr)(uint8_t* pMemory, size_t address, bool fatalOnFail);
 typedef bool(*WriteByteToMemoryFuncPtr)(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail);
 
+struct Flags8080
+{
+	// LSB
+	uint8_t C : 1;          // Carry - Set if the last addition operation resulted in a carry or if the last subtraction operation required a borrow
+	uint8_t unusedBit1 : 1;
+	uint8_t P : 1;          // Parity - Set if the number of 1 bits in the result is even.
+	uint8_t unusedBit3 : 1;
+	uint8_t AC : 1;         // Auxiliary Carry - used for binary-coded decimal arithmetic (BCD). Not required for Space Invaders
+	uint8_t unusedBit5 : 1;
+	uint8_t Z : 1;          // Zero - Set if the result is zero
+	uint8_t S : 1;          // Sign - Set if the result is negative i.e. bit 7 is set
+	// MSB
+};
+
 struct State8080
 {
-	uint8_t A;         // A and Flags are the Program Status Word (PSW)
-	uint8_t Flags;
+	uint8_t A;         // A and Flags togther make up the Program Status Word (PSW)
+	Flags8080 flags;
 
 	uint8_t B;
 	uint8_t C;

@@ -73,10 +73,37 @@ static uint16_t getInstructionAddress(const State8080& state)
 	return getInstructionD16(state);
 }
 
+static uint8_t calculateParity(uint8_t val)
+{
+	unsigned int numBitsSet = 0;
+	for(unsigned int bitIndex = 0; bitIndex < 8; bitIndex++)
+	{
+		if(val & (1 << bitIndex))
+			numBitsSet++;
+	}
+	bool isEven = (numBitsSet & 1) == 0;
+	uint8_t parity = isEven ? 1 : 0;
+	return parity;
+}
+
 // 0x00 NOP
 static void execute00(State8080& /*state*/)
 {
 	
+}
+
+// 0x05 DCR B
+// B <- B-1
+static void execute05(State8080& state)
+{
+	state.B--;
+
+	// #TODO: Set Z, S, P, AC
+	// #TODO: Refactor into a set of setters for reuse
+	state.flags.Z = (state.B == 0) ? 1 : 0;
+	state.flags.S = (state.B & 0x80) != 0;
+	state.flags.P = calculateParity(state.B);
+//	state.flags.AC = ; #TODO: Implement if required
 }
 
 // 0x06 MVI B, <d8>
@@ -186,7 +213,7 @@ static const Instruction s_instructions[] =
 	{ 0x02, "STAX B", 1, nullptr }, //		(BC) < -A
 	{ 0x03, "INX B", 1, nullptr }, //		BC < -BC + 1
 	{ 0x04, "INR B", 1, nullptr }, //	Z, S, P, AC	B < -B + 1
-	{ 0x05, "DCR B", 1, nullptr },         // Z, S, P, AC	B < -B - 1
+	{ 0x05, "DCR B", 1, execute05 }, // Z, S, P, AC	B < -B - 1
 	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
 	{ 0x07, "RLC",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev bit 7; CY = prev bit 7
 	{ 0x08, "-", 1, nullptr },
@@ -462,24 +489,24 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 		printf("   ");
 
 	// mnemonic
+	char text[64];
 	if(instruction.sizeBytes == 1)
-		printf(" %s\n", instruction.mnemonic);
+		sprintf(text, " %s", instruction.mnemonic);
 	else if(instruction.sizeBytes == 2)
 	{
 		uint8_t d8 = *(pPC + 1);
-		char text[64];
 		sprintf(text, instruction.mnemonic, d8);
-		printf(" %s\n", text);
 	}
 	else if(instruction.sizeBytes == 3)
 	{
 		uint8_t lsb = *(pPC + 1);
 		uint8_t msb = *(pPC + 2);
 		uint16_t val = (msb << 8) | lsb;
-		char text[64];
 		sprintf(text, instruction.mnemonic, val);
-		printf(" %s\n", text);
 	}
+
+	// #TODO: Fix up this formatting
+	printf(" %-14s", text);
 	return instruction.sizeBytes;
 }
 
