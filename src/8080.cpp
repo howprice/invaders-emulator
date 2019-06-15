@@ -66,6 +66,17 @@ static void execute11(State8080& state, uint16_t instructionSize)
 	state.PC += instructionSize;
 }
 
+// 0x1A LDAX D
+// D refers to the 16-bit register pair DE
+// Copy byte from memory at address in DE into A
+// A <- (DE)
+static void execute1A(State8080& state, uint16_t instructionSize)
+{
+	uint16_t address = (uint16_t)(state.D << 8) | (uint16_t)state.E;
+	state.A = state.pMemory[address];
+	state.PC += instructionSize;
+}
+
 // 0x21 LXI H,<d16>
 // H refers to the 16-bit register pair HL
 // Encoding: 0x21 <lsb> <msb>
@@ -129,7 +140,7 @@ static const Instruction s_instructions[] =
 	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
 	{ 0x18, "-", 1, nullptr }, //	
 	{ 0x19, "DAD D",	1, nullptr }, //		CY	HL = HL + DE
-	{ 0x1a, "LDAX D",	1, nullptr }, //			A < -(DE)
+	{ 0x1a, "LDAX D", 1, execute1A }, // A <- (DE)
 	{ 0x1b, "DCX D",	1, nullptr }, //			DE = DE - 1
 	{ 0x1c, "INR E",	1, nullptr }, //		Z, S, P, AC	E < -E + 1
 	{ 0x1d, "DCR E",	1, nullptr }, //		Z, S, P, AC	E < -E - 1
