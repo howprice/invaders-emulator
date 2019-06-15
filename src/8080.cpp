@@ -121,7 +121,9 @@ static void execute21(State8080& state)
 // 0x31  LXI SP,d32
 static void execute31(State8080& state)
 {
-	state.SP = getInstructionAddress(state);
+	uint16_t address = getInstructionAddress(state);
+	// #TODO: Assert that address is in RAM
+	state.SP = address;
 }
 
 // 0x77  MOV M,A
