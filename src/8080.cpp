@@ -89,9 +89,22 @@ static void execute21(State8080& state, uint16_t instructionSize)
 	state.PC += instructionSize;
 }
 
+// 0x31  LXI SP,d32
 static void execute31(State8080& state, uint16_t instructionSize)
 {
 	state.SP = getInstructionAddress(state);
+	state.PC += instructionSize;
+}
+
+// 0x77  MOV M,A
+// (HL) <- A
+// Moves the value in A to address HL, where H is MSB.
+static void execute77(State8080& state, uint16_t instructionSize)
+{
+	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	// #TODO: Call WriteMemory function here
+	HP_ASSERT(address < state.memorySizeBytes);
+	state.pMemory[address] = state.A;
 	state.PC += instructionSize;
 }
 
@@ -233,7 +246,7 @@ static const Instruction s_instructions[] =
 	{ 0x74, "MOV M,H", 1, nullptr }, //			(HL) < -H
 	{ 0x75, "MOV M,L", 1, nullptr }, //			(HL) < -L
 	{ 0x76, "HLT",	1, nullptr }, //			special
-	{ 0x77, "MOV M,A", 1, nullptr }, //			(HL) < -A
+	{ 0x77, "MOV M,A", 1, execute77 }, // (HL) < -A
 	{ 0x78, "MOV A,B", 1, nullptr }, //			A < -B
 	{ 0x79, "MOV A,C", 1, nullptr }, //			A < -C
 	{ 0x7a, "MOV A,D", 1, nullptr }, //			A < -D

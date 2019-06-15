@@ -195,9 +195,9 @@ int main(int argc, char** argv)
 	state.pMemory = new uint8_t[kPhysicalMemorySizeBytes];
 	state.memorySizeBytes = kPhysicalMemorySizeBytes;
 
-	TestMemory(state.pMemory);
+//	TestMemory(state.pMemory);
 
-#if 0
+#if 1
 	// Zero RAM
 	// #TODO: Is this expected or required? Maybe just helpful for debugging. Write 0xCC maybe? 
 	for(size_t address = kRomPhysicalSizeBytes; address < kPhysicalMemorySizeBytes; address++)
