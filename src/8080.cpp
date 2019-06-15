@@ -16,14 +16,23 @@ struct Instruction
 	ExecuteInstruction executeInstruction;
 };
 
-static uint8_t getInstructionD8(State8080& state)
+static uint8_t getInstructionD8(const State8080& state)
 {
 	// #TODO: Assert PC+1 in range
 	uint8_t d8 = state.pMemory[state.PC + 1];
 	return d8;
 }
 
-static uint16_t getInstructionAddress(State8080& state)
+static uint16_t getInstructionD16(const State8080& state)
+{
+	// #TODO: Assert PC+1 and PC+2 in range
+	uint8_t lsb = state.pMemory[state.PC + 1];
+	uint8_t msb = state.pMemory[state.PC + 2];
+	uint16_t d16 = (msb << 8) | lsb;
+	return d16;
+}
+
+static uint16_t getInstructionAddress(const State8080& state)
 {
 	// #TODO: Assert PC+1 and PC+2 in range
 	uint8_t lsb = state.pMemory[state.PC + 1];
@@ -45,7 +54,30 @@ static void execute06(State8080& state, uint16_t instructionSize)
 	state.PC += instructionSize;
 }
 
-// 0x31 LXI SP,<address>
+// 0x11 LXI D,<d16>
+// D refers to the 16-bit register pair DE
+// Encoding: 0x11 <lsb> <msb>
+// D <- msb, E <- lsb
+static void execute11(State8080& state, uint16_t instructionSize)
+{
+	uint16_t d16 = getInstructionD16(state);
+	state.D = (uint8_t)(d16 >> 8);
+	state.E = (uint8_t)(d16 & 0xff);
+	state.PC += instructionSize;
+}
+
+// 0x21 LXI H,<d16>
+// H refers to the 16-bit register pair HL
+// Encoding: 0x21 <lsb> <msb>
+// H <- msb, L <- lsb
+static void execute21(State8080& state, uint16_t instructionSize)
+{
+	uint16_t d16 = getInstructionD16(state);
+	state.H = (uint8_t)(d16 >> 8);
+	state.L = (uint8_t)(d16 & 0xff);
+	state.PC += instructionSize;
+}
+
 static void execute31(State8080& state, uint16_t instructionSize)
 {
 	state.SP = getInstructionAddress(state);
@@ -88,7 +120,7 @@ static const Instruction s_instructions[] =
 	{ 0x0e, "MVI C,%02X",	2, nullptr }, //			C < -byte 2
 	{ 0x0f, "RRC",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 0; CY = prev bit 0
 	{ 0x10, "-", 1, nullptr }, //	
-	{ 0x11, "LXI D,%04X",	3, nullptr }, //			D < -byte 3, E < -byte 2
+	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
 	{ 0x13, "INX D",	1, nullptr }, //			DE < -DE + 1
 	{ 0x14, "INR D",	1, nullptr }, //		Z, S, P, AC	D < -D + 1
@@ -104,7 +136,7 @@ static const Instruction s_instructions[] =
 	{ 0x1e, "MVI E,%02X",	2, nullptr }, //			E < -byte 2
 	{ 0x1f, "RAR",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0
 	{ 0x20, "-", 1, nullptr }, //	
-	{ 0x21, "LXI H,%04X",	3, nullptr }, //			H < -byte 3, L < -byte 2
+	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
 	{ 0x22, "SHLD %04X",	3, nullptr }, //			(adr) < -L; (adr + 1) < -H
 	{ 0x23, "INX H",	1, nullptr }, //			HL < -HL + 1
 	{ 0x24, "INR H",	1, nullptr }, //		Z, S, P, AC	H < -H + 1
