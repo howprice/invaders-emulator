@@ -194,6 +194,8 @@ int main(int argc, char** argv)
 	//        they are of the same type? 
 	state.pMemory = new uint8_t[kPhysicalMemorySizeBytes];
 	state.memorySizeBytes = kPhysicalMemorySizeBytes;
+	state.readByteFromMemory = ReadByteFromMemory;
+	state.writeByteToMemory = WriteByteToMemory;
 
 //	TestMemory(state.pMemory);
 

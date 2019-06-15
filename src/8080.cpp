@@ -16,13 +16,43 @@ struct Instruction
 	ExecuteInstruction execute;
 };
 
+static uint8_t readByteFromMemory(const State8080& state, uint16_t address)
+{
+	if(state.readByteFromMemory != nullptr)
+	{
+		uint8_t d8 = state.readByteFromMemory(state.pMemory, address, /*fatalOnFail*/true);
+		return d8;
+	}
+	else
+	{
+		HP_ASSERT(address < state.memorySizeBytes);
+		uint8_t d8 = state.pMemory[address];
+		return d8;
+	}
+}
+
+static void writeByteToMemory(const State8080& state, uint16_t address, uint8_t val)
+{
+	if(state.writeByteToMemory != nullptr)
+	{
+		state.writeByteToMemory(state.pMemory, address, val, /*fatalOnFail*/true);
+	}
+	else
+	{
+		HP_ASSERT(state.pMemory);
+		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
+		state.pMemory[address] = val;
+	}
+}
+
 static uint8_t getInstructionD8(const State8080& state)
 {
 	// When this helper function is called during instruction execution,
 	// the PC has already been advanced to the next sequential instruction
 	// so the data has been skipped over
 	HP_ASSERT(state.PC >= 1);
-	uint8_t d8 = state.pMemory[state.PC - 1];
+	uint16_t address = state.PC - 1;
+	uint8_t d8 = readByteFromMemory(state, address);
 	return d8;
 }
 
@@ -32,8 +62,8 @@ static uint16_t getInstructionD16(const State8080& state)
 	HP_ASSERT(state.PC >= 2);
 
 	// data word (or address) is stored in little-endian
-	uint8_t lsb = state.pMemory[state.PC - 2];
-	uint8_t msb = state.pMemory[state.PC - 1];
+	uint8_t lsb = readByteFromMemory(state, state.PC - 2);
+	uint8_t msb = readByteFromMemory(state, state.PC - 1);
 	uint16_t d16 = (msb << 8) | lsb;
 	return d16;
 }
@@ -72,8 +102,9 @@ static void execute11(State8080& state)
 // A <- (DE)
 static void execute1A(State8080& state)
 {
+	// MSB is always in the first register of the pair
 	uint16_t address = (uint16_t)(state.D << 8) | (uint16_t)state.E;
-	state.A = state.pMemory[address];
+	state.A = readByteFromMemory(state, address);
 }
 
 // 0x21 LXI H,<d16>
@@ -99,9 +130,7 @@ static void execute31(State8080& state)
 static void execute77(State8080& state)
 {
 	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
-	// #TODO: Call WriteMemory function here
-	HP_ASSERT(address < state.memorySizeBytes);
-	state.pMemory[address] = state.A;
+	writeByteToMemory(state, address, state.A);
 }
 
 // 0xC3 JMP <address>
@@ -121,8 +150,8 @@ static void executeCD(State8080& state)
 	uint8_t msb = (uint8_t)(returnAddress >> 8);
 	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
 	HP_ASSERT(state.SP >= 2);
-	state.pMemory[state.SP - 2] = lsb;
-	state.pMemory[state.SP - 1] = msb;
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
 	state.SP -= 2;
 }
 
@@ -432,10 +461,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 
 void Emulate8080Op(State8080& state)
 {
-	HP_ASSERT(state.pMemory);
-	HP_ASSERT(state.PC < state.memorySizeBytes);
-
-	const uint8_t opcode = state.pMemory[state.PC];
+	const uint8_t opcode = readByteFromMemory(state, state.PC);
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.opcode == opcode);
 	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
@@ -443,6 +469,7 @@ void Emulate8080Op(State8080& state)
 
 	// "Just before each instruction is executed, the Program Counter is advanced to the
 	// next sequential instruction." - Data Book, p2.
+	// #TODO: May want to store PC of currently executing instruction for error reporting e.g. invalid memory access
 	state.PC += instruction.sizeBytes;
 
 	instruction.execute(state);
