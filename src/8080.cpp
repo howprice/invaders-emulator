@@ -1,128 +1,129 @@
 #include "8080.h"
 
-static const unsigned int kMaxInstructionSize = 3;
-
+static const unsigned int kMinInstructionSizeBytes = 1;
+static const unsigned int kMaxInstructionSizeBytes = 3;
 
 #include "Helpers.h"
 #include "Assert.h"
 
-typedef void(*ExecuteInstruction)(State8080& state, uint16_t instructionSize);
+typedef void(*ExecuteInstruction)(State8080& state);
 
 struct Instruction
 {
 	uint8_t opcode;
 	const char* mnemonic;
-	uint16_t size;
-	ExecuteInstruction executeInstruction;
+	uint16_t sizeBytes;
+	ExecuteInstruction execute;
 };
 
 static uint8_t getInstructionD8(const State8080& state)
 {
-	// #TODO: Assert PC+1 in range
-	uint8_t d8 = state.pMemory[state.PC + 1];
+	// When this helper function is called during instruction execution,
+	// the PC has already been advanced to the next sequential instruction
+	// so the data has been skipped over
+	HP_ASSERT(state.PC >= 1);
+	uint8_t d8 = state.pMemory[state.PC - 1];
 	return d8;
 }
 
 static uint16_t getInstructionD16(const State8080& state)
 {
-	// #TODO: Assert PC+1 and PC+2 in range
-	uint8_t lsb = state.pMemory[state.PC + 1];
-	uint8_t msb = state.pMemory[state.PC + 2];
+	// see comment in getInstructionD8
+	HP_ASSERT(state.PC >= 2);
+
+	// data word (or address) is stored in little-endian
+	uint8_t lsb = state.pMemory[state.PC - 2];
+	uint8_t msb = state.pMemory[state.PC - 1];
 	uint16_t d16 = (msb << 8) | lsb;
 	return d16;
 }
 
 static uint16_t getInstructionAddress(const State8080& state)
 {
-	// #TODO: Assert PC+1 and PC+2 in range
-	uint8_t lsb = state.pMemory[state.PC + 1];
-	uint8_t msb = state.pMemory[state.PC + 2];
-	uint16_t address = (msb << 8) | lsb;
-	return address;
+	return getInstructionD16(state);
 }
 
 // 0x00 NOP
-static void execute00(State8080& state, uint16_t instructionSize)
+static void execute00(State8080& /*state*/)
 {
-	state.PC += instructionSize;
+	
 }
 
 // 0x06 MVI B, <d8>
-static void execute06(State8080& state, uint16_t instructionSize)
+static void execute06(State8080& state)
 {
 	state.B = getInstructionD8(state);
-	state.PC += instructionSize;
 }
 
 // 0x11 LXI D,<d16>
 // D refers to the 16-bit register pair DE
 // Encoding: 0x11 <lsb> <msb>
 // D <- msb, E <- lsb
-static void execute11(State8080& state, uint16_t instructionSize)
+static void execute11(State8080& state)
 {
 	uint16_t d16 = getInstructionD16(state);
 	state.D = (uint8_t)(d16 >> 8);
 	state.E = (uint8_t)(d16 & 0xff);
-	state.PC += instructionSize;
 }
 
 // 0x1A LDAX D
 // D refers to the 16-bit register pair DE
 // Copy byte from memory at address in DE into A
 // A <- (DE)
-static void execute1A(State8080& state, uint16_t instructionSize)
+static void execute1A(State8080& state)
 {
 	uint16_t address = (uint16_t)(state.D << 8) | (uint16_t)state.E;
 	state.A = state.pMemory[address];
-	state.PC += instructionSize;
 }
 
 // 0x21 LXI H,<d16>
 // H refers to the 16-bit register pair HL
 // Encoding: 0x21 <lsb> <msb>
 // H <- msb, L <- lsb
-static void execute21(State8080& state, uint16_t instructionSize)
+static void execute21(State8080& state)
 {
 	uint16_t d16 = getInstructionD16(state);
 	state.H = (uint8_t)(d16 >> 8);
 	state.L = (uint8_t)(d16 & 0xff);
-	state.PC += instructionSize;
 }
 
 // 0x31  LXI SP,d32
-static void execute31(State8080& state, uint16_t instructionSize)
+static void execute31(State8080& state)
 {
 	state.SP = getInstructionAddress(state);
-	state.PC += instructionSize;
 }
 
 // 0x77  MOV M,A
 // (HL) <- A
 // Moves the value in A to address HL, where H is MSB.
-static void execute77(State8080& state, uint16_t instructionSize)
+static void execute77(State8080& state)
 {
 	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	// #TODO: Call WriteMemory function here
 	HP_ASSERT(address < state.memorySizeBytes);
 	state.pMemory[address] = state.A;
-	state.PC += instructionSize;
 }
 
 // 0xC3 JMP <address>
-static void executeC3(State8080& state, uint16_t /*instructionSize*/)
+static void executeC3(State8080& state)
 {
 	state.PC = getInstructionAddress(state);
 }
 
 // 0xCD CALL <address>
-static void executeCD(State8080& state, uint16_t instructionSize)
+static void executeCD(State8080& state)
 {
 	// push return address onto stack
-	HP_ASSERT(state.SP >= 2);
-	uint16_t returnAddress = state.PC + instructionSize;
-	state.pMemory[--state.SP] = (uint8_t)(returnAddress >> 8); // push msb
-	state.pMemory[--state.SP] = (uint8_t)(returnAddress & 0xff); // push lsb
+	uint16_t returnAddress = state.PC; // the PC has been advanced prior to instruction execution
 	state.PC = getInstructionAddress(state); //  PC = <address>
+
+	// store return address in little-endian
+	uint8_t msb = (uint8_t)(returnAddress >> 8);
+	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
+	HP_ASSERT(state.SP >= 2);
+	state.pMemory[state.SP - 2] = lsb;
+	state.pMemory[state.SP - 1] = msb;
+	state.SP -= 2;
 }
 
 static const Instruction s_instructions[] =
@@ -396,28 +397,28 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	const uint8_t opcode = *pPC;
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.opcode == opcode);
-	HP_ASSERT(instruction.size > 0 && instruction.size <= kMaxInstructionSize);
+	HP_ASSERT(instruction.sizeBytes > 0 && instruction.sizeBytes <= kMaxInstructionSizeBytes);
 
 	// address
 	printf("0x%04X  ", pc);
 
 	// hex
-	for(unsigned int byteIndex = 0; byteIndex < instruction.size; byteIndex++)
+	for(unsigned int byteIndex = 0; byteIndex < instruction.sizeBytes; byteIndex++)
 		printf("%02X ", *(pPC + byteIndex));
-	for(unsigned int byteIndex = instruction.size; byteIndex < kMaxInstructionSize; byteIndex++)
+	for(unsigned int byteIndex = instruction.sizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
 		printf("   ");
 
 	// mnemonic
-	if(instruction.size == 1)
+	if(instruction.sizeBytes == 1)
 		printf(" %s\n", instruction.mnemonic);
-	else if(instruction.size == 2)
+	else if(instruction.sizeBytes == 2)
 	{
 		uint8_t d8 = *(pPC + 1);
 		char text[64];
 		sprintf(text, instruction.mnemonic, d8);
 		printf(" %s\n", text);
 	}
-	else if(instruction.size == 3)
+	else if(instruction.sizeBytes == 3)
 	{
 		uint8_t lsb = *(pPC + 1);
 		uint8_t msb = *(pPC + 2);
@@ -426,7 +427,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 		sprintf(text, instruction.mnemonic, val);
 		printf(" %s\n", text);
 	}
-	return instruction.size;
+	return instruction.sizeBytes;
 }
 
 void Emulate8080Op(State8080& state)
@@ -434,15 +435,15 @@ void Emulate8080Op(State8080& state)
 	HP_ASSERT(state.pMemory);
 	HP_ASSERT(state.PC < state.memorySizeBytes);
 
-	const uint8_t* pPC = &state.pMemory[state.PC];
-	const uint8_t opcode = *pPC;
+	const uint8_t opcode = state.pMemory[state.PC];
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.opcode == opcode);
-	HP_ASSERT(instruction.size > 0 && instruction.size <= kMaxInstructionSize);
+	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
+	HP_ASSERT(instruction.execute, "Unimplemented instruction 0x%02X", instruction.opcode);
 
-	HP_ASSERT(instruction.executeInstruction, "Unimplemented instruction 0x%02X", instruction.opcode);
-	if(instruction.executeInstruction)
-	{
-		instruction.executeInstruction(state, instruction.size);
-	}
+	// "Just before each instruction is executed, the Program Counter is advanced to the
+	// next sequential instruction." - Data Book, p2.
+	state.PC += instruction.sizeBytes;
+
+	instruction.execute(state);
 }
