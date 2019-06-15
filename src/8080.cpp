@@ -70,7 +70,9 @@ static uint16_t getInstructionD16(const State8080& state)
 
 static uint16_t getInstructionAddress(const State8080& state)
 {
-	return getInstructionD16(state);
+	uint16_t address = getInstructionD16(state);
+	HP_ASSERT(address < state.memorySizeBytes);
+	return address;
 }
 
 static uint8_t calculateParity(uint8_t val)
@@ -213,6 +215,18 @@ static void executeCD(State8080& state)
 	writeByteToMemory(state, state.SP - 2, lsb);
 	writeByteToMemory(state, state.SP - 1, msb);
 	state.SP -= 2;
+}
+
+// 0xC9 RET
+static void executeC9(State8080& state)
+{
+	// return address is stored in stack memory in little-endian format
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+	state.SP += 2;
+	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
+	HP_ASSERT(address < state.memorySizeBytes);
+	state.PC = address;
 }
 
 static const Instruction s_instructions[] =
@@ -418,7 +432,7 @@ static const Instruction s_instructions[] =
 	{ 0xc6, "ADI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A + byte
 	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
 	{ 0xc8, "RZ	1",	1, nullptr }, //		if Z, RET
-	{ 0xc9, "RET",	1, nullptr }, //			PC.lo < -(sp); PC.hi < -(sp + 1); SP < -SP + 2
+	{ 0xc9, "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
 	{ 0xca, "JZ %04X", 3, nullptr }, //			if Z, PC < -adr
 	{ 0xcb, "-", 1, nullptr }, //	
 	{ 0xcc, "CZ %04X",	3, nullptr }, //			if Z, CALL adr
