@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 		{
 			PrintState(state);
 			Disassemble8080(state.pMemory, kPhysicalMemorySizeBytes, state.PC);
-			Emulate8080Op(state);
+			Emulate8080Instruction(state);
 		}
 	}
 	else
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 		bool active = true; // #TODO: Is this CPU state?
 		while(active)
 		{
-			Emulate8080Op(state);
+			Emulate8080Instruction(state);
 		}
 	}
 
