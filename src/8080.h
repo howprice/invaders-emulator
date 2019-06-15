@@ -40,6 +40,6 @@ struct State8080
 // returns instruction size in bytes
 unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, unsigned int pc);
 
-void Emulate8080Op(State8080& state);
+void Emulate8080Instruction(State8080& state);
 
 #endif

@@ -96,6 +96,17 @@ static void execute11(State8080& state)
 	state.E = (uint8_t)(d16 & 0xff);
 }
 
+// 0x13 INX D
+// DE <- DE + 1
+// Increment 16-bit number stored in DE by one
+static void execute13(State8080& state)
+{
+	uint16_t D = ((uint16_t)state.D << 8) | (uint16_t)state.E;
+	D++;
+	state.D = (uint8_t)(D >> 8);
+	state.E = (uint8_t)(D & 0xff);
+}
+
 // 0x1A LDAX D
 // D refers to the 16-bit register pair DE
 // Copy byte from memory at address in DE into A
@@ -116,6 +127,17 @@ static void execute21(State8080& state)
 	uint16_t d16 = getInstructionD16(state);
 	state.H = (uint8_t)(d16 >> 8);
 	state.L = (uint8_t)(d16 & 0xff);
+}
+
+// 0x23 INX H
+// HL <- HL + 1
+// Increment 16-bit number stored in HL by one
+static void execute23(State8080& state)
+{
+	uint16_t H = ((uint16_t)state.H << 8) | (uint16_t)state.L;
+	H++;
+	state.H = (uint8_t)(H >> 8);
+	state.L = (uint8_t)(H & 0xff);
 }
 
 // 0x31  LXI SP,d32
@@ -178,7 +200,7 @@ static const Instruction s_instructions[] =
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
-	{ 0x13, "INX D",	1, nullptr }, //			DE < -DE + 1
+	{ 0x13, "INX D",	1, execute13 }, //			DE < -DE + 1
 	{ 0x14, "INR D",	1, nullptr }, //		Z, S, P, AC	D < -D + 1
 	{ 0x15, "DCR D",	1, nullptr }, //		Z, S, P, AC	D < -D - 1
 	{ 0x16, "MVI D, %02X",	2, nullptr }, //			D < -byte 2
@@ -194,7 +216,7 @@ static const Instruction s_instructions[] =
 	{ 0x20, "-", 1, nullptr }, //	
 	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
 	{ 0x22, "SHLD %04X",	3, nullptr }, //			(adr) < -L; (adr + 1) < -H
-	{ 0x23, "INX H",	1, nullptr }, //			HL < -HL + 1
+	{ 0x23, "INX H",	1, execute23 }, // HL <- HL + 1
 	{ 0x24, "INR H",	1, nullptr }, //		Z, S, P, AC	H < -H + 1
 	{ 0x25, "DCR H",	1, nullptr }, //		Z, S, P, AC	H < -H - 1
 	{ 0x26, "MVI H,%02X",	2, nullptr }, //			H < -byte 2
@@ -461,7 +483,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	return instruction.sizeBytes;
 }
 
-void Emulate8080Op(State8080& state)
+void Emulate8080Instruction(State8080& state)
 {
 	const uint8_t opcode = readByteFromMemory(state, state.PC);
 	const Instruction& instruction = s_instructions[opcode];
