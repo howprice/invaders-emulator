@@ -293,6 +293,15 @@ static void execute31(State8080& state)
 	state.SP = address;
 }
 
+// 0x32  STA <address>   aka LD (adress),A
+// Store Accumulator Direct
+// (adr) <- A
+static void execute32(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	writeByteToMemory(state, address, state.A);
+}
+
 // 0x36  MVI M,d8
 // The byte of immediate data is stored in the memory byte address stored in HL
 // (HL) <- byte 2
@@ -668,7 +677,7 @@ static const Instruction s_instructions[] =
 	{ 0x2f, "CMA", 1, nullptr }, //			A < -!A
 	{ 0x30, "-", 1, nullptr }, //	
 	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
-	{ 0x32, "STA %04X",	3, nullptr }, //			(adr) < -A
+	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
 	{ 0x34, "INR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)+1
 	{ 0x35, "DCR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)-1
