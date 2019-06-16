@@ -344,6 +344,13 @@ static void execute7A(State8080& state)
 	state.A = state.D;
 }
 
+// 0x7B  MOV A,E
+// A <- E
+static void execute7B(State8080& state)
+{
+	state.A = state.E;
+}
+
 // 0x7C  MOV A,H
 // A <- H
 static void execute7C(State8080& state)
@@ -716,7 +723,7 @@ static const Instruction s_instructions[] =
 	{ 0x78, "MOV A,B", 1, nullptr }, //			A < -B
 	{ 0x79, "MOV A,C", 1, nullptr }, //			A < -C
 	{ 0x7a, "MOV A,D", 1, execute7A }, // A <- D
-	{ 0x7b, "MOV A,E", 1, nullptr }, //			A < -E
+	{ 0x7b, "MOV A,E", 1, execute7B }, // A <- E
 	{ 0x7c, "MOV A,H", 1, execute7C }, // A <- H
 	{ 0x7d, "MOV A,L", 1, nullptr }, //			A < -L
 	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
