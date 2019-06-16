@@ -623,6 +623,13 @@ static void executeF5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xFB  EI
+// enable interrupts
+static void executeFB(State8080& state)
+{
+	state.interruptsEnabled = 1;
+}
+
 // 0xFE  CPI d8
 // Compare immediate with accumulator.
 // The comparison is performed by internally subtracting the data from the accumulator,
@@ -894,7 +901,7 @@ static const Instruction s_instructions[] =
 	{ 0xf8, "RM",	1, nullptr }, //			if M, RET
 	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL
 	{ 0xfa, "JM %04X",	3, nullptr }, //			if M, PC < -adr
-	{ 0xfb, "EI",	1, nullptr }, //			special
+	{ 0xfb, "EI", 1, executeFB }, // enable interrupts
 	{ 0xfc, "CM %04X",	3, nullptr }, //			if M, CALL adr
 	{ 0xfd, "-", 1, nullptr }, //	
 	{ 0xfe, "CPI %02X",	2, executeFE }, // Compare immediate with accumulator  Z, S, P, CY, AC    A - data
