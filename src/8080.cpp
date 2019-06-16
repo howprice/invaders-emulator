@@ -149,6 +149,18 @@ static void execute09(State8080& state)
 	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
 }
 
+// 0x0D  DCR C  aka DEC C
+// C <- C-1
+// Sets: Z, S, P, AC	  
+static void execute0D(State8080& state)
+{
+	state.C--;
+	state.flags.Z = calculateZeroFlag(state.C);
+	state.flags.S = calculateSignFlag(state.C);
+	state.flags.P = calculateParityFlag(state.C);
+	// #TODO: AC flag
+}
+
 // 0x0E  MVI C,d8
 static void execute0E(State8080& state)
 {
@@ -478,7 +490,7 @@ static const Instruction s_instructions[] =
 	{ 0x0a, "LDAX B",	1, nullptr }, //			A < -(BC)
 	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
-	{ 0x0d, "DCR C",	1, nullptr }, //		Z, S, P, AC	C < -C - 1
+	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C-1	Sets: Z, S, P, AC	  
 	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
 	{ 0x0f, "RRC",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 0; CY = prev bit 0
 	{ 0x10, "-", 1, nullptr }, //	
