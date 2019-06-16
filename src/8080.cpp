@@ -118,6 +118,13 @@ static void execute05(State8080& state)
 //	state.flags.AC = ; #TODO: Implement if required
 }
 
+// 0x0E  MVI C,d8
+static void execute0E(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.C = d8;
+}
+
 // 0x06 MVI B, <d8>
 static void execute06(State8080& state)
 {
@@ -290,7 +297,7 @@ static const Instruction s_instructions[] =
 	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
 	{ 0x0d, "DCR C",	1, nullptr }, //		Z, S, P, AC	C < -C - 1
-	{ 0x0e, "MVI C,%02X",	2, nullptr }, //			C < -byte 2
+	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
 	{ 0x0f, "RRC",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 0; CY = prev bit 0
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
