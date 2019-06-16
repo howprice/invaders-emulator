@@ -108,6 +108,18 @@ static void execute00(State8080& /*state*/)
 	
 }
 
+// 0x01  LXI B,<d16>  aka LXI BC,<d16>  aka LD BC,<d16>
+static void execute01(State8080& state)
+{
+	uint16_t d16 = getInstructionD16(state);
+	uint8_t msb = (uint8_t)(d16 >> 8);
+	uint8_t lsb = (uint8_t)(d16 & 0xff);
+
+	// the first register in the register pair always holds the MSB
+	state.B = msb;
+	state.C = lsb;
+}
+
 // 0x05 DCR B
 // B <- B-1
 static void execute05(State8080& state)
@@ -409,8 +421,8 @@ static void executeFE(State8080& state)
 static const Instruction s_instructions[] =
 {
 	{ 0x00, "NOP", 1, execute00 },
-	{ 0x01, "LXI B,%04X", 3, nullptr },
-	{ 0x02, "STAX B", 1, nullptr }, //		(BC) < -A
+	{ 0x01, "LXI B,%04X", 3, execute01 },
+	{ 0x02, "STAX B", 1, nullptr }, //		(BC) <- A
 	{ 0x03, "INX B", 1, nullptr }, //		BC < -BC + 1
 	{ 0x04, "INR B", 1, nullptr }, //	Z, S, P, AC	B < -B + 1
 	{ 0x05, "DCR B", 1, execute05 }, // Z, S, P, AC	B < -B - 1
