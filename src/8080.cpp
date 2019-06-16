@@ -132,6 +132,23 @@ static void execute05(State8080& state)
 //	state.flags.AC = ; #TODO: Implement if required
 }
 
+// 0x09  DAD BC  aka ADD HL,BC
+// HL <- HL + BC
+// Sets Carry flag
+static void execute09(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint16_t BC = ((uint16_t)state.B << 8) | (state.C);
+
+	// perform addition in 32-bits so can set carry flag
+	uint32_t result = (uint32_t)HL + (uint32_t)BC;
+
+	state.H = (uint8_t)(result >> 8);   // MSB
+	state.L = (uint8_t)(result & 0xff); // LSB
+
+	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+}
+
 // 0x0E  MVI C,d8
 static void execute0E(State8080& state)
 {
@@ -429,7 +446,7 @@ static const Instruction s_instructions[] =
 	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
 	{ 0x07, "RLC",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev bit 7; CY = prev bit 7
 	{ 0x08, "-", 1, nullptr },
-	{ 0x09, "DAD B",	1, nullptr }, //		CY	HL = HL + BC
+	{ 0x09, "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
 	{ 0x0a, "LDAX B",	1, nullptr }, //			A < -(BC)
 	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
