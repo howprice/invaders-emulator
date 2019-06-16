@@ -10,6 +10,8 @@
 
 typedef uint8_t(*ReadByteFromMemoryFuncPtr)(uint8_t* pMemory, size_t address, bool fatalOnFail);
 typedef bool(*WriteByteToMemoryFuncPtr)(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail);
+typedef uint8_t(*InFuncPtr)(uint8_t port);
+typedef void(*OutFuncPtr)(uint8_t port, uint8_t val);
 
 struct Flags8080
 {
@@ -46,10 +48,12 @@ struct State8080
 	uint8_t* pMemory;
 	uint32_t memorySizeBytes;
 
-	uint8_t interruptsEnabled; // the 8080 "INTE" bit
+	uint8_t INTE; // "INTE", the 8080 interrupt enable flip-flop [Data Book]
 
 	ReadByteFromMemoryFuncPtr readByteFromMemory;
 	WriteByteToMemoryFuncPtr writeByteToMemory;
+	InFuncPtr in;
+	OutFuncPtr out;
 };
 
 // returns instruction size in bytes

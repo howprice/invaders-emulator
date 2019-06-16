@@ -15,17 +15,15 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Add ImGui to project
-- Render video memory to SDL window
 - Emulate interrupts
   - On a timer to start
+- Render video memory to SDL window
+
 - Timing
   - Instruction cycle count
 - Debugger
   - ImGui and/or command line
   - Show stack
-- Display
-  - SDL2
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
 - Test on Linux/Mac
