@@ -75,7 +75,19 @@ static uint16_t getInstructionAddress(const State8080& state)
 	return address;
 }
 
-static uint8_t calculateParity(uint8_t val)
+static uint8_t calculateZeroFlag(uint8_t val)
+{
+	uint8_t Z = (val == 0) ? 1 : 0;
+	return Z;
+}
+
+static uint8_t calculateSignFlag(uint8_t val)
+{
+	uint8_t S = (val & 0x80) != 0;
+	return S;
+}
+
+static uint8_t calculateParityFlag(uint8_t val)
 {
 	unsigned int numBitsSet = 0;
 	for(unsigned int bitIndex = 0; bitIndex < 8; bitIndex++)
@@ -100,11 +112,9 @@ static void execute05(State8080& state)
 {
 	state.B--;
 
-	// #TODO: Set Z, S, P, AC
-	// #TODO: Refactor into a set of setters for reuse
-	state.flags.Z = (state.B == 0) ? 1 : 0;
-	state.flags.S = (state.B & 0x80) != 0;
-	state.flags.P = calculateParity(state.B);
+	state.flags.Z = calculateZeroFlag(state.B);
+	state.flags.S = calculateSignFlag(state.B);
+	state.flags.P = calculateParityFlag(state.B);
 //	state.flags.AC = ; #TODO: Implement if required
 }
 
@@ -244,6 +254,24 @@ static void executeC9(State8080& state)
 	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
 	HP_ASSERT(address < state.memorySizeBytes);
 	state.PC = address;
+}
+
+// 0xFE  CPI d8
+// Compare immediate with accumulator.
+// The comparison is performed by internally subtracting the data from the accumulator,
+// leaving the accumulator unchanged but setting the condition bits by the result.
+// Condition bits affected: Carry, Zero, Sign, Parity, Auxiliary Carry
+static void executeFE(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+
+	// The Carry bit will be set if the immediate data is greater than A, and reset otherwise. [Data Book, p29]
+	state.flags.C = (d8 > state.A) ? 1 : 0;
+
+	uint8_t res = state.A - d8;
+	state.flags.Z = calculateZeroFlag(res);
+	state.flags.S = calculateSignFlag(res);
+	state.flags.P = calculateParityFlag(res);
 }
 
 static const Instruction s_instructions[] =
@@ -502,7 +530,7 @@ static const Instruction s_instructions[] =
 	{ 0xfb, "EI",	1, nullptr }, //			special
 	{ 0xfc, "CM %04X",	3, nullptr }, //			if M, CALL adr
 	{ 0xfd, "-", 1, nullptr }, //	
-	{ 0xfe, "CPI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A - data
+	{ 0xfe, "CPI %02X",	2, executeFE }, // Compare immediate with accumulator  Z, S, P, CY, AC    A - data
 	{ 0xff, "RST 7",	1, nullptr }, //			CALL $38
 };
 static_assert(COUNTOF_ARRAY(s_instructions) == 256, "Array size incorrect");
@@ -555,7 +583,7 @@ void Emulate8080Instruction(State8080& state)
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.opcode == opcode);
 	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
-	HP_ASSERT(instruction.execute, "Unimplemented instruction 0x%02X", instruction.opcode);
+	HP_ASSERT(instruction.execute, "Unimplemented instruction 0x%02X at PC=%04X", instruction.opcode, state.PC);
 
 	// "Just before each instruction is executed, the Program Counter is advanced to the
 	// next sequential instruction." - Data Book, p2.
