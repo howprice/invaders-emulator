@@ -546,6 +546,20 @@ static void executeEB(State8080& state)
 	state.E = temp;
 }
 
+// 0xF1  POP PSW  aka POP AF
+static void executeF1(State8080& state)
+{
+	// stored in memory in little endian format
+	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+
+	// First register of register pair always contains the MSB
+	state.A = msb;
+	state.flags = *(Flags8080*)&lsb;
+	state.SP += 2;
+}
+
 // 0xF5  PUSH PSW  aka PUSH AF
 static void executeF5(State8080& state)
 {
@@ -820,7 +834,7 @@ static const Instruction s_instructions[] =
 	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data
 	{ 0xef, "RST 5",	1, nullptr }, //			CALL $28
 	{ 0xf0, "RP", 1, nullptr }, //			if P, RET
-	{ 0xf1, "POP PSW",	1, nullptr }, //			flags < -(sp); A < -(sp + 1); sp < -sp + 2
+	{ 0xf1, "POP PSW",	1, executeF1 }, // aka POP AF
 	{ 0xf2, "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
 	{ 0xf3, "DI",	1, nullptr }, //			special
 	{ 0xf4, "CP %04X",	3, nullptr }, //			if P, PC < -adr
