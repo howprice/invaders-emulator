@@ -499,6 +499,19 @@ static void executeEB(State8080& state)
 	state.E = temp;
 }
 
+// 0xF5  PUSH PSW  aka PUSH AF
+static void executeF5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.A;
+	uint8_t lsb = *(uint8_t*)&state.flags;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+}
+
 // 0xFE  CPI d8
 // Compare immediate with accumulator.
 // The comparison is performed by internally subtracting the data from the accumulator,
@@ -764,7 +777,7 @@ static const Instruction s_instructions[] =
 	{ 0xf2, "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
 	{ 0xf3, "DI",	1, nullptr }, //			special
 	{ 0xf4, "CP %04X",	3, nullptr }, //			if P, PC < -adr
-	{ 0xf5, "PUSH PSW",	1, nullptr }, //			(sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
+	{ 0xf5, "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
 	{ 0xf6, "ORI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A | data
 	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
 	{ 0xf8, "RM",	1, nullptr }, //			if M, RET

@@ -24,6 +24,7 @@ struct Flags8080
 	uint8_t S : 1;          // Sign - Set if the result is negative i.e. bit 7 is set
 	// MSB
 };
+static_assert(sizeof(Flags8080) == 1, "Flags should be 1 byte in size");
 
 struct State8080
 {
