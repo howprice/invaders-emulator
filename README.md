@@ -20,6 +20,7 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
   - Interrupts
 - Debugger
   - ImGui and/or command line
+  - Show stack
 - Display
   - SDL2
 - Test on Linux/Mac
