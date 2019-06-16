@@ -15,8 +15,6 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Emulation loop
-  - Don't blindly implement all instructions; only as required.
 - Timing
   - Instruction cycle count
   - Interrupts
