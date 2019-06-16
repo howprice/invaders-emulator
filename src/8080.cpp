@@ -337,6 +337,21 @@ static void executeE5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xEB  XCHG  aka EX DE,HL
+// The 16 bits of data held in the H and L registers are exchanged
+// with the 16 bits of data held in the D and E registers.
+// Condition bits affected: none
+static void executeEB(State8080& state)
+{
+	uint8_t temp = state.H;
+	state.H = state.D;
+	state.D = temp;
+
+	temp = state.L;
+	state.L = state.E;
+	state.E = temp;
+}
+
 // 0xFE  CPI d8
 // Compare immediate with accumulator.
 // The comparison is performed by internally subtracting the data from the accumulator,
@@ -592,7 +607,7 @@ static const Instruction s_instructions[] =
 	{ 0xe8, "RPE",	1, nullptr }, //			if PE, RET
 	{ 0xe9, "PCHL",	1, nullptr }, //			PC.hi < -H; PC.lo < -L
 	{ 0xea, "JPE %04X",	3, nullptr }, //			if PE, PC < -adr
-	{ 0xeb, "XCHG",	1, nullptr }, //			H < ->D; L < ->E
+	{ 0xeb, "XCHG",	1, executeEB }, // H <-> D; L <-> E
 	{ 0xec, "CPE %04X", 3, nullptr }, //			if PE, CALL adr
 	{ 0xed, "-", 1, nullptr }, //	
 	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data
