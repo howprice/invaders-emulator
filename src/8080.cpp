@@ -299,6 +299,20 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xC1  POP BC
+static void executeC1(State8080& state)
+{
+	// stored in memory in little endian format
+	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+
+	// First register of register pair always contains the MSB
+	state.B = msb;
+	state.C = lsb;
+	state.SP += 2;
+}
+
 // 0xC2 JNZ <address>
 // if NZ, PC <- adr
 static void executeC2(State8080& state)
@@ -630,7 +644,7 @@ static const Instruction s_instructions[] =
 	{ 0xbe, "CMP M", 1, nullptr }, //		Z, S, P, CY, AC	A - (HL)
 	{ 0xbf, "CMP A", 1, nullptr }, //		Z, S, P, CY, AC	A - A
 	{ 0xc0, "RNZ", 1, nullptr }, //			if NZ, RET
-	{ 0xc1, "POP B", 1, nullptr }, //			C < -(sp); B < -(sp + 1); sp < -sp + 2
+	{ 0xc1, "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
 	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
 	{ 0xc4, "CNZ %04X", 3, nullptr }, //			if NZ, CALL adr
