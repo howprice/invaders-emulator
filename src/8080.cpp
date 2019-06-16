@@ -410,6 +410,23 @@ static void executeC5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xC6  ADI <d8>  aka ADD A,<d8>
+// Add Immediate To Accumulator
+// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
+static void executeC6(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	
+	// perform 16 bit addition so can easily get carry bit
+	uint16_t result = (uint16_t)state.A + (uint16_t)d8;
+	state.A = (uint8_t)result;
+	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: Calculate Auxiliary Carry
+}
+
 // 0xCD CALL <address>
 static void executeCD(State8080& state)
 {
@@ -760,7 +777,7 @@ static const Instruction s_instructions[] =
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
 	{ 0xc4, "CNZ %04X", 3, nullptr }, //			if NZ, CALL adr
 	{ 0xc5, "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
-	{ 0xc6, "ADI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A + byte
+	{ 0xc6, "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
 	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
 	{ 0xc8, "RZ	1",	1, nullptr }, //		if Z, RET
 	{ 0xc9, "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
