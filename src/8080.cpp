@@ -324,6 +324,20 @@ static void executeD5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xE1  POP HL
+static void executeE1(State8080& state)
+{
+	// stored in memory in little endian format
+	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+
+	// First register of register pair always contains the MSB
+	state.H = msb;
+	state.L = lsb;
+	state.SP += 2;
+}
+
 // 0xE5  PUSH HL
 static void executeE5(State8080& state)
 {
@@ -597,7 +611,7 @@ static const Instruction s_instructions[] =
 	{ 0xde, "SBI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A - data - CY
 	{ 0xdf, "RST 3",	1, nullptr }, //			CALL $18
 	{ 0xe0, "RPO",	1, nullptr }, //			if PO, RET
-	{ 0xe1, "POP H",	1, nullptr }, //			L < -(sp); H < -(sp + 1); sp < -sp + 2
+	{ 0xe1, "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
 	{ 0xe2, "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
 	{ 0xe3, "XTHL",	1, nullptr }, //			L < -> (SP); H < -> (SP + 1)
 	{ 0xe4, "CPO %04X", 3, nullptr }, //			if PO, CALL adr
