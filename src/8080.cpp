@@ -402,6 +402,22 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xAF  XRA A  aka XOR A
+// Logical Exclusive-Or Accumulator with self 
+// A <- A ^ A
+// Condition bits affected: Z, S, P, CY, AC	
+// n.b. A XOR A will always be zero. This is the best choice for zeroing a register on all CPUs!
+// https://stackoverflow.com/questions/33666617/what-is-the-best-way-to-set-a-register-to-zero-in-x86-assembly-xor-mov-or-and
+static void executeAF(State8080& state)
+{
+	state.A = 0;
+	state.flags.Z = 1;
+	state.flags.S = 0;
+	state.flags.P = 1;
+	state.flags.C = 0;
+	// #TODO: Set AC flag
+}
+
 // 0xC1  POP BC
 static void executeC1(State8080& state)
 {
@@ -802,7 +818,7 @@ static const Instruction s_instructions[] =
 	{ 0xac, "XRA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ H
 	{ 0xad, "XRA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ L
 	{ 0xae, "XRA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ (HL)
-	{ 0xaf, "XRA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ A
+	{ 0xaf, "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A  (A <- 0)    Z, S, P, CY, AC	
 	{ 0xb0, "ORA B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | B
 	{ 0xb1, "ORA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | C
 	{ 0xb2, "ORA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | D
