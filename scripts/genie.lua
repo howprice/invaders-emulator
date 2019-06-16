@@ -36,7 +36,6 @@ solution "invaders-emulator"
 			
 		configuration "windows"
 			flags { "ReleaseRuntime" }  
-			
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
 			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
@@ -62,9 +61,11 @@ solution "invaders-emulator"
 			"../src/Helpers.*"
 		}
 		includedirs {
-			"../src/**"
+			"../src/**",
+			"../3rdparty/SDL2-2.0.9/include"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
+		links { "SDL2" }
 		debugdir "../data"		-- debugger working directory
 		
 		configuration "Debug"
@@ -84,12 +85,28 @@ solution "invaders-emulator"
 			
 		configuration "windows"
 			flags { "ReleaseRuntime" }  
-			
+			links { "SDL2main" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
 			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
 			buildoptions { "/wd4127" } -- conditional expression is constant
 			buildoptions { "/wd4505" } -- unreferenced local function has been removed
+
+		configuration { "windows", "not x64" }
+			libdirs { 
+				"../3rdparty/SDL2-2.0.9/lib/x86"
+			}
+			postbuildcommands { 
+				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
+			}
+
+		configuration { "windows", "x64" }		
+			libdirs { 
+				"../3rdparty/SDL2-2.0.9/lib/x64"
+			}
+			postbuildcommands { 
+				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
+			}
 			
 		configuration "linux"
 			buildoptions { "-std=c++0x" }

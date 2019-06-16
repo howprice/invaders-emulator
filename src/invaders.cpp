@@ -8,6 +8,8 @@
 #include "debugger.h"
 #include "8080.h"
 
+#include "SDL.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -188,6 +190,12 @@ int main(int argc, char** argv)
 {
 	parseCommandLine(argc, argv);
 
+	if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	{
+		fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+		return EXIT_FAILURE;
+	}
+
 	State8080 state = {};
 
 	// Init memory
@@ -262,6 +270,8 @@ int main(int argc, char** argv)
 
 	delete[] state.pMemory;
 	state.pMemory = nullptr;
+
+	SDL_Quit();
 
 	return 0;
 }
