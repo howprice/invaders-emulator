@@ -46,7 +46,7 @@ struct State8080
 	uint8_t* pMemory;
 	uint32_t memorySizeBytes;
 
-	uint8_t interruptsEnabled;
+	uint8_t interruptsEnabled; // the 8080 "INTE" bit
 
 	ReadByteFromMemoryFuncPtr readByteFromMemory;
 	WriteByteToMemoryFuncPtr writeByteToMemory;
@@ -56,5 +56,6 @@ struct State8080
 unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, unsigned int pc);
 
 void Emulate8080Instruction(State8080& state);
+void Generate8080Interrupt(State8080& state, unsigned int interruptNumber);
 
 #endif
