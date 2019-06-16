@@ -531,7 +531,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	// mnemonic
 	char text[64];
 	if(instruction.sizeBytes == 1)
-		sprintf(text, " %s", instruction.mnemonic);
+		sprintf(text, "%s", instruction.mnemonic);
 	else if(instruction.sizeBytes == 2)
 	{
 		uint8_t d8 = *(pPC + 1);
@@ -545,7 +545,6 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 		sprintf(text, instruction.mnemonic, val);
 	}
 
-	// #TODO: Fix up this formatting
 	printf(" %-14s", text);
 	return instruction.sizeBytes;
 }
