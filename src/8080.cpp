@@ -177,6 +177,16 @@ static void execute31(State8080& state)
 	state.SP = address;
 }
 
+// 0x36  MVI M,d8
+// The byte of immediate data is stored in the memory byte address stored in HL
+// (HL) <- byte 2
+static void execute36(State8080& state)
+{
+	uint16_t address = ((uint16_t)state.H << 8) | (uint16_t)state.L;
+	uint8_t d8 = getInstructionD8(state);
+	writeByteToMemory(state, address, d8);
+}
+
 // 0x77  MOV M,A
 // (HL) <- A
 // Moves the value in A to address HL, where H is MSB.
@@ -285,7 +295,7 @@ static const Instruction s_instructions[] =
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
 	{ 0x34, "INR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)+1
 	{ 0x35, "DCR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)-1
-	{ 0x36, "MVI M,%02X",	2, nullptr }, //			(HL) < -byte 2
+	{ 0x36, "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
 	{ 0x37, "STC",	1, nullptr }, //		CY	CY = 1
 	{ 0x38, "-", 1},
 	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
