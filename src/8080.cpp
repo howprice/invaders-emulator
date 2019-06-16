@@ -186,6 +186,14 @@ static void execute23(State8080& state)
 	state.L = (uint8_t)(H & 0xff);
 }
 
+// 0x26  MVI H,d8
+// H <- byte 2
+static void execute26(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.H = d8;
+}
+
 // 0x31  LXI SP,d32
 static void execute31(State8080& state)
 {
@@ -347,7 +355,7 @@ static const Instruction s_instructions[] =
 	{ 0x23, "INX H",	1, execute23 }, // HL <- HL + 1
 	{ 0x24, "INR H",	1, nullptr }, //		Z, S, P, AC	H < -H + 1
 	{ 0x25, "DCR H",	1, nullptr }, //		Z, S, P, AC	H < -H - 1
-	{ 0x26, "MVI H,%02X",	2, nullptr }, //			H < -byte 2
+	{ 0x26, "MVI H,%02X", 2, execute26 }, // H <- byte 2
 	{ 0x27, "DAA",	1, nullptr }, //			special
 	{ 0x28, "-", 1, nullptr }, //	
 	{ 0x29, "DAD H",	1, nullptr }, //		CY	HL = HL + HI
