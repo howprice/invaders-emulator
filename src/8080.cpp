@@ -499,6 +499,21 @@ static void executeE5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xE6  ANI <d8>  aka AND <d8>
+// And Immediate With Accumulator
+// The Carry bit is reset to zero
+// A <- A & d8
+// Condition bits affected: Carry, Zero, Sign, Parity	
+static void executeE6(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.A &= d8;
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+}
+
 // 0xEB  XCHG  aka EX DE,HL
 // The 16 bits of data held in the H and L registers are exchanged
 // with the 16 bits of data held in the D and E registers.
@@ -562,7 +577,7 @@ static const Instruction s_instructions[] =
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
 	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C-1	Sets: Z, S, P, AC	  
 	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
-	{ 0x0f, "RRC",	1, execute0F }, // A = A >> 1  bit 7 = prev bit 0  CY = prev bit 0  Sets Carry flag
+	{ 0x0f, "RRC",	1, execute0F }, // aka RRCA  Rotate Accumulator Right
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
@@ -777,7 +792,7 @@ static const Instruction s_instructions[] =
 	{ 0xe3, "XTHL",	1, nullptr }, //			L < -> (SP); H < -> (SP + 1)
 	{ 0xe4, "CPO %04X", 3, nullptr }, //			if PO, CALL adr
 	{ 0xe5, "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
-	{ 0xe6, "ANI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A & data
+	{ 0xe6, "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
 	{ 0xe7, "RST 4",	1, nullptr }, //			CALL $20
 	{ 0xe8, "RPE",	1, nullptr }, //			if PE, RET
 	{ 0xe9, "PCHL",	1, nullptr }, //			PC.hi < -H; PC.lo < -L
