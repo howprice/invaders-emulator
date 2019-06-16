@@ -285,6 +285,19 @@ static void executeC3(State8080& state)
 	state.PC = getInstructionAddress(state);
 }
 
+// 0xC5  PUSH BC
+static void executeC5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.B;
+	uint8_t lsb = state.C;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+}
+
 // 0xCD CALL <address>
 static void executeCD(State8080& state)
 {
@@ -592,7 +605,7 @@ static const Instruction s_instructions[] =
 	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
 	{ 0xc4, "CNZ %04X", 3, nullptr }, //			if NZ, CALL adr
-	{ 0xc5, "PUSH B", 1, nullptr }, //			(sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
+	{ 0xc5, "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
 	{ 0xc6, "ADI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A + byte
 	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
 	{ 0xc8, "RZ	1",	1, nullptr }, //		if Z, RET
