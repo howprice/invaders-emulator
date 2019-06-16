@@ -288,6 +288,16 @@ static void execute36(State8080& state)
 	writeByteToMemory(state, address, d8);
 }
 
+// 0x5E  MOV E,M  aka LD E,(HL)
+// E < -(HL)
+static void execute5E(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
+	uint8_t val = readByteFromMemory(state, HL);
+	state.E = val;
+
+}
+
 // 0x6F  MOV L,A
 // L <- A
 static void execute6F(State8080& state)
@@ -571,7 +581,7 @@ static const Instruction s_instructions[] =
 	{ 0x5b, "MOV E,E", 1, nullptr }, //			E < -E
 	{ 0x5c, "MOV E,H", 1, nullptr }, //			E < -H
 	{ 0x5d, "MOV E,L", 1, nullptr }, //			E < -L
-	{ 0x5e, "MOV E,M", 1, nullptr }, //			E < -(HL)
+	{ 0x5e, "MOV E,M", 1, execute5E }, // aka LD E,(HL)	 E < -(HL)
 	{ 0x5f, "MOV E,A", 1, nullptr }, //			E < -A
 	{ 0x60, "MOV H,B", 1, nullptr }, //			H < -B
 	{ 0x61, "MOV H,C", 1, nullptr }, //			H < -C
