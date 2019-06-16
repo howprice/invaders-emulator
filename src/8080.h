@@ -46,7 +46,7 @@ struct State8080
 	uint8_t* pMemory;
 	uint32_t memorySizeBytes;
 
-	// #TODO: interrupts enabled state
+	uint8_t interruptsEnabled;
 
 	ReadByteFromMemoryFuncPtr readByteFromMemory;
 	WriteByteToMemoryFuncPtr writeByteToMemory;
