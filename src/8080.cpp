@@ -168,6 +168,21 @@ static void execute0E(State8080& state)
 	state.C = d8;
 }
 
+// 0x0F  RRC  aka RRCA
+// Rotate Accumulator Right
+// "The carry bit is set equal to the low-order bit of the accumulator.
+// The contents of the accumulator are rotated on bit position to the right,
+// with the low-order bit being transferred to the high-order bit position of
+// the accumulator.
+// Condition bits affected: Carry
+// A = A >> 1  bit 7 = prev bit 0  Carry Flag = prev bit 0
+static void execute0F(State8080& state)
+{
+	state.flags.C = state.A & 1;
+	state.A = state.A >> 1;
+	state.A |= (state.flags.C << 7);
+}
+
 // 0x06 MVI B, <d8>
 static void execute06(State8080& state)
 {
@@ -547,7 +562,7 @@ static const Instruction s_instructions[] =
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
 	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C-1	Sets: Z, S, P, AC	  
 	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
-	{ 0x0f, "RRC",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 0; CY = prev bit 0
+	{ 0x0f, "RRC",	1, execute0F }, // A = A >> 1  bit 7 = prev bit 0  CY = prev bit 0  Sets Carry flag
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
