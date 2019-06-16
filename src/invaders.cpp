@@ -1,4 +1,3 @@
-// #TODO: Fix up Disassemble8080 column formatting
 // #TODO: Implement basic command line debugger
 //        - 
 // #TODO: Is RAM mirror at $4000 required by invaders roms??
@@ -173,6 +172,87 @@ static const Rom kRoms[] =
 	{"invaders.e", 0x800},
 };
 
+static uint8_t In(uint8_t port)
+{
+	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+
+	// Space Invaders input ports
+
+	// Read 1
+	// BIT 0    coin(0 when active)
+	//     1    P2 start button
+	//     2    P1 start button
+	//     3 ?
+	//     4    P1 shoot button
+	//     5    P1 joystick left
+	//     6    P1 joystick right
+	//     7 ?
+	//     
+	// Read 2
+	// BIT 0, 1 dipswitch number of lives(0:3, 1 : 4, 2 : 5, 3 : 6)
+	//     2    tilt 'button'
+	//     3    dipswitch bonus life at 1 : 1000, 0 : 1500
+	//     4    P2 shoot button
+	//     5    P2 joystick left
+	//     6    P2 joystick right
+	//     7    dipswitch coin info 1 : off, 0 : on
+	//     
+	// Read 3   shift register result
+
+	// Read port 1=$01 and 2=$00 will make the game run, but but only in attract mode.
+
+	if(port == 1)
+		return 1;
+	else if(port == 2)
+		return 0;
+	else if(port == 3)
+	{
+		HP_FATAL_ERROR("Shift register not implemented");
+	}
+	else
+	{
+		HP_FATAL_ERROR("Unexpected IN port: %u", port);
+	}
+
+	return 0;
+}
+
+static void Out(uint8_t port, uint8_t val)
+{
+	HP_UNUSED(val);
+
+	// Write 2    shift register result offset(bits 0, 1, 2)
+	// Write 3    sound related
+	// Write 4    fill shift register
+	// Write 5    sound related
+	// Write 6    strange 'debug' port ? eg.it writes to this port when
+	//            it writes text to the screen(0 = a, 1 = b, 2 = c, etc)
+	// 
+	// (write ports 3, 5, 6 can be left unemulated)
+	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+
+	switch(port)
+	{
+	case 2:
+		HP_FATAL_ERROR("TODO: Implement shift register");
+		break;
+	case 3:
+		// #TODO: Implement sound
+		break;
+	case 4:
+		HP_FATAL_ERROR("TODO: Implement shift register");
+		break;
+	case 5:
+		// #TODO: Implement sound
+		break;
+	case 6:
+		// #TODO: Is this the "Watchdog"? http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
+		break;
+	default:
+		HP_FATAL_ERROR("Unexpected OUT port: %u", port);
+	}
+}
+
 static void printUsage()
 {
 	puts("Usage: invaders [OPTIONS]");
@@ -324,8 +404,13 @@ int main(int argc, char** argv)
 		address += fileSizeBytes;
 	}
 
+	// set up machine inputs and outputs, for assembly IN and OUT instructions
+	state.in = In;
+	state.out = Out;
+
 	static bool show_demo_window = true;
 	bool bDone = false;
+	uint64_t frameIndex = 0;
 	Uint64 lastTime = SDL_GetPerformanceCounter();
 	while(!bDone)
 	{
@@ -358,6 +443,22 @@ int main(int argc, char** argv)
 		bool active = true; // #TODO: Is this CPU state?
 		while(active)
 		{
+			// #TODO: Add timings to 8080 instructions and break on emulated time rather than real time
+			
+			// #TODO: Interrupt $cf (RST 1) at the start of vblank http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+			//        OR..
+			//        ScanLine96:
+			//            Interrupt brings us here when the beam is* near* the middle of the screen. The real middle
+			//            would be 224 / 2 = 112. The code pretends this interrupt happens at line 128.
+			//        http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
+
+			// #TODO: Interrupts $d7 (RST 2) at the end of vblank. http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+			//        OR..
+			//        ScanLine224:
+			//            Interrupt brings us here when the beam is at the end of the screen(line 224) when 
+			//            the VBLANK begins.
+			//        http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
+
 			// break every 1/60 second
 			Uint64 currentTime = SDL_GetPerformanceCounter();
 			Uint64 deltaTime = currentTime - lastTime;
@@ -365,8 +466,8 @@ int main(int argc, char** argv)
 			double deltaTimeSeconds = (double)deltaTime / countsPerSecond;
 			if(deltaTimeSeconds > 1.0 / 60.0)
 			{
-				// #TODO: Generate interrupt
-
+				unsigned int rstNum = (frameIndex & 1) == 0 ? 1 : 2; // TEMP: oscillate between RST 1 and RST 2 in lieu of proper timing
+				Generate8080Interrupt(state, rstNum);
 				lastTime = currentTime;
 				break;
 			}
@@ -380,7 +481,6 @@ int main(int argc, char** argv)
 			Emulate8080Instruction(state);
 		}
 
-
 		// Rendering
 		ImGui::Render();
 		SDL_GL_MakeCurrent(pWindow, gl_context);
@@ -389,6 +489,8 @@ int main(int argc, char** argv)
 		glClear(GL_COLOR_BUFFER_BIT);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(pWindow);
+
+		frameIndex++;
 	}
 
 	delete[] state.pMemory;

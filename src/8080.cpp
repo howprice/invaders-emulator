@@ -1,4 +1,4 @@
-// #TODO: Implement OUT, as seen at address 090E
+// #TODO: Is there a way to group the instruction execute functions by type?
 
 #include "8080.h"
 
@@ -102,6 +102,18 @@ static uint8_t calculateParityFlag(uint8_t val)
 	return parity;
 }
 
+// Called from the various Return instructions: RZ, RNZ etc..
+static void performReturnOperation(State8080& state)
+{
+	// return address is stored in stack memory in little-endian format
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+	state.SP += 2;
+	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
+	HP_ASSERT(address < state.memorySizeBytes);
+	state.PC = address;
+}
+
 // 0x00 NOP
 static void execute00(State8080& /*state*/)
 {
@@ -118,6 +130,18 @@ static void execute01(State8080& state)
 	// the first register in the register pair always holds the MSB
 	state.B = msb;
 	state.C = lsb;
+}
+
+// 0x03  INX B  aka INC BC
+// Increment Register Pair BC
+// BC <- BC+1
+// Condition bits affected: None
+static void execute03(State8080& state)
+{
+	uint16_t BC = ((uint16_t)state.B << 8) | (state.C);
+	BC++;
+	state.B = (uint8_t)(BC >> 8);
+	state.C = (uint8_t)(BC & 0xff);
 }
 
 // 0x05 DCR B
@@ -147,6 +171,15 @@ static void execute09(State8080& state)
 	state.L = (uint8_t)(result & 0xff); // LSB
 
 	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+}
+
+// 0x0A  LDAX B  aka LD A,(BC)
+// A <- (BC)
+static void execute0A(State8080& state)
+{
+	// MSB is always in the first register of the pair
+	uint16_t address = (uint16_t)(state.B << 8) | (uint16_t)state.C;
+	state.A = readByteFromMemory(state, address);
 }
 
 // 0x0D  DCR C  aka DEC C
@@ -189,6 +222,17 @@ static void execute06(State8080& state)
 	state.B = getInstructionD8(state);
 }
 
+// 0x07  RLC  aka RLCA
+// Rotate Accumulator left
+// A = A << 1; bit 0 = prev bit 7; CY = prev bit 7
+// Condition bits affected: Carry
+static void execute07(State8080& state)
+{
+	state.flags.C = (state.A & 0x80) ? 1 : 0;
+	state.A = state.A << 1;
+	state.A |= state.flags.C;
+}
+
 // 0x11 LXI D,<d16>
 // D refers to the 16-bit register pair DE
 // Encoding: 0x11 <lsb> <msb>
@@ -209,6 +253,14 @@ static void execute13(State8080& state)
 	D++;
 	state.D = (uint8_t)(D >> 8);
 	state.E = (uint8_t)(D & 0xff);
+}
+
+// 0x16  MVI D,<d8>
+// D <- byte 2
+static void execute16(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.D = d8;
 }
 
 // 0x19  DAD D aka ADD HL,DE
@@ -285,6 +337,14 @@ static void execute29(State8080& state)
 	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
 }
 
+// 0x2E  MVI L,<d8>,
+// L <- <d8>
+static void execute2E(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.L = d8;
+}
+
 // 0x31  LXI SP,d32
 static void execute31(State8080& state)
 {
@@ -302,6 +362,21 @@ static void execute32(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0x35  DCR M  aka DEC (HL)
+// (HL) <- (HL)-1
+// Z, S, P, AC 
+static void execute35(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, HL);
+	val--;
+	writeByteToMemory(state, HL, val);
+	state.flags.Z = calculateZeroFlag(val);
+	state.flags.S = calculateSignFlag(val);
+	state.flags.P = calculateParityFlag(val);
+	// #TODO: AC flag
+}
+
 // 0x36  MVI M,d8
 // The byte of immediate data is stored in the memory byte address stored in HL
 // (HL) <- byte 2
@@ -310,6 +385,14 @@ static void execute36(State8080& state)
 	uint16_t address = ((uint16_t)state.H << 8) | (uint16_t)state.L;
 	uint8_t d8 = getInstructionD8(state);
 	writeByteToMemory(state, address, d8);
+}
+
+// 0x37  STC
+// Set Carry
+// The Carry bit is set to 1
+static void execute37(State8080& state)
+{
+	state.flags.C = 1;
 }
 
 // 0x3A  LDA <addr>
@@ -322,12 +405,39 @@ static void execute3A(State8080& state)
 	state.A = readByteFromMemory(state, address);
 }
 
+// 0x3D  DCR A  aka DEC A
+// A <- A-1
+// Z, S, P, AC	
+static void execute3D(State8080& state)
+{
+	state.A--;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: AC flag
+}
+
 // 0x3E  MVI A,<d8>
 // A <- <d8>
 static void execute3E(State8080& state)
 {
 	uint8_t d8 = getInstructionD8(state);
 	state.A = d8;
+}
+
+// 0x46  MOV B,M  aka MOV B,(HL)
+// B <- (HL)
+static void execute46(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	state.B = readByteFromMemory(state, HL);
+}
+
+// 0x4f  MOV C,A
+// C <- A
+static void execute4F(State8080& state)
+{
+	state.C = state.A;
 }
 
 // 0x56  MOV D,M
@@ -339,6 +449,13 @@ static void execute56(State8080& state)
 	state.D = val;
 }
 
+// 0x57  MOV D,A
+// D <- A
+static void execute57(State8080& state)
+{
+	state.D = state.A;
+}
+
 // 0x5E  MOV E,M  aka LD E,(HL)
 // E < -(HL)
 static void execute5E(State8080& state)
@@ -346,6 +463,13 @@ static void execute5E(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	state.E = val;
+}
+
+// 0x5F  MOV E,A
+// E <- A
+static void execute5F(State8080& state)
+{
+	state.E = state.A;
 }
 
 // 0x66  MOV H,M
@@ -357,11 +481,32 @@ static void execute66(State8080& state)
 	state.H = val;
 }
 
+// 0x67  MOV H,A
+// H <- A
+static void execute67(State8080& state)
+{
+	state.H = state.A;
+}
+
 // 0x6F  MOV L,A
 // L <- A
 static void execute6F(State8080& state)
 {
 	state.L = state.A;
+}
+
+// 0x78  MOV A,B
+// A <- B
+static void execute78(State8080& state)
+{
+	state.A = state.B;
+}
+
+// 0x79  MOV A,C
+// A <- C
+static void execute79(State8080& state)
+{
+	state.A = state.C;
 }
 
 // 0x7A  MOV A,D
@@ -383,6 +528,13 @@ static void execute7B(State8080& state)
 static void execute7C(State8080& state)
 {
 	state.A = state.H;
+}
+
+// 0x7d  MOV A,L
+// A <- L
+static void execute7D(State8080& state)
+{
+	state.A = state.L;
 }
 
 // 0x7E  MOV A,M
@@ -430,6 +582,46 @@ static void executeAF(State8080& state)
 	state.flags.P = 1;
 	state.flags.C = 0;
 	// #TODO: Set AC flag
+}
+
+// 0xB0  ORA B
+// The Carry bit is reset to zero.
+// A <- A|B
+// Z, S, P, CY, AC	
+static void executeB0(State8080& state)
+{
+	state.A |= state.B;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	state.flags.C = 0;
+	// #TODO: AC flag
+}
+
+// 0xb6  ORA M  aka OR (HL)
+// The specified bytes is logically ORed with A.
+// The Carry bit is rest to zero.
+// A <- A|(HL)
+// Z, S, P, CY, AC	
+static void executeB6(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, HL);
+	state.A = state.A | val;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	state.flags.C = 0;
+	// #TODO: Set AC flag
+}
+
+// 0xC0  RNZ
+// Return If Not Zero
+// If the Zero bit is 0, a return operation is performed
+static void executeC0(State8080& state)
+{
+	if(state.flags.Z == 0)
+		performReturnOperation(state);
 }
 
 // 0xC1  POP BC
@@ -507,16 +699,40 @@ static void executeCD(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xC8  RZ	
+// Return If Zero
+// If the Zero bit is 1, a return operation is performed.
+static void executeC8(State8080& state)
+{
+	if(state.flags.Z == 1)
+		performReturnOperation(state);
+}
+
 // 0xC9 RET
 static void executeC9(State8080& state)
 {
-	// return address is stored in stack memory in little-endian format
-	uint8_t lsb = readByteFromMemory(state, state.SP);
-	uint8_t msb = readByteFromMemory(state, state.SP + 1);
-	state.SP += 2;
-	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
-	HP_ASSERT(address < state.memorySizeBytes);
-	state.PC = address;
+	performReturnOperation(state);
+}
+
+// 0xCA  JZ <address>
+// Jump If Zero
+// If the Zero bit is one, program execution continues at the memory address
+// if Z, PC <- adr
+static void executeCA(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	HP_ASSERT(address < state.memorySizeBytes); // #TODO: Should really assert that is in ROM, or maybe ROM or RAM via callback to machine
+	if(state.flags.Z)
+		state.PC = address;
+}
+
+// 0xd0 RNC
+// Return If No Carry
+// If the Carry bit is zero, a return operation is performed
+static void executeD0(State8080& state)
+{
+	if(state.flags.C == 0)
+		performReturnOperation(state);
 }
 
 // 0xD1  POP DE
@@ -533,11 +749,27 @@ static void executeD1(State8080& state)
 	state.SP += 2;
 }
 
+// 0xD2  JNC <address>
+// Jump If No Carry
+// If the Carry bit is zero, program execution continues at the specified memory address
+// if NCY, PC <- adr
+static void executeD2(State8080& state)
+{
+	if(state.flags.C == 0)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
+		state.PC = address;
+	}
+}
+
 // 0xD3  OUT d8  aka OUT d8,A
 // The contents of A are sent to output device number <d8> 
-static void executeD3(State8080& /*state*/)
+static void executeD3(State8080& state)
 {
-
+	uint8_t port = getInstructionD8(state);
+	if(state.out != nullptr)
+		state.out(port, state.A);
 }
 
 // 0xD5  PUSH DE
@@ -551,6 +783,50 @@ static void executeD5(State8080& state)
 	writeByteToMemory(state, state.SP - 2, lsb);
 	writeByteToMemory(state, state.SP - 1, msb);
 	state.SP -= 2;
+}
+
+// 0xD6  SUI d8  aka SUB
+// Subtract Immediate From Accumulator
+// A <- A-d8
+// Z, S, P, CY, AC
+static void executeD6(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+
+}
+
+// 0xd8  RC
+// Return If Carry
+// If the Carry bit is 1, a return operation is performed
+static void executeD8(State8080& state)
+{
+	if(state.flags.C == 1)
+		performReturnOperation(state);
+}
+
+// 0xDA  JC <address>
+// Jump If Carry
+// If the Carry bit is 1, PC <- adr
+static void executeDA(State8080& state)
+{
+	if(state.flags.C == 1)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
+		state.PC = address;
+	}
+}
+
+// 0xDB  IN <d8>  aka IN A,<d8>
+// An 8-bit data byte is read from the numberd input device into the accumulator.
+static void executeDB(State8080& state)
+{
+	uint8_t port = getInstructionD8(state);
+
+	if(state.in)
+		state.A = state.in(port);
+	else
+		state.A = 0;
 }
 
 // 0xE1  POP HL
@@ -641,7 +917,7 @@ static void executeF5(State8080& state)
 // enable interrupts
 static void executeFB(State8080& state)
 {
-	state.interruptsEnabled = 1;
+	state.INTE = 1;
 }
 
 // 0xFE  CPI d8
@@ -667,14 +943,14 @@ static const Instruction s_instructions[] =
 	{ 0x00, "NOP", 1, execute00 },
 	{ 0x01, "LXI B,%04X", 3, execute01 },
 	{ 0x02, "STAX B", 1, nullptr }, //		(BC) <- A
-	{ 0x03, "INX B", 1, nullptr }, //		BC < -BC + 1
+	{ 0x03, "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
 	{ 0x04, "INR B", 1, nullptr }, //	Z, S, P, AC	B < -B + 1
 	{ 0x05, "DCR B", 1, execute05 }, // Z, S, P, AC	B < -B - 1
 	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
-	{ 0x07, "RLC",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev bit 7; CY = prev bit 7
+	{ 0x07, "RLC",	1, execute07 }, // aka RLCA	  A = A << 1; bit 0 = prev bit 7; CY = prev bit 7   Sets Carry flag
 	{ 0x08, "-", 1, nullptr },
 	{ 0x09, "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
-	{ 0x0a, "LDAX B",	1, nullptr }, //			A < -(BC)
+	{ 0x0a, "LDAX B", 1, execute0A}, // aka LD A,(BC)  A <- (BC)
 	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
 	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
 	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C-1	Sets: Z, S, P, AC	  
@@ -686,7 +962,7 @@ static const Instruction s_instructions[] =
 	{ 0x13, "INX D",	1, execute13 }, //			DE < -DE + 1
 	{ 0x14, "INR D",	1, nullptr }, //		Z, S, P, AC	D < -D + 1
 	{ 0x15, "DCR D",	1, nullptr }, //		Z, S, P, AC	D < -D - 1
-	{ 0x16, "MVI D, %02X",	2, nullptr }, //			D < -byte 2
+	{ 0x16, "MVI D, %02X",	2, execute16 }, // D <- byte 2
 	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
 	{ 0x18, "-", 1, nullptr }, //	
 	{ 0x19, "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
@@ -710,22 +986,22 @@ static const Instruction s_instructions[] =
 	{ 0x2b, "DCX H", 1, nullptr }, //			HL = HL - 1
 	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
 	{ 0x2d, "DCR L", 1, nullptr }, //		Z, S, P, AC	L < -L - 1
-	{ 0x2e, "MVI L, %02X", 2, nullptr }, //			L < -byte 2
+	{ 0x2e, "MVI L, %02X", 2, execute2E }, // L <- byte 2
 	{ 0x2f, "CMA", 1, nullptr }, //			A < -!A
 	{ 0x30, "-", 1, nullptr }, //	
 	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
 	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
 	{ 0x34, "INR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)+1
-	{ 0x35, "DCR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)-1
+	{ 0x35, "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL)-1   Z, S, P, AC 
 	{ 0x36, "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
-	{ 0x37, "STC",	1, nullptr }, //		CY	CY = 1
+	{ 0x37, "STC", 1, execute37 }, // Carry = 1
 	{ 0x38, "-", 1},
 	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
 	{ 0x3a, "LDA %04X",	3, execute3A }, // A <- (adr)
 	{ 0x3b, "DCX SP",	1, nullptr }, //			SP = SP - 1
 	{ 0x3c, "INR A",	1, nullptr }, //		Z, S, P, AC	A < -A + 1
-	{ 0x3d, "DCR A",	1, nullptr }, //		Z, S, P, AC	A < -A - 1
+	{ 0x3d, "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
 	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
 	{ 0x3f, "CMC",	1, nullptr }, //		CY	CY = !CY
 	{ 0x40, "MOV B,B", 1, nullptr }, //			B < -B
@@ -734,7 +1010,7 @@ static const Instruction s_instructions[] =
 	{ 0x43, "MOV B,E", 1, nullptr }, //			B < -E
 	{ 0x44, "MOV B,H", 1, nullptr }, //			B < -H
 	{ 0x45, "MOV B,L", 1, nullptr }, //			B < -L
-	{ 0x46, "MOV B,M", 1, nullptr }, //			B < -(HL)
+	{ 0x46, "MOV B,M", 1, execute46 }, // B <- (HL)
 	{ 0x47, "MOV B,A", 1, nullptr }, //			B < -A
 	{ 0x48, "MOV C,B", 1, nullptr }, //			C < -B
 	{ 0x49, "MOV C,C", 1, nullptr }, //			C < -C
@@ -743,7 +1019,7 @@ static const Instruction s_instructions[] =
 	{ 0x4c, "MOV C,H", 1, nullptr }, //			C < -H
 	{ 0x4d, "MOV C,L", 1, nullptr }, //			C < -L
 	{ 0x4e, "MOV C,M", 1, nullptr }, //			C < -(HL)
-	{ 0x4f, "MOV C,A", 1, nullptr }, //			C < -A
+	{ 0x4f, "MOV C,A", 1, execute4F }, // C <- A
 	{ 0x50, "MOV D,B", 1, nullptr }, //			D < -B
 	{ 0x51, "MOV D,C", 1, nullptr }, //			D < -C
 	{ 0x52, "MOV D,D", 1, nullptr }, //			D < -D
@@ -751,7 +1027,7 @@ static const Instruction s_instructions[] =
 	{ 0x54, "MOV D,H", 1, nullptr }, //			D < -H
 	{ 0x55, "MOV D,L", 1, nullptr }, //			D < -L
 	{ 0x56, "MOV D,M", 1, execute56 }, // D <- (HL)
-	{ 0x57, "MOV D,A", 1, nullptr }, //			D < -A
+	{ 0x57, "MOV D,A", 1, execute57 }, // D <- A
 	{ 0x58, "MOV E,B", 1, nullptr }, //			E < -B
 	{ 0x59, "MOV E,C", 1, nullptr }, //			E < -C
 	{ 0x5a, "MOV E,D", 1, nullptr }, //			E < -D
@@ -759,7 +1035,7 @@ static const Instruction s_instructions[] =
 	{ 0x5c, "MOV E,H", 1, nullptr }, //			E < -H
 	{ 0x5d, "MOV E,L", 1, nullptr }, //			E < -L
 	{ 0x5e, "MOV E,M", 1, execute5E }, // aka LD E,(HL)	 E < -(HL)
-	{ 0x5f, "MOV E,A", 1, nullptr }, //			E < -A
+	{ 0x5f, "MOV E,A", 1, execute5F }, // E <- A
 	{ 0x60, "MOV H,B", 1, nullptr }, //			H < -B
 	{ 0x61, "MOV H,C", 1, nullptr }, //			H < -C
 	{ 0x62, "MOV H,D", 1, nullptr }, //			H < -D
@@ -767,7 +1043,7 @@ static const Instruction s_instructions[] =
 	{ 0x64, "MOV H,H", 1, nullptr }, //			H < -H
 	{ 0x65, "MOV H,L", 1, nullptr }, //			H < -L
 	{ 0x66, "MOV H,M", 1, execute66 }, // H <- (HL)
-	{ 0x67, "MOV H,A", 1, nullptr }, //			H < -A
+	{ 0x67, "MOV H,A", 1, execute67 }, // H <- A
 	{ 0x68, "MOV L,B", 1, nullptr }, //			L < -B
 	{ 0x69, "MOV L,C", 1, nullptr }, //			L < -C
 	{ 0x6a, "MOV L,D", 1, nullptr }, //			L < -D
@@ -784,12 +1060,12 @@ static const Instruction s_instructions[] =
 	{ 0x75, "MOV M,L", 1, nullptr }, //			(HL) < -L
 	{ 0x76, "HLT",	1, nullptr }, //			special
 	{ 0x77, "MOV M,A", 1, execute77 }, // (HL) < -A
-	{ 0x78, "MOV A,B", 1, nullptr }, //			A < -B
-	{ 0x79, "MOV A,C", 1, nullptr }, //			A < -C
+	{ 0x78, "MOV A,B", 1, execute78 }, // A <- B
+	{ 0x79, "MOV A,C", 1, execute79 }, // A <- C
 	{ 0x7a, "MOV A,D", 1, execute7A }, // A <- D
 	{ 0x7b, "MOV A,E", 1, execute7B }, // A <- E
 	{ 0x7c, "MOV A,H", 1, execute7C }, // A <- H
-	{ 0x7d, "MOV A,L", 1, nullptr }, //			A < -L
+	{ 0x7d, "MOV A,L", 1, execute7D }, // A <- L
 	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
 	{ 0x7f, "MOV A,A", 1, nullptr }, //			A < -A
 	{ 0x80, "ADD B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B
@@ -840,13 +1116,13 @@ static const Instruction s_instructions[] =
 	{ 0xad, "XRA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ L
 	{ 0xae, "XRA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ (HL)
 	{ 0xaf, "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A  (A <- 0)    Z, S, P, CY, AC	
-	{ 0xb0, "ORA B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | B
+	{ 0xb0, "ORA B", 1, executeB0 }, // A <- A|B   Z, S, P, CY, AC	
 	{ 0xb1, "ORA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | C
 	{ 0xb2, "ORA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | D
 	{ 0xb3, "ORA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | E
 	{ 0xb4, "ORA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | H
 	{ 0xb5, "ORA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | L
-	{ 0xb6, "ORA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | (HL)
+	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A|(HL)   Z, S, P, CY, AC	
 	{ 0xb7, "ORA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | A
 	{ 0xb8, "CMP B", 1, nullptr }, //		Z, S, P, CY, AC	A - B
 	{ 0xb9, "CMP C", 1, nullptr }, //		Z, S, P, CY, AC	A - C
@@ -856,7 +1132,7 @@ static const Instruction s_instructions[] =
 	{ 0xbd, "CMP L", 1, nullptr }, //		Z, S, P, CY, AC	A - L
 	{ 0xbe, "CMP M", 1, nullptr }, //		Z, S, P, CY, AC	A - (HL)
 	{ 0xbf, "CMP A", 1, nullptr }, //		Z, S, P, CY, AC	A - A
-	{ 0xc0, "RNZ", 1, nullptr }, //			if NZ, RET
+	{ 0xc0, "RNZ", 1, executeC0 }, // if NZ, RET
 	{ 0xc1, "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
 	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
@@ -864,26 +1140,26 @@ static const Instruction s_instructions[] =
 	{ 0xc5, "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
 	{ 0xc6, "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
 	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
-	{ 0xc8, "RZ	1",	1, nullptr }, //		if Z, RET
+	{ 0xc8, "RZ	1",	1, executeC8 }, // if Z, RET
 	{ 0xc9, "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
-	{ 0xca, "JZ %04X", 3, nullptr }, //			if Z, PC < -adr
+	{ 0xca, "JZ %04X", 3, executeCA }, // if Z, PC <- adr
 	{ 0xcb, "-", 1, nullptr }, //	
 	{ 0xcc, "CZ %04X",	3, nullptr }, //			if Z, CALL adr
 	{ 0xcd, "CALL %04X", 3, executeCD }, // (SP - 1) <- PC.hi; (SP - 2) <- PC.lo; SP <- SP - 2; PC = adr
 	{ 0xce, "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
 	{ 0xcf, "RST 1", 1, nullptr }, //			CALL $8
-	{ 0xd0, "RNC",	1, nullptr }, //			if NCY, RET
+	{ 0xd0, "RNC",	1, executeD0 }, // if NCY, RET
 	{ 0xd1, "POP DE", 1, executeD1 }, // E < -(sp); D < -(sp + 1); sp < -sp + 2
-	{ 0xd2, "JNC %04X", 3, nullptr }, //			if NCY, PC < -adr
-	{ 0xd3, "OUT %02X",	2, executeD3 }, // special
+	{ 0xd2, "JNC %04X", 3, executeD2 }, // if NCY, PC <- adr
+	{ 0xd3, "OUT %02X",	2, executeD3 },
 	{ 0xd4, "CNC %04X",	3, nullptr }, //			if NCY, CALL adr
 	{ 0xd5, "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
-	{ 0xd6, "SUI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A - data
+	{ 0xd6, "SUI %02X", 2, executeD6 }, // aka SUB  A <- A-d8   Z, S, P, CY, AC	
 	{ 0xd7, "RST 2",	1, nullptr }, //			CALL $10
-	{ 0xd8, "RC", 1, nullptr }, //			if CY, RET
+	{ 0xd8, "RC", 1, executeD8 }, // if Carry set, RET
 	{ 0xd9, "-", 1, nullptr }, //	
-	{ 0xda, "JC %04X",	3, nullptr }, //			if CY, PC < -adr
-	{ 0xdb, "IN %02X",	2, nullptr }, //			special
+	{ 0xda, "JC %04X",	3, executeDA }, // if CY, PC < -adr
+	{ 0xdb, "IN %02X", 2, executeDB },
 	{ 0xdc, "CC %04X",	3, nullptr }, //			if CY, CALL adr
 	{ 0xdd, "-", 1, nullptr }, //	
 	{ 0xde, "SBI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A - data - CY
@@ -979,4 +1255,34 @@ void Emulate8080Instruction(State8080& state)
 	state.PC += instruction.sizeBytes;
 
 	instruction.execute(state);
+}
+
+void Generate8080Interrupt(State8080& state, unsigned int interruptNumber)
+{
+	HP_ASSERT(interruptNumber < 8, "There are eight Restart instructions, RST 0 - RST 7");
+
+	// Whenever INTE is equal to 0, the entire interrupt handling system is disabled,
+	// and not interrupts will be accepted
+	if(state.INTE == 0)
+		return;
+
+	// reset 8080 INTE bit [Data Book, p59]
+	state.INTE = 0;
+
+	// https://stackoverflow.com/questions/2165914/how-do-interrupts-work-on-the-intel-8080
+
+	// Perform a manual RST instruction.
+	// 
+	// - The PC is pushed onto the stack, providing a return address for later use by a RETURN instruction.
+	// - Call to one of 8 eight-byte subroutines located in the first 64 bytes of memory
+
+	// store return address in little-endian
+	uint8_t msb = (uint8_t)(state.PC >> 8);
+	uint8_t lsb = (uint8_t)(state.PC & 0xff);
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+
+	state.PC = (uint16_t)interruptNumber * 8;
 }
