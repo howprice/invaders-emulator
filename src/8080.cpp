@@ -194,6 +194,22 @@ static void execute26(State8080& state)
 	state.H = d8;
 }
 
+// 0x29  DAD HL aka ADD HL,HL 
+// HL <- HL + HL
+// Sets Carry flag
+static void execute29(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+
+	// perform addition in 32-bits so can set carry flag
+	uint32_t result = (uint32_t)HL + (uint32_t)HL;
+
+	state.H = (uint8_t)(result >> 8);   // MSB
+	state.L = (uint8_t)(result & 0xff); // LSB
+
+	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+}
+
 // 0x31  LXI SP,d32
 static void execute31(State8080& state)
 {
@@ -365,7 +381,7 @@ static const Instruction s_instructions[] =
 	{ 0x26, "MVI H,%02X", 2, execute26 }, // H <- byte 2
 	{ 0x27, "DAA",	1, nullptr }, //			special
 	{ 0x28, "-", 1, nullptr }, //	
-	{ 0x29, "DAD H",	1, nullptr }, //		CY	HL = HL + HI
+	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
 	{ 0x2a, "LHLD %04X",	3, nullptr }, //			L < -(adr); H < -(adr + 1)
 	{ 0x2b, "DCX H", 1, nullptr }, //			HL = HL - 1
 	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
