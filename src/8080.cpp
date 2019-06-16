@@ -263,14 +263,26 @@ static void executeC9(State8080& state)
 	state.PC = address;
 }
 
-// 0xD5  PUSH D, where D is the register pair DE
-// (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
+// 0xD5  PUSH DE
 static void executeD5(State8080& state)
 {
 	// First register of register pair always contains the MSB
 	// Store in memory in little-endian format.
 	uint8_t msb = state.D;
 	uint8_t lsb = state.E;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+}
+
+// 0xE5  PUSH HL
+static void executeE5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.H;
+	uint8_t lsb = state.L;
 	HP_ASSERT(state.SP >= 2);
 	writeByteToMemory(state, state.SP - 2, lsb);
 	writeByteToMemory(state, state.SP - 1, msb);
@@ -510,7 +522,7 @@ static const Instruction s_instructions[] =
 	{ 0xd2, "JNC %04X", 3, nullptr }, //			if NCY, PC < -adr
 	{ 0xd3, "OUT %02X",	2, nullptr }, //			special
 	{ 0xd4, "CNC %04X",	3, nullptr }, //			if NCY, CALL adr
-	{ 0xd5, "PUSH D",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
+	{ 0xd5, "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
 	{ 0xd6, "SUI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A - data
 	{ 0xd7, "RST 2",	1, nullptr }, //			CALL $10
 	{ 0xd8, "RC", 1, nullptr }, //			if CY, RET
@@ -526,7 +538,7 @@ static const Instruction s_instructions[] =
 	{ 0xe2, "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
 	{ 0xe3, "XTHL",	1, nullptr }, //			L < -> (SP); H < -> (SP + 1)
 	{ 0xe4, "CPO %04X", 3, nullptr }, //			if PO, CALL adr
-	{ 0xe5, "PUSH H",	1, nullptr }, //			(sp - 2) < -L; (sp - 1) < -H; sp < -sp - 2
+	{ 0xe5, "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
 	{ 0xe6, "ANI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A & data
 	{ 0xe7, "RST 4",	1, nullptr }, //			CALL $20
 	{ 0xe8, "RPE",	1, nullptr }, //			if PE, RET
