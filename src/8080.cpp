@@ -369,6 +369,20 @@ static void executeC9(State8080& state)
 	state.PC = address;
 }
 
+// 0xD1  POP DE
+static void executeD1(State8080& state)
+{
+	// stored in memory in little endian format
+	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+
+	// First register of register pair always contains the MSB
+	state.D = msb;
+	state.E = lsb;
+	state.SP += 2;
+}
+
 // 0xD3  OUT d8  aka OUT d8,A
 // The contents of A are sent to output device number <d8> 
 static void executeD3(State8080& /*state*/)
@@ -660,7 +674,7 @@ static const Instruction s_instructions[] =
 	{ 0xce, "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
 	{ 0xcf, "RST 1", 1, nullptr }, //			CALL $8
 	{ 0xd0, "RNC",	1, nullptr }, //			if NCY, RET
-	{ 0xd1, "POP D",	1, nullptr }, //			E < -(sp); D < -(sp + 1); sp < -sp + 2
+	{ 0xd1, "POP DE", 1, executeD1 }, // E < -(sp); D < -(sp + 1); sp < -sp + 2
 	{ 0xd2, "JNC %04X", 3, nullptr }, //			if NCY, PC < -adr
 	{ 0xd3, "OUT %02X",	2, executeD3 }, // special
 	{ 0xd4, "CNC %04X",	3, nullptr }, //			if NCY, CALL adr
