@@ -402,6 +402,20 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xA7  ANA A  aka AND A
+// A <- A & A  (does not change value of A)
+// Condition bits affected: Carry, Zero, Sign, Parity
+// The Carry bit is reset to zero.
+// n.b. This is a convenient way of testing if A is zero; it doesn't affect the value but does affect the flags
+static void executeA7(State8080& state)
+{
+	// value of A does not change
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+}
+
 // 0xAF  XRA A  aka XOR A
 // Logical Exclusive-Or Accumulator with self 
 // A <- A ^ A
@@ -817,7 +831,7 @@ static const Instruction s_instructions[] =
 	{ 0xa4, "ANA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & H
 	{ 0xa5, "ANA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & L
 	{ 0xa6, "ANA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & (HL)
-	{ 0xa7, "ANA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & A
+	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A    A <- A & A		Z, S, P, CY, AC	
 	{ 0xa8, "XRA B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ B
 	{ 0xa9, "XRA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ C
 	{ 0xaa, "XRA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ D
