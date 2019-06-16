@@ -153,6 +153,23 @@ static void execute13(State8080& state)
 	state.E = (uint8_t)(D & 0xff);
 }
 
+// 0x19  DAD D aka ADD HL,DE
+// HL <- HL + DE
+// Sets Carry flag
+static void execute19(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint16_t DE = ((uint16_t)state.D << 8) | (state.E);
+
+	// perform addition in 32-bits so can set carry flag
+	uint32_t result = (uint32_t)HL + (uint32_t)DE;
+
+	state.H = (uint8_t)(result >> 8);   // MSB
+	state.L = (uint8_t)(result & 0xff); // LSB
+
+	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+}
+
 // 0x1A LDAX D
 // D refers to the 16-bit register pair DE
 // Copy byte from memory at address in DE into A
@@ -365,7 +382,7 @@ static const Instruction s_instructions[] =
 	{ 0x16, "MVI D, %02X",	2, nullptr }, //			D < -byte 2
 	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
 	{ 0x18, "-", 1, nullptr }, //	
-	{ 0x19, "DAD D",	1, nullptr }, //		CY	HL = HL + DE
+	{ 0x19, "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
 	{ 0x1a, "LDAX D", 1, execute1A }, // A <- (DE)
 	{ 0x1b, "DCX D",	1, nullptr }, //			DE = DE - 1
 	{ 0x1c, "INR E",	1, nullptr }, //		Z, S, P, AC	E < -E + 1
