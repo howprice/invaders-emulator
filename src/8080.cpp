@@ -320,6 +320,14 @@ static void execute7C(State8080& state)
 	state.A = state.H;
 }
 
+// 0x7E  MOV A,M
+// A <- (HL)
+static void execute7E(State8080& state)
+{
+	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	state.A = readByteFromMemory(state, HL);
+}
+
 // 0x77  MOV M,A
 // (HL) <- A
 // Moves the value in A to address HL, where H is MSB.
@@ -621,7 +629,7 @@ static const Instruction s_instructions[] =
 	{ 0x7b, "MOV A,E", 1, nullptr }, //			A < -E
 	{ 0x7c, "MOV A,H", 1, execute7C }, // A <- H
 	{ 0x7d, "MOV A,L", 1, nullptr }, //			A < -L
-	{ 0x7e, "MOV A,M", 1, nullptr }, //			A < -(HL)
+	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
 	{ 0x7f, "MOV A,A", 1, nullptr }, //			A < -A
 	{ 0x80, "ADD B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B
 	{ 0x81, "ADD C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + C
