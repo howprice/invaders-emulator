@@ -1,3 +1,5 @@
+// #TODO: Implement OUT, as seen at address 090E
+
 #include "8080.h"
 
 static const unsigned int kMinInstructionSizeBytes = 1;
@@ -311,6 +313,13 @@ static void executeC9(State8080& state)
 	state.PC = address;
 }
 
+// 0xD3  OUT d8  aka OUT d8,A
+// The contents of A are sent to output device number <d8> 
+static void executeD3(State8080& /*state*/)
+{
+
+}
+
 // 0xD5  PUSH DE
 static void executeD5(State8080& state)
 {
@@ -597,7 +606,7 @@ static const Instruction s_instructions[] =
 	{ 0xd0, "RNC",	1, nullptr }, //			if NCY, RET
 	{ 0xd1, "POP D",	1, nullptr }, //			E < -(sp); D < -(sp + 1); sp < -sp + 2
 	{ 0xd2, "JNC %04X", 3, nullptr }, //			if NCY, PC < -adr
-	{ 0xd3, "OUT %02X",	2, nullptr }, //			special
+	{ 0xd3, "OUT %02X",	2, executeD3 }, // special
 	{ 0xd4, "CNC %04X",	3, nullptr }, //			if NCY, CALL adr
 	{ 0xd5, "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
 	{ 0xd6, "SUI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A - data
