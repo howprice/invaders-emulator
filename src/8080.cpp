@@ -303,6 +303,16 @@ static void execute36(State8080& state)
 	writeByteToMemory(state, address, d8);
 }
 
+// 0x3A  LDA <addr>
+// Load Accumulator Direct
+// The byte at the specified address replaces the accumulator
+// A <- (adr)
+static void execute3A(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	state.A = readByteFromMemory(state, address);
+}
+
 // 0x56  MOV D,M
 // D <- (HL)
 static void execute56(State8080& state)
@@ -658,7 +668,7 @@ static const Instruction s_instructions[] =
 	{ 0x37, "STC",	1, nullptr }, //		CY	CY = 1
 	{ 0x38, "-", 1},
 	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
-	{ 0x3a, "LDA %04X",	3, nullptr }, //			A < -(adr)
+	{ 0x3a, "LDA %04X",	3, execute3A }, // A <- (adr)
 	{ 0x3b, "DCX SP",	1, nullptr }, //			SP = SP - 1
 	{ 0x3c, "INR A",	1, nullptr }, //		Z, S, P, AC	A < -A + 1
 	{ 0x3d, "DCR A",	1, nullptr }, //		Z, S, P, AC	A < -A - 1
