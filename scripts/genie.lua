@@ -58,14 +58,17 @@ solution "invaders-emulator"
 			"../src/8080.*",
 			"../src/debugger.*",
 			"../src/Assert.*",
-			"../src/Helpers.*"
+			"../src/Helpers.*",
+			"../src/imgui/**",
+			"../3rdParty/gl3w/GL/**"
 		}
 		includedirs {
 			"../src/**",
-			"../3rdparty/SDL2-2.0.9/include"
+			"../3rdparty/SDL2-2.0.9/include",
+			"../3rdparty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
-		links { "SDL2" }
+		links { "SDL2", "opengl32" }
 		debugdir "../data"		-- debugger working directory
 		
 		configuration "Debug"

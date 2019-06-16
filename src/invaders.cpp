@@ -8,11 +8,31 @@
 #include "debugger.h"
 #include "8080.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #include "SDL.h"
+
+// About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually.
+// Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
+// You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
+#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
+#include <GL/gl3w.h>    // Initialize with gl3wInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
+#include <GL/glew.h>    // Initialize with glewInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+#include <glad/glad.h>  // Initialize with gladLoadGL()
+#else
+#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static const unsigned int kDisplayWidth = 1280;
+static const unsigned int kDisplayHeight = 720;
 
 enum class MemoryType
 {
@@ -196,6 +216,62 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	// Decide GL+GLSL versions
+#if __APPLE__
+	// GL 3.2 Core + GLSL 150
+	const char* glsl_version = "#version 150";
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+	// GL 3.0 + GLSL 130
+	const char* glsl_version = "#version 130";
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
+	// Create window with graphics context
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kDisplayWidth, kDisplayHeight, window_flags);
+
+	SDL_GLContext gl_context = SDL_GL_CreateContext(pWindow);
+	SDL_GL_SetSwapInterval(1); // Enable vsync
+
+	// Initialize OpenGL loader
+#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
+	bool err = gl3wInit() != 0;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
+	bool err = glewInit() != GLEW_OK;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+	bool err = gladLoadGL() == 0;
+#else
+	bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader is likely to requires some form of initialization.
+#endif
+	if(err)
+	{
+		fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+		return EXIT_FAILURE;
+	}
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplSDL2_InitForOpenGL(pWindow, gl_context);
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
 	State8080 state = {};
 
 	// Init memory
@@ -248,28 +324,84 @@ int main(int argc, char** argv)
 		address += fileSizeBytes;
 	}
 
-	if(s_debug)
+	static bool show_demo_window = true;
+	bool bDone = false;
+	Uint64 lastTime = SDL_GetPerformanceCounter();
+	while(!bDone)
 	{
+		SDL_Event event;
+		while(SDL_PollEvent(&event))
+		{
+			if(event.type == SDL_QUIT)
+			{
+				bDone = true;
+			}
+			else if(event.type == SDL_KEYDOWN)
+			{
+				if(event.key.keysym.sym == SDLK_ESCAPE)
+					bDone = true;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+				{
+				}
+			}
+		}
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(pWindow);
+		ImGui::NewFrame();
+
+		// update
+		if(show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
+
 		bool active = true; // #TODO: Is this CPU state?
 		while(active)
 		{
-			Disassemble8080(state.pMemory, kPhysicalMemorySizeBytes, state.PC);
-			printf("    ");
-			PrintState(state);
+			// break every 1/60 second
+			Uint64 currentTime = SDL_GetPerformanceCounter();
+			Uint64 deltaTime = currentTime - lastTime;
+			Uint64 countsPerSecond = SDL_GetPerformanceFrequency();
+			double deltaTimeSeconds = (double)deltaTime / countsPerSecond;
+			if(deltaTimeSeconds > 1.0 / 60.0)
+			{
+				// #TODO: Generate interrupt
+
+				lastTime = currentTime;
+				break;
+			}
+
+			if(s_debug)
+			{
+				Disassemble8080(state.pMemory, kPhysicalMemorySizeBytes, state.PC);
+				printf("    ");
+				PrintState(state);
+			}
 			Emulate8080Instruction(state);
 		}
-	}
-	else
-	{
-		bool active = true; // #TODO: Is this CPU state?
-		while(active)
-		{
-			Emulate8080Instruction(state);
-		}
+
+
+		// Rendering
+		ImGui::Render();
+		SDL_GL_MakeCurrent(pWindow, gl_context);
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		SDL_GL_SwapWindow(pWindow);
 	}
 
 	delete[] state.pMemory;
 	state.pMemory = nullptr;
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
+	SDL_GL_DeleteContext(gl_context);
+
+	SDL_DestroyWindow(pWindow);
+	pWindow = nullptr;
 
 	SDL_Quit();
 
