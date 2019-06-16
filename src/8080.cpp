@@ -313,6 +313,14 @@ static void execute3A(State8080& state)
 	state.A = readByteFromMemory(state, address);
 }
 
+// 0x3E  MVI A,<d8>
+// A <- <d8>
+static void execute3E(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.A = d8;
+}
+
 // 0x56  MOV D,M
 // D <- (HL)
 static void execute56(State8080& state)
@@ -672,7 +680,7 @@ static const Instruction s_instructions[] =
 	{ 0x3b, "DCX SP",	1, nullptr }, //			SP = SP - 1
 	{ 0x3c, "INR A",	1, nullptr }, //		Z, S, P, AC	A < -A + 1
 	{ 0x3d, "DCR A",	1, nullptr }, //		Z, S, P, AC	A < -A - 1
-	{ 0x3e, "MVI A,%02X",	2, nullptr }, //			A < -byte 2
+	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
 	{ 0x3f, "CMC",	1, nullptr }, //		CY	CY = !CY
 	{ 0x40, "MOV B,B", 1, nullptr }, //			B < -B
 	{ 0x41, "MOV B,C", 1, nullptr }, //			B < -C
