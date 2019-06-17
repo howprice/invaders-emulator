@@ -525,6 +525,13 @@ static void execute46(State8080& state)
 	state.B = readByteFromMemory(state, HL);
 }
 
+// 0x47 MOV B,A
+// B <- A
+static void execute47(State8080& state)
+{
+	state.B = state.A;
+}
+
 // 0x4E  MOV C,M
 // C <- (HL)
 static void execute4E(State8080& state)
@@ -1278,7 +1285,7 @@ static const Instruction s_instructions[] =
 	{ 0x44, "MOV B,H", 1, nullptr }, //			B < -H
 	{ 0x45, "MOV B,L", 1, nullptr }, //			B < -L
 	{ 0x46, "MOV B,M", 1, execute46 }, // B <- (HL)
-	{ 0x47, "MOV B,A", 1, nullptr }, //			B < -A
+	{ 0x47, "MOV B,A", 1, execute47 }, // B <- A
 	{ 0x48, "MOV C,B", 1, nullptr }, //			C < -B
 	{ 0x49, "MOV C,C", 1, nullptr }, //			C < -C
 	{ 0x4a, "MOV C,D", 1, nullptr }, //			C < -D
