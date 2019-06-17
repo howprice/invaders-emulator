@@ -564,6 +564,14 @@ static void execute6F(State8080& state)
 	state.L = state.A;
 }
 
+// 0x70  MOV M,B
+// (HL) <- B
+static void execute70(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.B);
+}
+
 // 0x78  MOV A,B
 // A <- B
 static void execute78(State8080& state)
@@ -1205,7 +1213,7 @@ static const Instruction s_instructions[] =
 	{ 0x6d, "MOV L,L", 1, nullptr }, //			L < -L
 	{ 0x6e, "MOV L,M", 1, nullptr }, //			L < -(HL)
 	{ 0x6f, "MOV L,A", 1, execute6F }, // L <- A
-	{ 0x70, "MOV M,B", 1, nullptr }, //			(HL) < -B
+	{ 0x70, "MOV M,B", 1, execute70 }, // (HL) <- B
 	{ 0x71, "MOV M,C", 1, nullptr }, //			(HL) < -C
 	{ 0x72, "MOV M,D", 1, nullptr }, //			(HL) < -D
 	{ 0x73, "MOV M,E", 1, nullptr }, //			(HL) < -E
