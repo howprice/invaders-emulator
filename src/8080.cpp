@@ -677,18 +677,33 @@ static void executeAF(State8080& state)
 	// #TODO: Set AC flag
 }
 
+// 0xB0  ORA <data>
+// The Carry bit is reset to zero.
+// A <- A|<data>
+// Z, S, P, CY, AC	
+static void executeORA(State8080& state, uint8_t data)
+{
+	state.A |= data;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	state.flags.C = 0;
+	// #TODO: AC flag
+}
+
 // 0xB0  ORA B
 // The Carry bit is reset to zero.
 // A <- A|B
 // Z, S, P, CY, AC	
 static void executeB0(State8080& state)
 {
-	state.A |= state.B;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	state.flags.C = 0;
-	// #TODO: AC flag
+	executeORA(state, state.B);
+}
+
+// 0xB4  ORA H
+static void executeB4(State8080& state)
+{
+	executeORA(state, state.H);
 }
 
 // 0xb6  ORA M  aka OR (HL)
@@ -1281,7 +1296,7 @@ static const Instruction s_instructions[] =
 	{ 0xb1, "ORA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | C
 	{ 0xb2, "ORA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | D
 	{ 0xb3, "ORA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | E
-	{ 0xb4, "ORA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | H
+	{ 0xb4, "ORA H", 1, executeB4 }, // aka XOR H   A <- A|H   Z, S, P, CY, AC	
 	{ 0xb5, "ORA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | L
 	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A|(HL)   Z, S, P, CY, AC	
 	{ 0xb7, "ORA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | A
