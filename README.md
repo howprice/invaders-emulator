@@ -15,12 +15,12 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Emulate interrupts
-  - On a timer to start
+- Implement Shift Register
 - Render video memory to SDL window
-
-- Timing
-  - Instruction cycle count
+- Map host input (SDL) to port data
+- Return instruction cycle count from instruction execution functions
+  - n.b. Can be different depending on what the instruction did e.g. jump or not jump
+  - Best reference for this? Data Book?
 - Debugger
   - ImGui and/or command line
   - Show stack

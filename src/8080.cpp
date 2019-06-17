@@ -102,6 +102,21 @@ static uint8_t calculateParityFlag(uint8_t val)
 	return parity;
 }
 
+// Called from the various Call instructions: CALL, CZ, CNZ, etc
+static void performCallOperation(State8080& state)
+{
+	// Push return address onto stack, stored in little endian
+	uint16_t returnAddress = state.PC;  // the PC has been advanced prior to instruction execution
+	uint8_t msb = (uint8_t)(returnAddress >> 8);
+	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+
+	state.PC = getInstructionAddress(state); //  PC = <address>
+}
+
 // Called from the various Return instructions: RZ, RNZ etc..
 static void performReturnOperation(State8080& state)
 {
@@ -335,6 +350,20 @@ static void execute29(State8080& state)
 	state.L = (uint8_t)(result & 0xff); // LSB
 
 	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+}
+
+// 0x2A  LHLD <address>   aka LD HL,(addr)
+// Load H and L Direct
+// The byte at the memory address replaces the contents
+// of the L register. The byte at the next higher memory
+// address replaces the contents of the H register.
+// L <- (adr)       LSB
+// H <- (adr + 1)   MSB
+static void execute2A(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	state.L = readByteFromMemory(state, address);
+	state.H = readByteFromMemory(state, address + 1);
 }
 
 // 0x2E  MVI L,<d8>,
@@ -653,6 +682,15 @@ static void executeC3(State8080& state)
 	state.PC = getInstructionAddress(state);
 }
 
+// 0x4d  CNZ <address>
+// Call If Not Zero
+// If the Zero bit is one, a call operation is performed to the subroutine at the specified address.
+static void executeC4(State8080& state)
+{
+	if(state.flags.Z == 1)
+		performCallOperation(state);
+}
+
 // 0xC5  PUSH BC
 static void executeC5(State8080& state)
 {
@@ -686,17 +724,7 @@ static void executeC6(State8080& state)
 // 0xCD CALL <address>
 static void executeCD(State8080& state)
 {
-	// push return address onto stack
-	uint16_t returnAddress = state.PC; // the PC has been advanced prior to instruction execution
-	state.PC = getInstructionAddress(state); //  PC = <address>
-
-	// store return address in little-endian
-	uint8_t msb = (uint8_t)(returnAddress >> 8);
-	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
+	performCallOperation(state);
 }
 
 // 0xC8  RZ	
@@ -788,11 +816,23 @@ static void executeD5(State8080& state)
 // 0xD6  SUI d8  aka SUB
 // Subtract Immediate From Accumulator
 // A <- A-d8
-// Z, S, P, CY, AC
+// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
 static void executeD6(State8080& state)
 {
 	uint8_t d8 = getInstructionD8(state);
+	uint8_t result = state.A - d8;
 
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = d8 > state.A;
+
+	state.flags.S = calculateSignFlag(result);
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.P = calculateParityFlag(result);
+	// #TODO: Set AC flag
+
+	state.A = result;
 }
 
 // 0xd8  RC
@@ -841,6 +881,30 @@ static void executeE1(State8080& state)
 	state.H = msb;
 	state.L = lsb;
 	state.SP += 2;
+}
+
+// 0xE3  XTHL  aka EX (SP),HL
+// Exchange Stack
+// The contents of the L register are exchanged
+// with the contents of the memory byte whose address
+// is held in the stack pointer SP.The contents of the H
+// register are exchanged with the contents of the memory
+// byte whose address is one greater than that held in the stack
+// pointer.
+// 
+// L <-> (SP)       swap LSB
+// H <-> (SP + 1)   swap MSB
+static void executeE3(State8080& state)
+{
+	// LSB
+	uint8_t temp = state.L;
+	state.L = readByteFromMemory(state, state.SP);
+	writeByteToMemory(state, state.SP, temp);
+
+	// MSB
+	temp = state.H;
+	state.H = readByteFromMemory(state, state.SP + 1);
+	writeByteToMemory(state, state.SP + 1, temp);
 }
 
 // 0xE5  PUSH HL
@@ -982,7 +1046,7 @@ static const Instruction s_instructions[] =
 	{ 0x27, "DAA",	1, nullptr }, //			special
 	{ 0x28, "-", 1, nullptr }, //	
 	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
-	{ 0x2a, "LHLD %04X",	3, nullptr }, //			L < -(adr); H < -(adr + 1)
+	{ 0x2a, "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
 	{ 0x2b, "DCX H", 1, nullptr }, //			HL = HL - 1
 	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
 	{ 0x2d, "DCR L", 1, nullptr }, //		Z, S, P, AC	L < -L - 1
@@ -1136,7 +1200,7 @@ static const Instruction s_instructions[] =
 	{ 0xc1, "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
 	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
 	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
-	{ 0xc4, "CNZ %04X", 3, nullptr }, //			if NZ, CALL adr
+	{ 0xc4, "CNZ %04X", 3, executeC4 }, // if NZ, CALL adr
 	{ 0xc5, "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
 	{ 0xc6, "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
 	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
@@ -1167,7 +1231,7 @@ static const Instruction s_instructions[] =
 	{ 0xe0, "RPO",	1, nullptr }, //			if PO, RET
 	{ 0xe1, "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
 	{ 0xe2, "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
-	{ 0xe3, "XTHL",	1, nullptr }, //			L < -> (SP); H < -> (SP + 1)
+	{ 0xe3, "XTHL",	1, executeE3 }, // L <-> (SP); H <-> (SP + 1)
 	{ 0xe4, "CPO %04X", 3, nullptr }, //			if PO, CALL adr
 	{ 0xe5, "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
 	{ 0xe6, "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
