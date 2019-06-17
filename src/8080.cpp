@@ -450,6 +450,16 @@ static void execute2E(State8080& state)
 	state.L = d8;
 }
 
+// 0x2F  CMA   aka CPL
+// Complement Accumulator
+// Each bit of the contents of the accumulator
+// is complemented (producing the one's complement).
+// A <- !A
+static void execute2F(State8080& state)
+{
+	state.A = ~state.A;
+}
+
 // 0x31  LXI SP,d32
 static void execute31(State8080& state)
 {
@@ -1303,7 +1313,7 @@ static const Instruction s_instructions[] =
 	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
 	{ 0x2d, "DCR L", 1, nullptr }, //		Z, S, P, AC	L < -L - 1
 	{ 0x2e, "MVI L, %02X", 2, execute2E }, // L <- byte 2
-	{ 0x2f, "CMA", 1, nullptr }, //			A < -!A
+	{ 0x2f, "CMA", 1, execute2F }, // aka CPL  A <- !A
 	{ 0x30, "-", 1, nullptr }, //	
 	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
 	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
