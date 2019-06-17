@@ -525,6 +525,14 @@ static void execute46(State8080& state)
 	state.B = readByteFromMemory(state, HL);
 }
 
+// 0x4E  MOV C,M
+// C <- (HL)
+static void execute4E(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	state.C = readByteFromMemory(state, HL);
+}
+
 // 0x4f  MOV C,A
 // C <- A
 static void execute4F(State8080& state)
@@ -823,6 +831,14 @@ static void executeC6(State8080& state)
 	// #TODO: Calculate Auxiliary Carry
 }
 
+// 0xCC  CZ <adr>
+// if Z, CALL adr
+static void executeCC(State8080& state)
+{
+	if(state.flags.Z == 1)
+		performCallOperation(state);
+}
+
 // 0xCD CALL <address>
 static void executeCD(State8080& state)
 {
@@ -1112,6 +1128,22 @@ static void executeF6(State8080& state)
 	state.flags.P = calculateParityFlag(state.A);
 }
 
+// 0xFA  JM <address>   aka JP M,<adr>
+// Jump If Minus
+// If the Sign bit is one (indicating a negative
+// result), program execution continues at the memory
+// address adr.
+// Condition bits affected : None
+static void executeFA(State8080& state)
+{
+	if(state.flags.S == 1)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes);
+		state.PC = address;
+	}
+}
+
 // 0xFB  EI
 // enable interrupts
 static void executeFB(State8080& state)
@@ -1217,7 +1249,7 @@ static const Instruction s_instructions[] =
 	{ 0x4b, "MOV C,E", 1, nullptr }, //			C < -E
 	{ 0x4c, "MOV C,H", 1, nullptr }, //			C < -H
 	{ 0x4d, "MOV C,L", 1, nullptr }, //			C < -L
-	{ 0x4e, "MOV C,M", 1, nullptr }, //			C < -(HL)
+	{ 0x4e, "MOV C,M", 1, execute4E }, // C <- (HL)
 	{ 0x4f, "MOV C,A", 1, execute4F }, // C <- A
 	{ 0x50, "MOV D,B", 1, nullptr }, //			D < -B
 	{ 0x51, "MOV D,C", 1, nullptr }, //			D < -C
@@ -1343,7 +1375,7 @@ static const Instruction s_instructions[] =
 	{ 0xc9, "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
 	{ 0xca, "JZ %04X", 3, executeCA }, // if Z, PC <- adr
 	{ 0xcb, "-", 1, nullptr }, //	
-	{ 0xcc, "CZ %04X",	3, nullptr }, //			if Z, CALL adr
+	{ 0xcc, "CZ %04X",	3, executeCC }, // if Z, CALL adr
 	{ 0xcd, "CALL %04X", 3, executeCD }, // (SP - 1) <- PC.hi; (SP - 2) <- PC.lo; SP <- SP - 2; PC = adr
 	{ 0xce, "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
 	{ 0xcf, "RST 1", 1, nullptr }, //			CALL $8
@@ -1389,7 +1421,7 @@ static const Instruction s_instructions[] =
 	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
 	{ 0xf8, "RM",	1, nullptr }, //			if M, RET
 	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL
-	{ 0xfa, "JM %04X",	3, nullptr }, //			if M, PC < -adr
+	{ 0xfa, "JM %04X", 3, executeFA }, // Jump If Minus aka JP M,<adr>  if M, PC <- adr
 	{ 0xfb, "EI", 1, executeFB }, // enable interrupts
 	{ 0xfc, "CM %04X",	3, nullptr }, //			if M, CALL adr
 	{ 0xfd, "-", 1, nullptr }, //	
