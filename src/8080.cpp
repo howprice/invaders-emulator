@@ -159,6 +159,18 @@ static void execute03(State8080& state)
 	state.C = (uint8_t)(BC & 0xff);
 }
 
+// 0x04  INR B  aka INC B
+// The B register is incremented by one.
+// Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
+// n.b. Does not affect Carry
+static void execute04(State8080& state)
+{
+	state.B++;
+	state.flags.Z = calculateZeroFlag(state.B);
+	state.flags.S = calculateSignFlag(state.B);
+	state.flags.P = calculateParityFlag(state.B);
+}
+
 // 0x05 DCR B
 // B <- B-1
 static void execute05(State8080& state)
@@ -1085,7 +1097,7 @@ static const Instruction s_instructions[] =
 	{ 0x01, "LXI B,%04X", 3, execute01 },
 	{ 0x02, "STAX B", 1, nullptr }, //		(BC) <- A
 	{ 0x03, "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
-	{ 0x04, "INR B", 1, nullptr }, //	Z, S, P, AC	B < -B + 1
+	{ 0x04, "INR B", 1, execute04 }, // aka INC B  B <- B+1   Z, S, P, AC	
 	{ 0x05, "DCR B", 1, execute05 }, // Z, S, P, AC	B < -B - 1
 	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
 	{ 0x07, "RLC",	1, execute07 }, // aka RLCA	  A = A << 1; bit 0 = prev bit 7; CY = prev bit 7   Sets Carry flag
