@@ -366,6 +366,19 @@ static void execute2A(State8080& state)
 	state.H = readByteFromMemory(state, address + 1);
 }
 
+// 0x2B  DCX H  aka DEC HL
+// Decrement Register Pair HL
+// The 16-bit number held in the HL register pair is decremented by one.
+// Condition bits affected : None
+// HL <- HL-1
+static void execute2B(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint16_t result = HL - 1;
+	state.H = (uint8_t)(result >> 8);   // MSB
+	state.L = (uint8_t)(result & 0xff); // LSB
+}
+
 // 0x2E  MVI L,<d8>,
 // L <- <d8>
 static void execute2E(State8080& state)
@@ -1077,7 +1090,7 @@ static const Instruction s_instructions[] =
 	{ 0x28, "-", 1, nullptr }, //	
 	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
 	{ 0x2a, "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
-	{ 0x2b, "DCX H", 1, nullptr }, //			HL = HL - 1
+	{ 0x2b, "DCX H", 1, execute2B }, // aka DEC HL   HL <- HL-1
 	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
 	{ 0x2d, "DCR L", 1, nullptr }, //		Z, S, P, AC	L < -L - 1
 	{ 0x2e, "MVI L, %02X", 2, execute2E }, // L <- byte 2
