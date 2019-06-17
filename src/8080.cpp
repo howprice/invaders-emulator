@@ -935,6 +935,20 @@ static void executeE6(State8080& state)
 	state.flags.P = calculateParityFlag(state.A);
 }
 
+// 0xE9  PCHL  aka JP (HL)
+// The contents of the H register replace the
+// most significant 8 bits of the program counter, and the contents
+// of the L register replace the least significant 8 bits of
+// the program counter.This causes program execution to continue
+// at the address contained in the Hand L registers.
+// PC.hi <- H; PC.lo <- L
+static void executeE9(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	HP_ASSERT(HL < state.memorySizeBytes); // #TODO: Should really test vs memory map to ensure jump is into ROM
+	state.PC = HL;
+}
+
 // 0xEB  XCHG  aka EX DE,HL
 // The 16 bits of data held in the H and L registers are exchanged
 // with the 16 bits of data held in the D and E registers.
@@ -1237,7 +1251,7 @@ static const Instruction s_instructions[] =
 	{ 0xe6, "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
 	{ 0xe7, "RST 4",	1, nullptr }, //			CALL $20
 	{ 0xe8, "RPE",	1, nullptr }, //			if PE, RET
-	{ 0xe9, "PCHL",	1, nullptr }, //			PC.hi < -H; PC.lo < -L
+	{ 0xe9, "PCHL",	1, executeE9 }, // aka JP (HL)  PC.hi <- H; PC.lo <- L
 	{ 0xea, "JPE %04X",	3, nullptr }, //			if PE, PC < -adr
 	{ 0xeb, "XCHG",	1, executeEB }, // H <-> D; L <-> E
 	{ 0xec, "CPE %04X", 3, nullptr }, //			if PE, CALL adr
