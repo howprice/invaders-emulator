@@ -957,7 +957,7 @@ static void executeD6(State8080& state)
 	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
 	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
 	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
-	state.flags.C = d8 > state.A;
+	state.flags.C = (d8 > state.A) ? 1 : 0;
 
 	state.flags.S = calculateSignFlag(result);
 	state.flags.Z = calculateZeroFlag(result);
@@ -999,6 +999,28 @@ static void executeDB(State8080& state)
 		state.A = state.in(port);
 	else
 		state.A = 0;
+}
+
+// 0xDE  SBI d8  aka SBC A,d8
+// Subtract Immediate from Accumulator With Borrow
+// The Carry bit is internally added to the byte of immediate data.
+// This value is then subtracted from the accumulator using two's complement arithmetic.
+// Since this is a subtraction operation, the carry bit is
+// set if there is no carry out of the high - order position, and
+// reset if there is a carry out.
+// Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
+// A <- A-d8-CY
+static void executeDE(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	d8 += state.flags.C;
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = d8 > state.A ? 1 : 0;
+
+	state.A -= d8;
 }
 
 // 0xE1  POP HL
@@ -1407,7 +1429,7 @@ static const Instruction s_instructions[] =
 	{ 0xdb, "IN %02X", 2, executeDB },
 	{ 0xdc, "CC %04X",	3, nullptr }, //			if CY, CALL adr
 	{ 0xdd, "-", 1, nullptr }, //	
-	{ 0xde, "SBI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A - data - CY
+	{ 0xde, "SBI %02X",	2, executeDE }, // aka SBC A,d8   A <- A-d8-CY   Z, S, P, CY, AC	
 	{ 0xdf, "RST 3",	1, nullptr }, //			CALL $18
 	{ 0xe0, "RPO",	1, nullptr }, //			if PO, RET
 	{ 0xe1, "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
