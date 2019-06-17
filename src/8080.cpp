@@ -701,14 +701,9 @@ static void execute7D(State8080& state)
 	state.A = state.L;
 }
 
-// 0x86  ADD M  aka ADD A,(HL)
-// A <- A+(HL)
-// Z, S, P, CY, AC	
-static void execute86(State8080& state)
+static void performAddOperation(State8080& state, uint8_t val)
 {
-	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
-	uint8_t val = readByteFromMemory(state, HL);
-	uint16_t result = state.A + val;
+	uint16_t result = (uint16_t)state.A + (uint16_t)val; // 16 bit arithmetic so can test for carry
 	state.A = (uint8_t)result;
 
 	state.flags.C = result > 0xff;
@@ -716,6 +711,22 @@ static void execute86(State8080& state)
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
 	// #TODO: AC flag
+}
+
+// 0x85  ADD L  aka ADD A,L
+// A < -A + L
+static void execute85(State8080& state)
+{
+	performAddOperation(state, state.L);
+}
+
+// 0x86  ADD M  aka ADD A,(HL)
+// A <- A+(HL)
+static void execute86(State8080& state)
+{
+	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	uint8_t val = readByteFromMemory(state, HL);
+	performAddOperation(state, val);
 }
 
 // 0x7E  MOV A,M
@@ -1415,7 +1426,7 @@ static const Instruction s_instructions[] =
 	{ 0x82, "ADD D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + D
 	{ 0x83, "ADD E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + E
 	{ 0x84, "ADD H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + H
-	{ 0x85, "ADD L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + L
+	{ 0x85, "ADD L", 1, execute85 }, // aka ADD A,L   A <- A+L   Z, S, P, CY, AC
 	{ 0x86, "ADD M", 1, execute86 }, // A <- A+(HL)  Z, S, P, CY, AC	
 	{ 0x87, "ADD A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + A
 	{ 0x88, "ADC B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B + CY
