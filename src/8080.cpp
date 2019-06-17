@@ -282,6 +282,19 @@ static void execute13(State8080& state)
 	state.E = (uint8_t)(D & 0xff);
 }
 
+// 0x14  INR D  aka INC D
+// The D register is incremented by one.
+// Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
+// n.b. Does not affect Carry
+static void execute14(State8080& state)
+{
+	state.D++;
+	state.flags.Z = calculateZeroFlag(state.D);
+	state.flags.S = calculateSignFlag(state.D);
+	state.flags.P = calculateParityFlag(state.D);
+	// #TODO: Set AC flag
+}
+
 // 0x16  MVI D,<d8>
 // D <- byte 2
 static void execute16(State8080& state)
@@ -1233,8 +1246,8 @@ static const Instruction s_instructions[] =
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
-	{ 0x13, "INX D",	1, execute13 }, //			DE < -DE + 1
-	{ 0x14, "INR D",	1, nullptr }, //		Z, S, P, AC	D < -D + 1
+	{ 0x13, "INX D", 1, execute13 }, //			DE < -DE + 1
+	{ 0x14, "INR D", 1, execute14 }, // aka INC D  D <- D+1   Z, S, P, AC	
 	{ 0x15, "DCR D",	1, nullptr }, //		Z, S, P, AC	D < -D - 1
 	{ 0x16, "MVI D, %02X",	2, execute16 }, // D <- byte 2
 	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
