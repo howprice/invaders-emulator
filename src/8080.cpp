@@ -735,6 +735,22 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xA6  ANA M  aka AND (HL)
+// A <- A&(HL)
+// Condition bits affected: Carry, Zero, Sign, Parity
+// The Carry bit is reset to zero.
+static void executeA6(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, HL);
+	state.A &= val;
+
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+}
+
 // 0xA7  ANA A  aka AND A
 // A <- A & A  (does not change value of A)
 // Condition bits affected: Carry, Zero, Sign, Parity
@@ -1432,7 +1448,7 @@ static const Instruction s_instructions[] =
 	{ 0xa3, "ANA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & E
 	{ 0xa4, "ANA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & H
 	{ 0xa5, "ANA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & L
-	{ 0xa6, "ANA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & (HL)
+	{ 0xa6, "ANA M", 1, executeA6 }, // aka AND (HL)   A <- A&(HL)  Z, S, P, CY, AC	
 	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A    A <- A & A		Z, S, P, CY, AC	
 	{ 0xa8, "XRA B", 1, executeA8 }, // aka XOR B   A <- A^B   Z, S, P, CY, AC
 	{ 0xa9, "XRA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ C
