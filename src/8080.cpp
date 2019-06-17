@@ -597,6 +597,22 @@ static void executeA7(State8080& state)
 	state.flags.P = calculateParityFlag(state.A);
 }
 
+// 0xA8  XRA B  aka XOR B
+// B EXCLUSIVE-ORed
+// bit by bit with the contents of the accumulator.
+// The Carry bit is reset to zero.
+// A <- A^B
+//Condition bits affected : Carry, Zero, Sign, Parity, Auxiliary Carry
+static void executeA8(State8080& state)
+{
+	state.A = state.A ^ state.B;
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: AC flag
+}
+
 // 0xAF  XRA A  aka XOR A
 // Logical Exclusive-Or Accumulator with self 
 // A <- A ^ A
@@ -1186,7 +1202,7 @@ static const Instruction s_instructions[] =
 	{ 0xa5, "ANA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & L
 	{ 0xa6, "ANA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & (HL)
 	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A    A <- A & A		Z, S, P, CY, AC	
-	{ 0xa8, "XRA B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ B
+	{ 0xa8, "XRA B", 1, executeA8 }, // aka XOR B   A <- A^B   Z, S, P, CY, AC
 	{ 0xa9, "XRA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ C
 	{ 0xaa, "XRA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ D
 	{ 0xab, "XRA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ E
