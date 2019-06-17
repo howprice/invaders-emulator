@@ -172,6 +172,47 @@ static const Rom kRoms[] =
 	{"invaders.e", 0x800},
 };
 
+//----------------------------------------------------------------------------------------
+/* IO
+
+Dedicated Shift Hardware
+
+The 8080 instruction set does not include opcodes for shifting. An 8 - bit pixel image must 
+be shifted into a 16 - bit word for the desired bit - position on the screen. Space Invaders 
+adds a hardware shift register to help with the math.
+
+16 bit shift register:
+
+f              0	bit
+xxxxxxxxyyyyyyyy
+
+Writing to port 4 shifts x into y, and the new value into x, eg.
+$0000,
+write $aa->$aa00,
+write $ff->$ffaa,
+write $12->$12ff, ..
+
+Writing to port 2 (bits 0, 1, 2) sets the offset for the 8 bit result, eg.
+offset 0:
+rrrrrrrr		     result = xxxxxxxx
+xxxxxxxxyyyyyyyy
+
+offset 2 :
+  rrrrrrrr	         result = xxxxxxyy
+xxxxxxxxyyyyyyyy
+
+offset 7 :
+       rrrrrrrr      result = xyyyyyyy
+xxxxxxxxyyyyyyyy
+
+Reading from port 3 returns said result.
+
+http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html#DedicatedShiftHardware
+*/
+
+static uint16_t s_shiftRegisterValue = 0x0000;
+static uint8_t s_shiftRegisterOffset = 0; // [0,7]
+
 static uint8_t In(uint8_t port)
 {
 	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
@@ -207,7 +248,35 @@ static uint8_t In(uint8_t port)
 		return 0;
 	else if(port == 3)
 	{
-		HP_FATAL_ERROR("Shift register not implemented");
+		// Reading from port 3 returns the shifted register value.
+
+		// Writing to port 2 (bits 0, 1, 2) sets the offset for the 8 bit result, eg.
+		// offset 0:
+		// rrrrrrrr		     result = xxxxxxxx
+		// xxxxxxxxyyyyyyyy
+		// 
+		// offset 2 :
+		//   rrrrrrrr	         result = xxxxxxyy
+		// xxxxxxxxyyyyyyyy
+		// 
+		// offset 7 :
+		//        rrrrrrrr      result = xyyyyyyy
+		// xxxxxxxxyyyyyyyy
+		// 
+		
+		// offset | shift
+		//   0    |   8
+		//   1    |   7
+		//   2    |   6
+		//   ...
+		//   7    |   1
+		//
+		// So shift = 8 - offset
+
+		HP_ASSERT(s_shiftRegisterOffset <= 7);
+		unsigned int shift = 8 - s_shiftRegisterOffset;
+		uint8_t result = (uint8_t)(s_shiftRegisterValue >> shift);
+		return result;
 	}
 	else
 	{
@@ -221,7 +290,7 @@ static void Out(uint8_t port, uint8_t val)
 {
 	HP_UNUSED(val);
 
-	// Write 2    shift register result offset(bits 0, 1, 2)
+	// Write 2    shift register result offset (bits 0, 1, 2)
 	// Write 3    sound related
 	// Write 4    fill shift register
 	// Write 5    sound related
@@ -234,14 +303,33 @@ static void Out(uint8_t port, uint8_t val)
 	switch(port)
 	{
 	case 2:
-		HP_FATAL_ERROR("TODO: Implement shift register");
+		// Writing to port 2 (bits 0, 1, 2) sets the offset for the 8 bit result,
+		HP_ASSERT(val <= 7);
+		s_shiftRegisterOffset = val;
 		break;
 	case 3:
 		// #TODO: Implement sound
 		break;
 	case 4:
-		HP_FATAL_ERROR("TODO: Implement shift register");
+	{
+		// Write into Shift Register
+		// 
+		// f              0	bit
+		// xxxxxxxxyyyyyyyy
+		//
+		// Writing to port 4 shifts x into y, and the new value into x, eg.
+		//	$0000,
+		//	write $aa->$aa00,
+		//	write $ff->$ffaa,
+		//	write $12->$12ff, ..
+		//
+		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html#DedicatedShiftHardware
+
+		s_shiftRegisterValue = s_shiftRegisterValue >> 8;
+//		s_shiftRegisterValue &= 0x00ff; // redundant; the above shift will shift in zeros from the left
+		s_shiftRegisterValue |= (uint16_t)val << 8;
 		break;
+	}
 	case 5:
 		// #TODO: Implement sound
 		break;
