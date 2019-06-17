@@ -572,6 +572,13 @@ static void execute5F(State8080& state)
 	state.E = state.A;
 }
 
+// 0x61  MOV H,C
+// H <- C
+static void execute61(State8080& state)
+{
+	state.H = state.C;
+}
+
 // 0x66  MOV H,M
 // H <- (HL)
 static void execute66(State8080& state)
@@ -1275,7 +1282,7 @@ static const Instruction s_instructions[] =
 	{ 0x5e, "MOV E,M", 1, execute5E }, // aka LD E,(HL)	 E < -(HL)
 	{ 0x5f, "MOV E,A", 1, execute5F }, // E <- A
 	{ 0x60, "MOV H,B", 1, nullptr }, //			H < -B
-	{ 0x61, "MOV H,C", 1, nullptr }, //			H < -C
+	{ 0x61, "MOV H,C", 1, execute61 }, // H <- C
 	{ 0x62, "MOV H,D", 1, nullptr }, //			H < -D
 	{ 0x63, "MOV H,E", 1, nullptr }, //			H < -E
 	{ 0x64, "MOV H,H", 1, nullptr }, //			H < -H
