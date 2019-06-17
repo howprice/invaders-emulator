@@ -1035,6 +1035,25 @@ static void executeF5(State8080& state)
 	state.SP -= 2;
 }
 
+// 0xF6  ORI d8
+// Or Immediate With Accumulator
+// The byte of immediate data is logically
+// ORed with the contents of the accumulator.
+// The result is stored in the accumulator. The Carry bit
+// is reset to zero, while the Zero, Sign, and Parity bits are set
+// according to the result.
+// Condition bits affected : Carry, Zero, Sign, Parity
+// A <- A|data
+static void executeF6(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	state.A |= d8;
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+}
+
 // 0xFB  EI
 // enable interrupts
 static void executeFB(State8080& state)
@@ -1308,7 +1327,7 @@ static const Instruction s_instructions[] =
 	{ 0xf3, "DI",	1, nullptr }, //			special
 	{ 0xf4, "CP %04X",	3, nullptr }, //			if P, PC < -adr
 	{ 0xf5, "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
-	{ 0xf6, "ORI %02X", 2, nullptr }, //		Z, S, P, CY, AC	A < -A | data
+	{ 0xf6, "ORI %02X", 2, executeF6 }, // A <- A|data  Z, S, P, CY, AC	
 	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
 	{ 0xf8, "RM",	1, nullptr }, //			if M, RET
 	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL
