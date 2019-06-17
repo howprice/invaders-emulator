@@ -344,6 +344,17 @@ static void execute21(State8080& state)
 	state.L = (uint8_t)(d16 & 0xff);
 }
 
+// 0x22  SHLD <address>  aka LD (adr),HL
+// Store H and L Direct
+// Condition bits affected : None
+// (adr) <- L; (adr+1) <- H
+static void execute22(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	writeByteToMemory(state, address, state.L); // LSB
+	writeByteToMemory(state, address + 1, state.H); // MSB
+}
+
 // 0x23 INX H
 // HL <- HL + 1
 // Increment 16-bit number stored in HL by one
@@ -472,6 +483,18 @@ static void execute3A(State8080& state)
 {
 	uint16_t address = getInstructionAddress(state);
 	state.A = readByteFromMemory(state, address);
+}
+
+// 0x3C  INR A  aka INC A
+// A <- A+1
+// Z, S, P, AC
+static void execute3C(State8080& state)
+{
+	state.A++;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: AC flag
 }
 
 // 0x3D  DCR A  aka DEC A
@@ -1150,7 +1173,7 @@ static const Instruction s_instructions[] =
 	{ 0x1f, "RAR",	1, execute1F }, // A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0		CY	
 	{ 0x20, "-", 1, nullptr }, //	
 	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
-	{ 0x22, "SHLD %04X",	3, nullptr }, //			(adr) < -L; (adr + 1) < -H
+	{ 0x22, "SHLD %04X", 3, execute22 }, // aka LD (adr),HL  (adr) < -L; (adr + 1) < -H
 	{ 0x23, "INX H",	1, execute23 }, // HL <- HL + 1
 	{ 0x24, "INR H",	1, nullptr }, //		Z, S, P, AC	H < -H + 1
 	{ 0x25, "DCR H",	1, nullptr }, //		Z, S, P, AC	H < -H - 1
@@ -1176,7 +1199,7 @@ static const Instruction s_instructions[] =
 	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
 	{ 0x3a, "LDA %04X",	3, execute3A }, // A <- (adr)
 	{ 0x3b, "DCX SP",	1, nullptr }, //			SP = SP - 1
-	{ 0x3c, "INR A",	1, nullptr }, //		Z, S, P, AC	A < -A + 1
+	{ 0x3c, "INR A", 1, execute3C }, // aka INC A   A <- A+1   Z, S, P, AC
 	{ 0x3d, "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
 	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
 	{ 0x3f, "CMC",	1, nullptr }, //		CY	CY = !CY
