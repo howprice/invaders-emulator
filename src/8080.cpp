@@ -691,6 +691,23 @@ static void execute7D(State8080& state)
 	state.A = state.L;
 }
 
+// 0x86  ADD M  aka ADD A,(HL)
+// A <- A+(HL)
+// Z, S, P, CY, AC	
+static void execute86(State8080& state)
+{
+	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	uint8_t val = readByteFromMemory(state, HL);
+	uint16_t result = state.A + val;
+	state.A = (uint8_t)result;
+
+	state.flags.C = result > 0xff;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: AC flag
+}
+
 // 0x7E  MOV A,M
 // A <- (HL)
 static void execute7E(State8080& state)
@@ -1373,7 +1390,7 @@ static const Instruction s_instructions[] =
 	{ 0x83, "ADD E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + E
 	{ 0x84, "ADD H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + H
 	{ 0x85, "ADD L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + L
-	{ 0x86, "ADD M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + (HL)
+	{ 0x86, "ADD M", 1, execute86 }, // A <- A+(HL)  Z, S, P, CY, AC	
 	{ 0x87, "ADD A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + A
 	{ 0x88, "ADC B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B + CY
 	{ 0x89, "ADC C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + C + CY
