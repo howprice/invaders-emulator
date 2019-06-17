@@ -306,6 +306,21 @@ static void execute1A(State8080& state)
 	state.A = readByteFromMemory(state, address);
 }
 
+// 0x1F  RAR  aka RRA
+// Rotate Accumulator Right Through Carry
+// The contents of the accumulator are rotated one bit position to the right.
+// The low-order bit of the accumulator replaces the carry bit, while the 
+// carry bit replaces the high - order bit of the accumulator.
+// Condition bits affected : Carry
+// A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0
+static void execute1F(State8080& state)
+{
+	uint8_t prevCarry = state.flags.C;
+	state.flags.C = state.A & 1;
+	state.A = state.A >> 1;
+	state.A |= prevCarry << 7;
+}
+
 // 0x21 LXI H,<d16>
 // H refers to the 16-bit register pair HL
 // Encoding: 0x21 <lsb> <msb>
@@ -1078,7 +1093,7 @@ static const Instruction s_instructions[] =
 	{ 0x1c, "INR E",	1, nullptr }, //		Z, S, P, AC	E < -E + 1
 	{ 0x1d, "DCR E",	1, nullptr }, //		Z, S, P, AC	E < -E - 1
 	{ 0x1e, "MVI E,%02X",	2, nullptr }, //			E < -byte 2
-	{ 0x1f, "RAR",	1, nullptr }, //		CY	A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0
+	{ 0x1f, "RAR",	1, execute1F }, // A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0		CY	
 	{ 0x20, "-", 1, nullptr }, //	
 	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
 	{ 0x22, "SHLD %04X",	3, nullptr }, //			(adr) < -L; (adr + 1) < -H
