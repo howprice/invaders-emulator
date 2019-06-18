@@ -129,12 +129,24 @@ static void performReturnOperation(State8080& state)
 	state.PC = address;
 }
 
+//-----------------------------------------------------------------------------
+
+// 0x00 NOP
+static void execute00(State8080& /*state*/)
+{
+
+}
+
+//-----------------------------------------------------------------------------
 // INR
+//
 // Increment Register or Memory
+//
 // The specified register or memory byte is incremented by one.
-// The B register is incremented by one.
+// 
 // Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
 // n.b. Does not affect Carry
+
 static void executeINR(State8080& state, uint8_t& regOrMemoryByte)
 {
 	regOrMemoryByte++;
@@ -144,11 +156,128 @@ static void executeINR(State8080& state, uint8_t& regOrMemoryByte)
 	// #TODO: Set AC flag
 }
 
-// 0x00 NOP
-static void execute00(State8080& /*state*/)
+// 0x04  INR B  aka INC B
+static void execute04(State8080& state)
 {
-	
+	executeINR(state, state.B);
 }
+
+// 0x0C  INR C  aka INC C
+static void execute0C(State8080& state)
+{
+	executeINR(state, state.C);
+}
+
+// 0x14  INR D  aka INC D
+static void execute14(State8080& state)
+{
+	executeINR(state, state.D);
+}
+
+// 0x1C  INR E  aka INC E
+static void execute1C(State8080& state)
+{
+	executeINR(state, state.E);
+}
+
+// 0x24  INR H  aka INC H
+static void execute24(State8080& state)
+{
+	executeINR(state, state.H);
+}
+
+// 0x2C  INR L  aka INC L
+static void execute2C(State8080& state)
+{
+	executeINR(state, state.L);
+}
+
+// 0x34  INR M  aka INC (HL)
+// (HL) <- (HL) + 1
+static void execute34(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	HP_ASSERT(HL < state.memorySizeBytes);
+	uint8_t* pByte = state.pMemory + HL;
+	executeINR(state, *pByte);
+}
+
+// 0x3C  INR A  aka INC A
+static void execute3C(State8080& state)
+{
+	executeINR(state, state.A);
+}
+
+//-----------------------------------------------------------------------------
+// DCR
+//
+// Decrement Register or Memory
+//
+// The specified register or memory byte is decremented by one.
+//
+// Condition bits affected: Zero, Sign, Parity, Auxiliary Carry
+
+static void executeDCR(State8080& state, uint8_t& val)
+{
+	val--;
+	state.flags.Z = calculateZeroFlag(val);
+	state.flags.S = calculateSignFlag(val);
+	state.flags.P = calculateParityFlag(val);
+	//	state.flags.AC = ; #TODO: Implement if required
+}
+
+// 0x05 DCR B  aka DEC B
+static void execute05(State8080& state)
+{
+	executeDCR(state, state.B);
+}
+
+// 0x0D  DCR C  aka DEC C
+static void execute0D(State8080& state)
+{
+	executeDCR(state, state.C);
+}
+
+// 0x15  DCR D  aka DEC D
+static void execute15(State8080& state)
+{
+	executeDCR(state, state.D);
+}
+
+// 0x1D  DCR E  aka DEC E
+static void execute1D(State8080& state)
+{
+	executeDCR(state, state.E);
+}
+
+// 0x25  DCR H  aka DEC H
+static void execute25(State8080& state)
+{
+	executeDCR(state, state.H);
+}
+
+// 0x2D  DCR L  aka DEC L
+static void execute2D(State8080& state)
+{
+	executeDCR(state, state.L);
+}
+
+// 0x35  DCR M  aka DEC (HL)
+static void execute35(State8080& state)
+{
+	uint16_t address = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, address);
+	executeDCR(state, val);
+	writeByteToMemory(state, address, val);
+}
+
+// 0x3D  DCR A  aka DEC A
+static void execute3D(State8080& state)
+{
+	executeDCR(state, state.A);
+}
+
+//-----------------------------------------------------------------------------
 
 // 0x01  LXI B,<d16>  aka LXI BC,<d16>  aka LD BC,<d16>
 static void execute01(State8080& state)
@@ -172,24 +301,6 @@ static void execute03(State8080& state)
 	BC++;
 	state.B = (uint8_t)(BC >> 8);
 	state.C = (uint8_t)(BC & 0xff);
-}
-
-// 0x04  INR B  aka INC B
-static void execute04(State8080& state)
-{
-	executeINR(state, state.B);
-}
-
-// 0x05 DCR B
-// B <- B-1
-static void execute05(State8080& state)
-{
-	state.B--;
-
-	state.flags.Z = calculateZeroFlag(state.B);
-	state.flags.S = calculateSignFlag(state.B);
-	state.flags.P = calculateParityFlag(state.B);
-//	state.flags.AC = ; #TODO: Implement if required
 }
 
 // 0x09  DAD BC  aka ADD HL,BC
@@ -216,18 +327,6 @@ static void execute0A(State8080& state)
 	// MSB is always in the first register of the pair
 	uint16_t address = (uint16_t)(state.B << 8) | (uint16_t)state.C;
 	state.A = readByteFromMemory(state, address);
-}
-
-// 0x0D  DCR C  aka DEC C
-// C <- C-1
-// Sets: Z, S, P, AC	  
-static void execute0D(State8080& state)
-{
-	state.C--;
-	state.flags.Z = calculateZeroFlag(state.C);
-	state.flags.S = calculateSignFlag(state.C);
-	state.flags.P = calculateParityFlag(state.C);
-	// #TODO: AC flag
 }
 
 // 0x0E  MVI C,d8
@@ -289,25 +388,6 @@ static void execute13(State8080& state)
 	D++;
 	state.D = (uint8_t)(D >> 8);
 	state.E = (uint8_t)(D & 0xff);
-}
-
-// 0x14  INR D  aka INC D
-
-static void execute14(State8080& state)
-{
-	executeINR(state, state.D);
-}
-
-// 0x15  DCR D  aka DEC D
-// D <- D-1
-// Z, S, P, AC
-static void execute15(State8080& state)
-{
-	state.D--;
-	state.flags.Z = calculateZeroFlag(state.D);
-	state.flags.S = calculateSignFlag(state.D);
-	state.flags.P = calculateParityFlag(state.D);
-	// #TODO: AC flag
 }
 
 // 0x16  MVI D,<d8>
@@ -480,31 +560,6 @@ static void execute32(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
-// 0x34  INR M  aka INC (HL)
-// (HL) <- (HL)+1   Z, S, P, AC  
-static void execute34(State8080& state)
-{
-	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
-	HP_ASSERT(HL < state.memorySizeBytes);
-	uint8_t* pByte = state.pMemory + HL;
-	executeINR(state, *pByte);
-}
-
-// 0x35  DCR M  aka DEC (HL)
-// (HL) <- (HL)-1
-// Z, S, P, AC 
-static void execute35(State8080& state)
-{
-	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
-	uint8_t val = readByteFromMemory(state, HL);
-	val--;
-	writeByteToMemory(state, HL, val);
-	state.flags.Z = calculateZeroFlag(val);
-	state.flags.S = calculateSignFlag(val);
-	state.flags.P = calculateParityFlag(val);
-	// #TODO: AC flag
-}
-
 // 0x36  MVI M,d8
 // The byte of immediate data is stored in the memory byte address stored in HL
 // (HL) <- byte 2
@@ -531,24 +586,6 @@ static void execute3A(State8080& state)
 {
 	uint16_t address = getInstructionAddress(state);
 	state.A = readByteFromMemory(state, address);
-}
-
-// 0x3C  INR A  aka INC A
-static void execute3C(State8080& state)
-{
-	executeINR(state, state.A);
-}
-
-// 0x3D  DCR A  aka DEC A
-// A <- A-1
-// Z, S, P, AC	
-static void execute3D(State8080& state)
-{
-	state.A--;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: AC flag
 }
 
 // 0x3E  MVI A,<d8>
@@ -1469,56 +1506,56 @@ static const Instruction s_instructions[] =
 	{ 0x01, "LXI B,%04X", 3, execute01 },
 	{ 0x02, "STAX B", 1, nullptr }, //		(BC) <- A
 	{ 0x03, "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
-	{ 0x04, "INR B", 1, execute04 }, // aka INC B  B <- B+1   Z, S, P, AC	
-	{ 0x05, "DCR B", 1, execute05 }, // Z, S, P, AC	B < -B - 1
+	{ 0x04, "INR B", 1, execute04 }, // aka INC B   B <- B + 1    Z, S, P, AC
+	{ 0x05, "DCR B", 1, execute05 }, // aka DEC B    B <- B - 1   Z, S, P, AC
 	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
 	{ 0x07, "RLC",	1, execute07 }, // aka RLCA	  A = A << 1; bit 0 = prev bit 7; CY = prev bit 7   Sets Carry flag
 	{ 0x08, "-", 1, nullptr },
 	{ 0x09, "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
 	{ 0x0a, "LDAX B", 1, execute0A}, // aka LD A,(BC)  A <- (BC)
 	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
-	{ 0x0c, "INR C",	1, nullptr }, //		Z, S, P, AC	C < -C + 1
-	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C-1	Sets: Z, S, P, AC	  
+	{ 0x0c, "INR C", 1, execute0C }, // aka INC C    C <- C + 1    Z, S, P, AC
+	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C - 1    Z, S, P, AC
 	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
 	{ 0x0f, "RRC",	1, execute0F }, // aka RRCA  Rotate Accumulator Right
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
 	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
 	{ 0x13, "INX D", 1, execute13 }, //			DE < -DE + 1
-	{ 0x14, "INR D", 1, execute14 }, // aka INC D  D <- D+1   Z, S, P, AC	
-	{ 0x15, "DCR D", 1, execute15 }, // D <- D-1  Z, S, P, AC
+	{ 0x14, "INR D", 1, execute14 }, // aka INC D    D <- D + 1   Z, S, P, AC	
+	{ 0x15, "DCR D", 1, execute15 }, // aka DEC D	 D <- D - 1    Z, S, P, AC
 	{ 0x16, "MVI D, %02X",	2, execute16 }, // D <- byte 2
 	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
 	{ 0x18, "-", 1, nullptr }, //	
 	{ 0x19, "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
 	{ 0x1a, "LDAX D", 1, execute1A }, // A <- (DE)
 	{ 0x1b, "DCX D",	1, nullptr }, //			DE = DE - 1
-	{ 0x1c, "INR E",	1, nullptr }, //		Z, S, P, AC	E < -E + 1
-	{ 0x1d, "DCR E",	1, nullptr }, //		Z, S, P, AC	E < -E - 1
+	{ 0x1c, "INR E", 1, execute1C }, // aka INC E    E <- E + 1    Z, S, P, AC
+	{ 0x1d, "DCR E", 1, execute1D }, // aka DEC E	 E <- E - 1    Z, S, P, AC
 	{ 0x1e, "MVI E,%02X",	2, nullptr }, //			E < -byte 2
 	{ 0x1f, "RAR",	1, execute1F }, // A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0		CY	
 	{ 0x20, "-", 1, nullptr }, //	
 	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
 	{ 0x22, "SHLD %04X", 3, execute22 }, // aka LD (adr),HL  (adr) < -L; (adr + 1) < -H
 	{ 0x23, "INX H",	1, execute23 }, // HL <- HL + 1
-	{ 0x24, "INR H",	1, nullptr }, //		Z, S, P, AC	H < -H + 1
-	{ 0x25, "DCR H",	1, nullptr }, //		Z, S, P, AC	H < -H - 1
+	{ 0x24, "INR H", 1, execute24}, // aka INC H    H <- H + 1    Z, S, P, AC
+	{ 0x25, "DCR H", 1, execute25 }, // aka DEC H	 H <- H - 1    Z, S, P, AC
 	{ 0x26, "MVI H,%02X", 2, execute26 }, // H <- byte 2
 	{ 0x27, "DAA",	1, nullptr }, //			special
 	{ 0x28, "-", 1, nullptr }, //	
 	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
 	{ 0x2a, "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
 	{ 0x2b, "DCX H", 1, execute2B }, // aka DEC HL   HL <- HL-1
-	{ 0x2c, "INR L", 1, nullptr }, //		Z, S, P, AC	L < -L + 1
-	{ 0x2d, "DCR L", 1, nullptr }, //		Z, S, P, AC	L < -L - 1
+	{ 0x2c, "INR L", 1, execute2C }, // aka INC L    L <- L + 1    Z, S, P, AC
+	{ 0x2d, "DCR L", 1, execute2D }, // aka DEC L	 L <- L - 1    Z, S, P, AC
 	{ 0x2e, "MVI L, %02X", 2, execute2E }, // L <- byte 2
 	{ 0x2f, "CMA", 1, execute2F }, // aka CPL  A <- !A
 	{ 0x30, "-", 1, nullptr }, //	
 	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
 	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
-	{ 0x34, "INR M", 1, execute34 }, // aka INC (HL)   (HL) <- (HL)+1   Z, S, P, AC  
-	{ 0x35, "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL)-1   Z, S, P, AC 
+	{ 0x34, "INR M", 1, execute34 }, // aka INC (HL)   (HL) <- (HL) + 1    Z, S, P, AC  
+	{ 0x35, "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL) - 1    Z, S, P, AC 
 	{ 0x36, "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
 	{ 0x37, "STC", 1, execute37 }, // Carry = 1
 	{ 0x38, "-", 1},
