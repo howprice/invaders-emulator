@@ -181,10 +181,10 @@ static void execute2C(State8080& state)
 // (HL) <- (HL) + 1
 static void execute34(State8080& state)
 {
-	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
-	HP_ASSERT(HL < state.memorySizeBytes);
-	uint8_t* pByte = state.pMemory + HL;
-	executeINR(state, *pByte);
+	uint16_t address = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, address);
+	executeINR(state, val);
+	writeByteToMemory(state, address, val);
 }
 
 // 0x3C  INR A  aka INC A
@@ -1205,6 +1205,85 @@ static void execute87(State8080& state)
 }
 
 //------------------------------------------------------------------------------
+// SUB
+//
+// Subtract Register or Memory From Accumulator
+//
+// The specified byte is subtracted from the accumulator using two's complement 
+// arithmetic.
+//
+// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
+
+static void executeSUB(State8080& state, uint8_t& val)
+{
+	uint8_t result = state.A - val;
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = (val > state.A) ? 1 : 0;
+
+	state.flags.S = calculateSignFlag(result);
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.P = calculateParityFlag(result);
+	// #TODO: Set AC flag
+
+	state.A = result;
+}
+
+// 0x90  SUB B   A <- A - B
+static void execute90(State8080& state)
+{
+	executeSUB(state, state.B);
+}
+
+// 0x91  SUB C   A <- A - C
+static void execute91(State8080& state)
+{
+	executeSUB(state, state.C);
+}
+
+// 0x92  SUB D   A <- A - D
+static void execute92(State8080& state)
+{
+	executeSUB(state, state.D);
+}
+
+// 0x93  SUB E   A <- A - E
+static void execute93(State8080& state)
+{
+	executeSUB(state, state.E);
+}
+
+// 0x94  SUB H   A <- A - H 
+static void execute94(State8080& state)
+{
+	executeSUB(state, state.H);
+}
+
+// 0x95  SUB L   A <- A - L
+static void execute95(State8080& state)
+{
+	executeSUB(state, state.L);
+}
+
+// 0x96  SUB M   A <- A - (HL)	
+static void execute96(State8080& state)
+{
+	uint16_t address = ((uint16_t)state.H << 8) | (state.L);
+	HP_ASSERT(address < state.memorySizeBytes);
+	uint8_t val = readByteFromMemory(state, address);
+	executeSUB(state, val);
+	writeByteToMemory(state, address, val);
+}
+
+// 0x97  SUB A   A <- A - A
+static void execute97(State8080& state)
+{
+	executeSUB(state, state.A);
+}
+
+//------------------------------------------------------------------------------
 
 // 0xA0  ANA B  aka AND B
 // A <- A&B
@@ -1569,7 +1648,7 @@ static void executeD5(State8080& state)
 
 // 0xD6  SUI d8  aka SUB
 // Subtract Immediate From Accumulator
-// A <- A-d8
+// A <- A - d8
 // Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
 static void executeD6(State8080& state)
 {
@@ -1978,14 +2057,14 @@ static const Instruction s_instructions[] =
 	{ 0x8d, "ADC L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + L + CY
 	{ 0x8e, "ADC M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + (HL)+CY
 	{ 0x8f, "ADC A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + A + CY
-	{ 0x90, "SUB B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - B
-	{ 0x91, "SUB C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - C
-	{ 0x92, "SUB D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + D
-	{ 0x93, "SUB E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - E
-	{ 0x94, "SUB H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + H
-	{ 0x95, "SUB L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - L
-	{ 0x96, "SUB M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + (HL)
-	{ 0x97, "SUB A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - A
+	{ 0x90, "SUB B", 1, execute90 }, // A <- A - B       Z, S, P, CY, AC	
+	{ 0x91, "SUB C", 1, execute91 }, // A <- A - C       Z, S, P, CY, AC	
+	{ 0x92, "SUB D", 1, execute92 }, // A <- A - D       Z, S, P, CY, AC	
+	{ 0x93, "SUB E", 1, execute93 }, // A <- A - E       Z, S, P, CY, AC	
+	{ 0x94, "SUB H", 1, execute94 }, // A <- A - H       Z, S, P, CY, AC	
+	{ 0x95, "SUB L", 1, execute95 }, // A <- A - L       Z, S, P, CY, AC	
+	{ 0x96, "SUB M", 1, execute96 }, // A <- A - (HL)    Z, S, P, CY, AC	
+	{ 0x97, "SUB A", 1, execute97 }, // A <- A - A       Z, S, P, CY, AC	
 	{ 0x98, "SBB B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - B - CY
 	{ 0x99, "SBB C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - C - CY
 	{ 0x9a, "SBB D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - D - CY
