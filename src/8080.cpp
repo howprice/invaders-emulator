@@ -715,33 +715,87 @@ static void execute7D(State8080& state)
 	state.A = state.L;
 }
 
-static void performAddOperation(State8080& state, uint8_t val)
-{
-	uint16_t result = (uint16_t)state.A + (uint16_t)val; // 16 bit arithmetic so can test for carry
-	state.A = (uint8_t)result;
+//------------------------------------------------------------------------------
+// ADD
+//
+// ADD Register or Memory To Accumulator
+//
+// The specified byte is added to the con tents of the accumulator using two's 
+// complement arithmetic.
+//
+// Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
 
-	state.flags.C = result > 0xff;
+static void executeADD(State8080& state, uint8_t val)
+{
+	uint16_t result16 = (uint16_t)state.A + (uint16_t)val; // 16 bit arithmetic so can test for carry
+	state.A = (uint8_t)result16;
+
+	state.flags.C = result16 > 0xff;
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
 	// #TODO: AC flag
 }
 
+// 0x80  ADD B  aka ADD A,B
+// A <- A + B
+static void execute80(State8080& state)
+{
+	executeADD(state, state.B);
+}
+
+// 0x81  ADD C  aka ADD A,C
+// A <- A + C
+static void execute81(State8080& state)
+{
+	executeADD(state, state.C);
+}
+
+// 0x82  ADD D  aka ADD A,D
+// A <- A + D
+static void execute82(State8080& state)
+{
+	executeADD(state, state.D);
+}
+
+// 0x83  ADD E  aka ADD A,E
+// A <- A + E
+static void execute83(State8080& state)
+{
+	executeADD(state, state.E);
+}
+
+// 0x84  ADD H  aka ADD A,H
+// A <- A + H
+static void execute84(State8080& state)
+{
+	executeADD(state, state.H);
+}
+
 // 0x85  ADD L  aka ADD A,L
-// A < -A + L
+// A <- A + L
 static void execute85(State8080& state)
 {
-	performAddOperation(state, state.L);
+	executeADD(state, state.L);
 }
 
 // 0x86  ADD M  aka ADD A,(HL)
-// A <- A+(HL)
+// A <- A + (HL)
 static void execute86(State8080& state)
 {
 	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	uint8_t val = readByteFromMemory(state, HL);
-	performAddOperation(state, val);
+	executeADD(state, val);
 }
+
+// 0x87  ADD A  aka ADD A,A
+// A <- A + A
+static void execute87(State8080& state)
+{
+	executeADD(state, state.A);
+}
+
+//------------------------------------------------------------------------------
 
 // 0x7E  MOV A,M
 // A <- (HL)
@@ -1539,14 +1593,14 @@ static const Instruction s_instructions[] =
 	{ 0x7d, "MOV A,L", 1, execute7D }, // A <- L
 	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
 	{ 0x7f, "MOV A,A", 1, nullptr }, //			A < -A
-	{ 0x80, "ADD B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B
-	{ 0x81, "ADD C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + C
-	{ 0x82, "ADD D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + D
-	{ 0x83, "ADD E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + E
-	{ 0x84, "ADD H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + H
-	{ 0x85, "ADD L", 1, execute85 }, // aka ADD A,L   A <- A+L   Z, S, P, CY, AC
-	{ 0x86, "ADD M", 1, execute86 }, // A <- A+(HL)  Z, S, P, CY, AC	
-	{ 0x87, "ADD A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + A
+	{ 0x80, "ADD B", 1, execute80 }, //	aka ADD A,B     A <- A + B     Z, S, P, CY, AC
+	{ 0x81, "ADD C", 1, execute81 }, //	aka ADD A,C     A <- A + C     Z, S, P, CY, AC
+	{ 0x82, "ADD D", 1, execute82 }, //	aka ADD A,D     A <- A + D     Z, S, P, CY, AC
+	{ 0x83, "ADD E", 1, execute83 }, //	aka ADD A,E     A <- A + E     Z, S, P, CY, AC
+	{ 0x84, "ADD H", 1, execute84 }, //	aka ADD A,H     A <- A + H     Z, S, P, CY, AC
+	{ 0x85, "ADD L", 1, execute85 }, // aka ADD A,L     A <- A + L     Z, S, P, CY, AC
+	{ 0x86, "ADD M", 1, execute86 }, // aka ADD A,(HL)  A <- A + (HL)  Z, S, P, CY, AC	
+	{ 0x87, "ADD A", 1, execute87 }, //	aka ADD A,A     A <- A + A     Z, S, P, CY, AC	
 	{ 0x88, "ADC B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B + CY
 	{ 0x89, "ADC C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + C + CY
 	{ 0x8a, "ADC D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + D + CY
