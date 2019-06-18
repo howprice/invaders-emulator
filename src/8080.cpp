@@ -882,6 +882,91 @@ static void executeB6(State8080& state)
 	// #TODO: Set AC flag
 }
 
+//------------------------------------------------------------------------------
+// CMP
+// Compare Register or Memory With Accumulator
+//
+// The specified byte is compared to the contents of the accumulator.
+// The comparison is performed by internally subtracting the contents of REG 
+// from the accumulator (leaving both unchanged) and setting the condition
+// bits according to the result. In particular, the Zero bit is
+// set if the quantities are equal, and reset if they are unequal.
+// Since a subtract operation is performed, the Carry bit will be
+// set if there is no carry out of bit 7, indicating that the
+// contents of REG are greater than the contents of the accumulator,
+// and reset otherwise.
+// NOTE: If the two quantities to be compared differ in sign,
+//    the sense of the Carry bit is reversed.
+//
+// Condition bits affected : Carry, Zero, Sign, Parity, Auxiliary Carry
+
+static void executeCMP(State8080& state, uint8_t val)
+{
+	uint8_t diff = state.A - val;
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = val > state.A ? 1 : 0;
+
+	state.flags.S = calculateSignFlag(diff);
+	state.flags.Z = calculateZeroFlag(diff);
+	state.flags.P = calculateParityFlag(diff);
+	// #TODO: state.flags.A
+}
+
+// 0xB8  CMP B  aka CP B
+static void executeB8(State8080& state)
+{
+	executeCMP(state, state.B);
+}
+
+// 0xB9  CMP C  aka CP C
+static void executeB9(State8080& state)
+{
+	executeCMP(state, state.C);
+}
+
+// 0xBA  CMP D  aka CP D
+static void executeBA(State8080& state)
+{
+	executeCMP(state, state.D);
+}
+
+// 0xBB  CMP E  aka CP E
+static void executeBB(State8080& state)
+{
+	executeCMP(state, state.E);
+}
+
+// 0xBC  CMP H  aka CP H
+static void executeBC(State8080& state)
+{
+	executeCMP(state, state.H);
+}
+
+// 0xBD  CMP L  aka CP L
+static void executeBD(State8080& state)
+{
+	executeCMP(state, state.L);
+}
+
+// 0xBE  CMP M  aka CP (HL)
+static void executeBE(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, HL);
+	executeCMP(state, val);
+}
+
+// 0xBF  CMP A  aka CP A
+static void executeBF(State8080& state)
+{
+	executeCMP(state, state.A);
+}
+
+//------------------------------------------------------------------------------
+
 // 0xC0  RNZ
 // Return If Not Zero
 // If the Zero bit is 0, a return operation is performed
@@ -1132,9 +1217,14 @@ static void executeDE(State8080& state)
 	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
 	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
 	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
-	state.flags.C = d8 > state.A ? 1 : 0;
+	state.flags.C = (d8 > state.A) ? 1 : 0;
 
 	state.A -= d8;
+
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: state.flags.A
 }
 
 // 0xE1  POP HL
@@ -1505,14 +1595,14 @@ static const Instruction s_instructions[] =
 	{ 0xb5, "ORA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | L
 	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A|(HL)   Z, S, P, CY, AC	
 	{ 0xb7, "ORA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | A
-	{ 0xb8, "CMP B", 1, nullptr }, //		Z, S, P, CY, AC	A - B
-	{ 0xb9, "CMP C", 1, nullptr }, //		Z, S, P, CY, AC	A - C
-	{ 0xba, "CMP D", 1, nullptr }, //		Z, S, P, CY, AC	A - D
-	{ 0xbb, "CMP E", 1, nullptr }, //		Z, S, P, CY, AC	A - E
-	{ 0xbc, "CMP H", 1, nullptr }, //		Z, S, P, CY, AC	A - H
-	{ 0xbd, "CMP L", 1, nullptr }, //		Z, S, P, CY, AC	A - L
-	{ 0xbe, "CMP M", 1, nullptr }, //		Z, S, P, CY, AC	A - (HL)
-	{ 0xbf, "CMP A", 1, nullptr }, //		Z, S, P, CY, AC	A - A
+	{ 0xb8, "CMP B", 1, executeB8 }, // aka CP B     A-B   Z, S, P, CY, AC
+	{ 0xb9, "CMP C", 1, executeB9 }, //	aka CP C     A-B   Z, S, P, CY, AC
+	{ 0xba, "CMP D", 1, executeBA }, //	aka CP D     A-B   Z, S, P, CY, AC
+	{ 0xbb, "CMP E", 1, executeBB }, //	aka CP E     A-B   Z, S, P, CY, AC
+	{ 0xbc, "CMP H", 1, executeBC }, //	aka CP H     A-B   Z, S, P, CY, AC
+	{ 0xbd, "CMP L", 1, executeBD }, //	aka CP L     A-B   Z, S, P, CY, AC
+	{ 0xbe, "CMP M", 1, executeBE }, //	aka CP (HL)  A-B   Z, S, P, CY, AC
+	{ 0xbf, "CMP A", 1, executeBF }, //	aka CP A     A-B   Z, S, P, CY, AC
 	{ 0xc0, "RNZ", 1, executeC0 }, // if NZ, RET
 	{ 0xc1, "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
 	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
