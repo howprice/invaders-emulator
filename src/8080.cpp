@@ -596,6 +596,62 @@ static void execute3E(State8080& state)
 	state.A = d8;
 }
 
+//------------------------------------------------------------------------------
+// MOV
+//
+// One byte of data is moved from the register specified by src(the source 
+// register) to the register specified by dst(the destination register). The 
+// data replaces the contents of the destination register; the source remains 
+// unchanged.
+//
+// Condition bits affected: None
+//
+// Format: MOV D,S   01DDDSSS  where Dest and Source reg fields :
+//                             111 = A(Accumulator)
+//                             000 = B
+//                             001 = C
+//                             010 = D
+//                             011 = E
+//                             100 = H
+//                             101 = L
+//                             110 = M (Memory reference through address in HL)
+
+// 0x40  MOV B,B
+static void execute40(State8080& /*state*/)
+{
+	//state.B = state.B;
+}
+
+// 0x41  MOV B,C
+static void execute41(State8080& state)
+{
+	state.B = state.C;
+}
+
+// 0x42  MOV B,D
+static void execute42(State8080& state)
+{
+	state.B = state.D;
+}
+
+// 0x43  MOV B,E
+static void execute43(State8080& state)
+{
+	state.B = state.E;
+}
+
+// 0x44  MOV B,H
+static void execute44(State8080& state)
+{
+	state.B = state.H;
+}
+
+// 0x45  MOV B,L
+static void execute45(State8080& state)
+{
+	state.B = state.L;
+}
+
 // 0x46  MOV B,M  aka MOV B,(HL)
 // B <- (HL)
 static void execute46(State8080& state)
@@ -611,6 +667,42 @@ static void execute47(State8080& state)
 	state.B = state.A;
 }
 
+// 0x48  MOV C,B
+static void execute48(State8080& state)
+{
+	state.C = state.B;
+}
+
+// 0x49  MOV C,C
+static void execute49(State8080& /*state*/)
+{
+
+}
+
+// 0x4A  MOV C,D
+static void execute4A(State8080& state)
+{
+	state.C = state.D;
+}
+
+// 0x4B  MOV C,E
+static void execute4B(State8080& state)
+{
+	state.C = state.E;
+}
+
+// 0x4C  MOV C,H
+static void execute4C(State8080& state)
+{
+	state.C = state.H;
+}
+
+// 0x4D  MOV C,L
+static void execute4D(State8080& state)
+{
+	state.C = state.L;
+}
+
 // 0x4E  MOV C,M
 // C <- (HL)
 static void execute4E(State8080& state)
@@ -619,11 +711,47 @@ static void execute4E(State8080& state)
 	state.C = readByteFromMemory(state, HL);
 }
 
-// 0x4f  MOV C,A
+// 0x4F  MOV C,A
 // C <- A
 static void execute4F(State8080& state)
 {
 	state.C = state.A;
+}
+
+// 0x50  MOV D,B
+static void execute50(State8080& state)
+{
+	state.D = state.B;
+}
+
+// 0x51  MOV D,C
+static void execute51(State8080& state)
+{
+	state.D = state.C;
+}
+
+// 0x52  MOV D,D
+static void execute52(State8080& /*state*/)
+{
+
+}
+
+// 0x53  MOV D,E
+static void execute53(State8080& state)
+{
+	state.D = state.E;
+}
+
+// 0x54  MOV D,H
+static void execute54(State8080& state)
+{
+	state.D = state.H;
+}
+
+// 0x55  MOV D,L
+static void execute55(State8080& state)
+{
+	state.D = state.L;
 }
 
 // 0x56  MOV D,M
@@ -642,6 +770,42 @@ static void execute57(State8080& state)
 	state.D = state.A;
 }
 
+// 0x58  MOV E,B
+static void execute58(State8080& state)
+{
+	state.E = state.B;
+}
+
+// 0x59  MOV E,C
+static void execute59(State8080& state)
+{
+	state.E = state.C;
+}
+
+// 0x5A  MOV E,D
+static void execute5A(State8080& state)
+{
+	state.E = state.D;
+}
+
+// 0x5B  MOV E,E
+static void execute5B(State8080& /*state*/)
+{
+	
+}
+
+// 0x5C  MOV E,H
+static void execute5C(State8080& state)
+{
+	state.E = state.H;
+}
+
+// 0x5D  MOV E,L
+static void execute5D(State8080& state)
+{
+	state.E = state.L;
+}
+
 // 0x5E  MOV E,M  aka LD E,(HL)
 // E < -(HL)
 static void execute5E(State8080& state)
@@ -658,11 +822,41 @@ static void execute5F(State8080& state)
 	state.E = state.A;
 }
 
+// 0x60  MOV H,B
+static void execute60(State8080& state)
+{
+	state.H = state.B;
+}
+
 // 0x61  MOV H,C
 // H <- C
 static void execute61(State8080& state)
 {
 	state.H = state.C;
+}
+
+// 0x62  MOV H,D
+static void execute62(State8080& state)
+{
+	state.H = state.D;
+}
+
+// 0x63  MOV H,E
+static void execute63(State8080& state)
+{
+	state.H = state.E;
+}
+
+// 0x64  MOV H,H
+static void execute64(State8080& /*state*/)
+{
+
+}
+
+// 0x65  MOV H,L
+static void execute65(State8080& state)
+{
+	state.H = state.L;
 }
 
 // 0x66  MOV H,M
@@ -695,6 +889,38 @@ static void execute69(State8080& state)
 	state.L = state.C;
 }
 
+// 0x6A  MOV L,D
+static void execute6A(State8080& state)
+{
+	state.L = state.D;
+}
+
+// 0x6B  MOV L,E
+static void execute6B(State8080& state)
+{
+	state.L = state.E;
+}
+
+// 0x6C  MOV L,H
+static void execute6C(State8080& state)
+{
+	state.L = state.H;
+}
+
+// 0x6D  MOV L,L
+static void execute6D(State8080& /*state*/)
+{
+
+}
+
+// 0x6E  MOV L,M
+static void execute6E(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
+	uint8_t val = readByteFromMemory(state, HL);
+	state.L = val;
+}
+
 // 0x6F  MOV L,A
 // L <- A
 static void execute6F(State8080& state)
@@ -708,6 +934,56 @@ static void execute70(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.B);
+}
+
+// 0x71  MOV M,C
+static void execute71(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.C);
+}
+
+// 0x72  MOV M,D
+static void execute72(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.D);
+}
+
+// 0x73  MOV M,E
+static void execute73(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.E);
+}
+
+// 0x74  MOV M,H
+static void execute74(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.H);
+}
+
+// 0x75  MOV M,L
+static void execute75(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	writeByteToMemory(state, HL, state.L);
+}
+
+// 0x76  HALT
+static void execute76(State8080& /*state*/)
+{
+	HP_FATAL_ERROR("HALT");
+}
+
+// 0x77  MOV M,A
+// (HL) <- A
+// Moves the value in A to address HL, where H is MSB.
+static void execute77(State8080& state)
+{
+	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	writeByteToMemory(state, address, state.A);
 }
 
 // 0x78  MOV A,B
@@ -745,11 +1021,25 @@ static void execute7C(State8080& state)
 	state.A = state.H;
 }
 
-// 0x7d  MOV A,L
+// 0x7D  MOV A,L
 // A <- L
 static void execute7D(State8080& state)
 {
 	state.A = state.L;
+}
+
+// 0x7E  MOV A,M
+// A <- (HL)
+static void execute7E(State8080& state)
+{
+	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	state.A = readByteFromMemory(state, HL);
+}
+
+// 0x7F  MOV A,A
+static void execute7F(State8080& /*state*/)
+{
+	
 }
 
 //------------------------------------------------------------------------------
@@ -833,23 +1123,6 @@ static void execute87(State8080& state)
 }
 
 //------------------------------------------------------------------------------
-
-// 0x7E  MOV A,M
-// A <- (HL)
-static void execute7E(State8080& state)
-{
-	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
-	state.A = readByteFromMemory(state, HL);
-}
-
-// 0x77  MOV M,A
-// (HL) <- A
-// Moves the value in A to address HL, where H is MSB.
-static void execute77(State8080& state)
-{
-	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
-	writeByteToMemory(state, address, state.A);
-}
 
 // 0xA0  ANA B  aka AND B
 // A <- A&B
@@ -1566,62 +1839,62 @@ static const Instruction s_instructions[] =
 	{ 0x3d, "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
 	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
 	{ 0x3f, "CMC",	1, nullptr }, //		CY	CY = !CY
-	{ 0x40, "MOV B,B", 1, nullptr }, //			B < -B
-	{ 0x41, "MOV B,C", 1, nullptr }, //			B < -C
-	{ 0x42, "MOV B,D", 1, nullptr }, //			B < -D
-	{ 0x43, "MOV B,E", 1, nullptr }, //			B < -E
-	{ 0x44, "MOV B,H", 1, nullptr }, //			B < -H
-	{ 0x45, "MOV B,L", 1, nullptr }, //			B < -L
+	{ 0x40, "MOV B,B", 1, execute40 }, // B <- B
+	{ 0x41, "MOV B,C", 1, execute41 }, // B <- C
+	{ 0x42, "MOV B,D", 1, execute42 }, // B <- D
+	{ 0x43, "MOV B,E", 1, execute43 }, // B <- E
+	{ 0x44, "MOV B,H", 1, execute44 }, // B <- H
+	{ 0x45, "MOV B,L", 1, execute45 }, // B <- L
 	{ 0x46, "MOV B,M", 1, execute46 }, // B <- (HL)
 	{ 0x47, "MOV B,A", 1, execute47 }, // B <- A
-	{ 0x48, "MOV C,B", 1, nullptr }, //			C < -B
-	{ 0x49, "MOV C,C", 1, nullptr }, //			C < -C
-	{ 0x4a, "MOV C,D", 1, nullptr }, //			C < -D
-	{ 0x4b, "MOV C,E", 1, nullptr }, //			C < -E
-	{ 0x4c, "MOV C,H", 1, nullptr }, //			C < -H
-	{ 0x4d, "MOV C,L", 1, nullptr }, //			C < -L
+	{ 0x48, "MOV C,B", 1, execute48 }, // C <- B
+	{ 0x49, "MOV C,C", 1, execute49 }, // C <- C
+	{ 0x4a, "MOV C,D", 1, execute4A }, // C <- D
+	{ 0x4b, "MOV C,E", 1, execute4B }, // C <- E
+	{ 0x4c, "MOV C,H", 1, execute4C }, // C <- H
+	{ 0x4d, "MOV C,L", 1, execute4D }, // C <- L
 	{ 0x4e, "MOV C,M", 1, execute4E }, // C <- (HL)
 	{ 0x4f, "MOV C,A", 1, execute4F }, // C <- A
-	{ 0x50, "MOV D,B", 1, nullptr }, //			D < -B
-	{ 0x51, "MOV D,C", 1, nullptr }, //			D < -C
-	{ 0x52, "MOV D,D", 1, nullptr }, //			D < -D
-	{ 0x53, "MOV D,E", 1, nullptr }, //			D < -E
-	{ 0x54, "MOV D,H", 1, nullptr }, //			D < -H
-	{ 0x55, "MOV D,L", 1, nullptr }, //			D < -L
+	{ 0x50, "MOV D,B", 1, execute50 }, // D <- B
+	{ 0x51, "MOV D,C", 1, execute51 }, // D <- C
+	{ 0x52, "MOV D,D", 1, execute52 }, // D <- D
+	{ 0x53, "MOV D,E", 1, execute53 }, // D <- E
+	{ 0x54, "MOV D,H", 1, execute54 }, // D <- H
+	{ 0x55, "MOV D,L", 1, execute55 }, // D <- L
 	{ 0x56, "MOV D,M", 1, execute56 }, // D <- (HL)
 	{ 0x57, "MOV D,A", 1, execute57 }, // D <- A
-	{ 0x58, "MOV E,B", 1, nullptr }, //			E < -B
-	{ 0x59, "MOV E,C", 1, nullptr }, //			E < -C
-	{ 0x5a, "MOV E,D", 1, nullptr }, //			E < -D
-	{ 0x5b, "MOV E,E", 1, nullptr }, //			E < -E
-	{ 0x5c, "MOV E,H", 1, nullptr }, //			E < -H
-	{ 0x5d, "MOV E,L", 1, nullptr }, //			E < -L
-	{ 0x5e, "MOV E,M", 1, execute5E }, // aka LD E,(HL)	 E < -(HL)
+	{ 0x58, "MOV E,B", 1, execute58 }, // E <- B
+	{ 0x59, "MOV E,C", 1, execute59 }, // E <- C
+	{ 0x5a, "MOV E,D", 1, execute5A }, // E <- D
+	{ 0x5b, "MOV E,E", 1, execute5B }, // E <- E
+	{ 0x5c, "MOV E,H", 1, execute5C }, // E <- H
+	{ 0x5d, "MOV E,L", 1, execute5D }, // E <- L
+	{ 0x5e, "MOV E,M", 1, execute5E }, // E < -(HL)
 	{ 0x5f, "MOV E,A", 1, execute5F }, // E <- A
-	{ 0x60, "MOV H,B", 1, nullptr }, //			H < -B
+	{ 0x60, "MOV H,B", 1, execute60 }, // H <- B
 	{ 0x61, "MOV H,C", 1, execute61 }, // H <- C
-	{ 0x62, "MOV H,D", 1, nullptr }, //			H < -D
-	{ 0x63, "MOV H,E", 1, nullptr }, //			H < -E
-	{ 0x64, "MOV H,H", 1, nullptr }, //			H < -H
-	{ 0x65, "MOV H,L", 1, nullptr }, //			H < -L
+	{ 0x62, "MOV H,D", 1, execute62 }, // H <- D
+	{ 0x63, "MOV H,E", 1, execute63 }, // H <- E
+	{ 0x64, "MOV H,H", 1, execute64 }, // H <- H
+	{ 0x65, "MOV H,L", 1, execute65 }, // H <- L
 	{ 0x66, "MOV H,M", 1, execute66 }, // H <- (HL)
 	{ 0x67, "MOV H,A", 1, execute67 }, // H <- A
 	{ 0x68, "MOV L,B", 1, execute68 }, // L <- B
 	{ 0x69, "MOV L,C", 1, execute69 }, // L <- C
-	{ 0x6a, "MOV L,D", 1, nullptr }, //			L < -D
-	{ 0x6b, "MOV L,E", 1, nullptr }, //			L < -E
-	{ 0x6c, "MOV L,H", 1, nullptr }, //			L < -H
-	{ 0x6d, "MOV L,L", 1, nullptr }, //			L < -L
-	{ 0x6e, "MOV L,M", 1, nullptr }, //			L < -(HL)
+	{ 0x6a, "MOV L,D", 1, execute6A }, // L <- D
+	{ 0x6b, "MOV L,E", 1, execute6B }, // L <- E
+	{ 0x6c, "MOV L,H", 1, execute6C }, // L <- H
+	{ 0x6d, "MOV L,L", 1, execute6D }, // L <- L
+	{ 0x6e, "MOV L,M", 1, execute6E }, // L <- (HL)
 	{ 0x6f, "MOV L,A", 1, execute6F }, // L <- A
 	{ 0x70, "MOV M,B", 1, execute70 }, // (HL) <- B
-	{ 0x71, "MOV M,C", 1, nullptr }, //			(HL) < -C
-	{ 0x72, "MOV M,D", 1, nullptr }, //			(HL) < -D
-	{ 0x73, "MOV M,E", 1, nullptr }, //			(HL) < -E
-	{ 0x74, "MOV M,H", 1, nullptr }, //			(HL) < -H
-	{ 0x75, "MOV M,L", 1, nullptr }, //			(HL) < -L
+	{ 0x71, "MOV M,C", 1, execute71 }, // (HL) <- C
+	{ 0x72, "MOV M,D", 1, execute72 }, // (HL) <- D
+	{ 0x73, "MOV M,E", 1, execute73 }, // (HL) <- E
+	{ 0x74, "MOV M,H", 1, execute74 }, // (HL) <- H
+	{ 0x75, "MOV M,L", 1, execute75 }, // (HL) <- L
 	{ 0x76, "HLT",	1, nullptr }, //			special
-	{ 0x77, "MOV M,A", 1, execute77 }, // (HL) < -A
+	{ 0x77, "MOV M,A", 1, execute77 }, // (HL) <- A
 	{ 0x78, "MOV A,B", 1, execute78 }, // A <- B
 	{ 0x79, "MOV A,C", 1, execute79 }, // A <- C
 	{ 0x7a, "MOV A,D", 1, execute7A }, // A <- D
@@ -1629,7 +1902,7 @@ static const Instruction s_instructions[] =
 	{ 0x7c, "MOV A,H", 1, execute7C }, // A <- H
 	{ 0x7d, "MOV A,L", 1, execute7D }, // A <- L
 	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
-	{ 0x7f, "MOV A,A", 1, nullptr }, //			A < -A
+	{ 0x7f, "MOV A,A", 1, execute7F }, // A <- A
 	{ 0x80, "ADD B", 1, execute80 }, //	aka ADD A,B     A <- A + B     Z, S, P, CY, AC
 	{ 0x81, "ADD C", 1, execute81 }, //	aka ADD A,C     A <- A + C     Z, S, P, CY, AC
 	{ 0x82, "ADD D", 1, execute82 }, //	aka ADD A,D     A <- A + D     Z, S, P, CY, AC
