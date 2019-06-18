@@ -102,21 +102,6 @@ static uint8_t calculateParityFlag(uint8_t val)
 	return parity;
 }
 
-// Called from the various Call instructions: CALL, CZ, CNZ, etc
-static void performCallOperation(State8080& state)
-{
-	// Push return address onto stack, stored in little endian
-	uint16_t returnAddress = state.PC;  // the PC has been advanced prior to instruction execution
-	uint8_t msb = (uint8_t)(returnAddress >> 8);
-	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
-
-	state.PC = getInstructionAddress(state); //  PC = <address>
-}
-
 // Called from the various Return instructions: RZ, RNZ etc..
 static void performReturnOperation(State8080& state)
 {
@@ -275,6 +260,103 @@ static void execute35(State8080& state)
 static void execute3D(State8080& state)
 {
 	executeDCR(state, state.A);
+}
+
+//-----------------------------------------------------------------------------
+// CALL
+
+// Called from the various Call instructions: CALL, CZ, CNZ, etc
+
+static void executeCALL(State8080& state)
+{
+	// Push return address onto stack, stored in little endian
+	uint16_t returnAddress = state.PC;  // the PC has been advanced prior to instruction execution
+	uint8_t msb = (uint8_t)(returnAddress >> 8);
+	uint8_t lsb = (uint8_t)(returnAddress & 0xff);
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+
+	state.PC = getInstructionAddress(state); //  PC = <address>
+}
+
+// 0xCD CALL <address>
+static void executeCD(State8080& state)
+{
+	executeCALL(state);
+}
+
+// 0xDC  CC <addr>
+// Call If Carry
+static void executeDC(State8080& state)
+{
+	if(state.flags.C == 1)
+		executeCALL(state);
+}
+
+// 0xD4  CNC <addr>  aka CALL NC,<address>
+// Call If No Carry
+static void executeD4(State8080& state)
+{
+	if(state.flags.C == 0)
+		executeCALL(state);
+}
+
+// 0xCC  CZ <adr>
+// Call If Zero
+// If the Zero bit is zero, a call operation is performed to subroutine sub.
+// *** Surely if the Zero bit is *1* !!
+static void executeCC(State8080& state)
+{
+	if(state.flags.Z == 1)
+		executeCALL(state);
+}
+
+// 0xC4  CNZ <address>
+// Call If Not Zero
+// If the Zero bit is one, a call operation is performed to the subroutine at the specified address.
+// *** Surely if the Zero bit is *0* !!
+static void executeC4(State8080& state)
+{
+	if(state.flags.Z == 0)
+		executeCALL(state);
+}
+
+// 0xFC  CM
+// Call If Minus
+// If the Sign bit is one (indicating a minus result), a call operation is performed to subroutine sub.
+static void executeFC(State8080& state)
+{
+	if(state.flags.S == 1)
+		executeCALL(state);
+}
+
+// 0xF4 CP
+// Call If Plus
+// If the Sign bit is zero (indicating a positive result), a call operation is performed to subroutine sub.
+static void executeF4(State8080& state)
+{
+	if(state.flags.S == 0)
+		executeCALL(state);
+}
+
+// 0xEC  CPE
+// Call If Parity Even
+// If the Parity bit is one (indicating even parity), a call operation is performed to subroutine sub.
+static void executeEC(State8080& state)
+{
+	if(state.flags.P == 1)
+		executeCALL(state);
+}
+
+// 0xE4  CPO
+// Call If Parity Odd
+// If the Parity bit is zero (indicating odd parity), a call operation is performed to subroutine sub.
+static void executeE4(State8080& state)
+{
+	if(state.flags.P == 0)
+		executeCALL(state);
 }
 
 //-----------------------------------------------------------------------------
@@ -1369,15 +1451,6 @@ static void executeC3(State8080& state)
 	state.PC = getInstructionAddress(state);
 }
 
-// 0x4d  CNZ <address>
-// Call If Not Zero
-// If the Zero bit is one, a call operation is performed to the subroutine at the specified address.
-static void executeC4(State8080& state)
-{
-	if(state.flags.Z == 1)
-		performCallOperation(state);
-}
-
 // 0xC5  PUSH BC
 static void executeC5(State8080& state)
 {
@@ -1406,20 +1479,6 @@ static void executeC6(State8080& state)
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
 	// #TODO: Calculate Auxiliary Carry
-}
-
-// 0xCC  CZ <adr>
-// if Z, CALL adr
-static void executeCC(State8080& state)
-{
-	if(state.flags.Z == 1)
-		performCallOperation(state);
-}
-
-// 0xCD CALL <address>
-static void executeCD(State8080& state)
-{
-	performCallOperation(state);
 }
 
 // 0xC8  RZ	
@@ -1987,7 +2046,7 @@ static const Instruction s_instructions[] =
 	{ 0xd1, "POP DE", 1, executeD1 }, // E < -(sp); D < -(sp + 1); sp < -sp + 2
 	{ 0xd2, "JNC %04X", 3, executeD2 }, // if NCY, PC <- adr
 	{ 0xd3, "OUT %02X",	2, executeD3 },
-	{ 0xd4, "CNC %04X",	3, nullptr }, //			if NCY, CALL adr
+	{ 0xd4, "CNC %04X",	3, executeD4 }, // aka CALL NC,<address>  if NCY, CALL adr
 	{ 0xd5, "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
 	{ 0xd6, "SUI %02X", 2, executeD6 }, // aka SUB  A <- A-d8   Z, S, P, CY, AC	
 	{ 0xd7, "RST 2",	1, nullptr }, //			CALL $10
@@ -1995,7 +2054,7 @@ static const Instruction s_instructions[] =
 	{ 0xd9, "-", 1, nullptr }, //	
 	{ 0xda, "JC %04X",	3, executeDA }, // if CY, PC < -adr
 	{ 0xdb, "IN %02X", 2, executeDB },
-	{ 0xdc, "CC %04X",	3, nullptr }, //			if CY, CALL adr
+	{ 0xdc, "CC %04X",	3, executeDC }, // if CY, CALL adr
 	{ 0xdd, "-", 1, nullptr }, //	
 	{ 0xde, "SBI %02X",	2, executeDE }, // aka SBC A,d8   A <- A-d8-CY   Z, S, P, CY, AC	
 	{ 0xdf, "RST 3",	1, nullptr }, //			CALL $18
@@ -2003,7 +2062,7 @@ static const Instruction s_instructions[] =
 	{ 0xe1, "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
 	{ 0xe2, "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
 	{ 0xe3, "XTHL",	1, executeE3 }, // L <-> (SP); H <-> (SP + 1)
-	{ 0xe4, "CPO %04X", 3, nullptr }, //			if PO, CALL adr
+	{ 0xe4, "CPO %04X", 3, executeE4 }, //			if PO, CALL adr
 	{ 0xe5, "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
 	{ 0xe6, "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
 	{ 0xe7, "RST 4",	1, nullptr }, //			CALL $20
@@ -2011,7 +2070,7 @@ static const Instruction s_instructions[] =
 	{ 0xe9, "PCHL",	1, executeE9 }, // aka JP (HL)  PC.hi <- H; PC.lo <- L
 	{ 0xea, "JPE %04X",	3, nullptr }, //			if PE, PC < -adr
 	{ 0xeb, "XCHG",	1, executeEB }, // H <-> D; L <-> E
-	{ 0xec, "CPE %04X", 3, nullptr }, //			if PE, CALL adr
+	{ 0xec, "CPE %04X", 3, executeEC }, //			if PE, CALL adr
 	{ 0xed, "-", 1, nullptr }, //	
 	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data
 	{ 0xef, "RST 5",	1, nullptr }, //			CALL $28
@@ -2019,7 +2078,7 @@ static const Instruction s_instructions[] =
 	{ 0xf1, "POP PSW",	1, executeF1 }, // aka POP AF
 	{ 0xf2, "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
 	{ 0xf3, "DI",	1, nullptr }, //			special
-	{ 0xf4, "CP %04X",	3, nullptr }, //			if P, PC < -adr
+	{ 0xf4, "CP %04X",	3, executeF4 }, //			if P, PC < -adr
 	{ 0xf5, "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
 	{ 0xf6, "ORI %02X", 2, executeF6 }, // A <- A|data  Z, S, P, CY, AC	
 	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
@@ -2027,7 +2086,7 @@ static const Instruction s_instructions[] =
 	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL
 	{ 0xfa, "JM %04X", 3, executeFA }, // Jump If Minus aka JP M,<adr>  if M, PC <- adr
 	{ 0xfb, "EI", 1, executeFB }, // enable interrupts
-	{ 0xfc, "CM %04X",	3, nullptr }, //			if M, CALL adr
+	{ 0xfc, "CM %04X",	3, executeFC }, //			if M, CALL adr
 	{ 0xfd, "-", 1, nullptr }, //	
 	{ 0xfe, "CPI %02X",	2, executeFE }, // Compare immediate with accumulator  Z, S, P, CY, AC    A - data
 	{ 0xff, "RST 7",	1, nullptr }, //			CALL $38
