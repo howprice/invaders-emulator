@@ -129,6 +129,21 @@ static void performReturnOperation(State8080& state)
 	state.PC = address;
 }
 
+// INR
+// Increment Register or Memory
+// The specified register or memory byte is incremented by one.
+// The B register is incremented by one.
+// Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
+// n.b. Does not affect Carry
+static void executeINR(State8080& state, uint8_t& regOrMemoryByte)
+{
+	regOrMemoryByte++;
+	state.flags.Z = calculateZeroFlag(regOrMemoryByte);
+	state.flags.S = calculateSignFlag(regOrMemoryByte);
+	state.flags.P = calculateParityFlag(regOrMemoryByte);
+	// #TODO: Set AC flag
+}
+
 // 0x00 NOP
 static void execute00(State8080& /*state*/)
 {
@@ -160,15 +175,9 @@ static void execute03(State8080& state)
 }
 
 // 0x04  INR B  aka INC B
-// The B register is incremented by one.
-// Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
-// n.b. Does not affect Carry
 static void execute04(State8080& state)
 {
-	state.B++;
-	state.flags.Z = calculateZeroFlag(state.B);
-	state.flags.S = calculateSignFlag(state.B);
-	state.flags.P = calculateParityFlag(state.B);
+	executeINR(state, state.B);
 }
 
 // 0x05 DCR B
@@ -283,16 +292,10 @@ static void execute13(State8080& state)
 }
 
 // 0x14  INR D  aka INC D
-// The D register is incremented by one.
-// Condition bits affected : Zero, Sign, Parity, Auxiliary Carry
-// n.b. Does not affect Carry
+
 static void execute14(State8080& state)
 {
-	state.D++;
-	state.flags.Z = calculateZeroFlag(state.D);
-	state.flags.S = calculateSignFlag(state.D);
-	state.flags.P = calculateParityFlag(state.D);
-	// #TODO: Set AC flag
+	executeINR(state, state.D);
 }
 
 // 0x15  DCR D  aka DEC D
@@ -477,6 +480,16 @@ static void execute32(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0x34  INR M  aka INC (HL)
+// (HL) <- (HL)+1   Z, S, P, AC  
+static void execute34(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	HP_ASSERT(HL < state.memorySizeBytes);
+	uint8_t* pByte = state.pMemory + HL;
+	executeINR(state, *pByte);
+}
+
 // 0x35  DCR M  aka DEC (HL)
 // (HL) <- (HL)-1
 // Z, S, P, AC 
@@ -521,15 +534,9 @@ static void execute3A(State8080& state)
 }
 
 // 0x3C  INR A  aka INC A
-// A <- A+1
-// Z, S, P, AC
 static void execute3C(State8080& state)
 {
-	state.A++;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: AC flag
+	executeINR(state, state.A);
 }
 
 // 0x3D  DCR A  aka DEC A
@@ -644,6 +651,13 @@ static void execute68(State8080& state)
 	state.L = state.B;
 }
 
+// 0x69  MOV L,C
+// L <- C
+static void execute69(State8080& state)
+{
+	state.L = state.C;
+}
+
 // 0x6F  MOV L,A
 // L <- A
 static void execute6F(State8080& state)
@@ -746,9 +760,23 @@ static void execute77(State8080& state)
 	writeByteToMemory(state, address, state.A);
 }
 
+// 0xA0  ANA B  aka AND B
+// A <- A&B
+// Z, S, P, CY, AC	
+static void executeA0(State8080& state)
+{
+	state.A &= state.B;
+	state.flags.C = 0;
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	// #TODO: state.flags.AC
+}
+
+
 // 0xA6  ANA M  aka AND (HL)
 // A <- A&(HL)
-// Condition bits affected: Carry, Zero, Sign, Parity
+// Condition bits affected: Carry, Zero, Sign, Parity, AC
 // The Carry bit is reset to zero.
 static void executeA6(State8080& state)
 {
@@ -1345,7 +1373,7 @@ static const Instruction s_instructions[] =
 	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
 	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
 	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
-	{ 0x34, "INR M",	1, nullptr }, //		Z, S, P, AC(HL) < -(HL)+1
+	{ 0x34, "INR M", 1, execute34 }, // aka INC (HL)   (HL) <- (HL)+1   Z, S, P, AC  
 	{ 0x35, "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL)-1   Z, S, P, AC 
 	{ 0x36, "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
 	{ 0x37, "STC", 1, execute37 }, // Carry = 1
@@ -1398,7 +1426,7 @@ static const Instruction s_instructions[] =
 	{ 0x66, "MOV H,M", 1, execute66 }, // H <- (HL)
 	{ 0x67, "MOV H,A", 1, execute67 }, // H <- A
 	{ 0x68, "MOV L,B", 1, execute68 }, // L <- B
-	{ 0x69, "MOV L,C", 1, nullptr }, //			L < -C
+	{ 0x69, "MOV L,C", 1, execute69 }, // L <- C
 	{ 0x6a, "MOV L,D", 1, nullptr }, //			L < -D
 	{ 0x6b, "MOV L,E", 1, nullptr }, //			L < -E
 	{ 0x6c, "MOV L,H", 1, nullptr }, //			L < -H
@@ -1453,7 +1481,7 @@ static const Instruction s_instructions[] =
 	{ 0x9d, "SBB L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - L - CY
 	{ 0x9e, "SBB M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - (HL)-CY
 	{ 0x9f, "SBB A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - A - CY
-	{ 0xa0, "ANA B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & B
+	{ 0xa0, "ANA B", 1, executeA0 }, // aka AND B  A <- A&B   Z, S, P, CY, AC	
 	{ 0xa1, "ANA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & C
 	{ 0xa2, "ANA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & D
 	{ 0xa3, "ANA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & E
