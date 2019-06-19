@@ -16,7 +16,6 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- ImGui window to show machine and CPU state
 - Render video memory to SDL window
 - Add timings to 8080 instructions 
 - What is the correct point in the frame to generate the interrupts? See machine update function
