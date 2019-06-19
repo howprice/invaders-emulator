@@ -16,8 +16,12 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Implement Shift Register
+- ImGui window to show machine and CPU state
 - Render video memory to SDL window
+- Add timings to 8080 instructions 
+- What is the correct point in the frame to generate the interrupts? See machine update function
+- Headless mode (command line arg)
+- Remove pMemory from State8080; it belongs in the Machine
 - Map host input (SDL) to port data
 - Return instruction cycle count from instruction execution functions
   - n.b. Can be different depending on what the instruction did e.g. jump or not jump
@@ -29,3 +33,5 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
   - http://www.brentradio.com/SpaceInvaders.htm
 - Test on Linux/Mac
 - Test with other 8080bw compatible ROMs See list in C:\GitHub\mamedev\mame\src\mame\drivers\mw8080bw.cpp
+  - May need to implement more instructions and Auxiliary Carry Flag
+- What is the purpose of the RAM mirror? (It *is* used)

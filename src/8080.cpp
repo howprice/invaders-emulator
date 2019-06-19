@@ -1,5 +1,3 @@
-// #TODO: Is there a way to group the instruction execute functions by type?
-
 #include "8080.h"
 
 static const unsigned int kMinInstructionSizeBytes = 1;
@@ -1630,7 +1628,7 @@ static void executeD3(State8080& state)
 {
 	uint8_t port = getInstructionD8(state);
 	if(state.out != nullptr)
-		state.out(port, state.A);
+		state.out(port, state.A, state.userdata);
 }
 
 // 0xD5  PUSH DE
@@ -1697,7 +1695,7 @@ static void executeDB(State8080& state)
 	uint8_t port = getInstructionD8(state);
 
 	if(state.in)
-		state.A = state.in(port);
+		state.A = state.in(port, state.userdata);
 	else
 		state.A = 0;
 }
@@ -2214,7 +2212,8 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	return instruction.sizeBytes;
 }
 
-void Emulate8080Instruction(State8080& state)
+// returns the number of cycles that the instruction took to execute
+unsigned int Emulate8080Instruction(State8080& state)
 {
 	const uint8_t opcode = readByteFromMemory(state, state.PC);
 	const Instruction& instruction = s_instructions[opcode];
@@ -2228,6 +2227,10 @@ void Emulate8080Instruction(State8080& state)
 	state.PC += instruction.sizeBytes;
 
 	instruction.execute(state);
+
+	// #TODO: Add timings to all instructions
+	unsigned int instructionCycleCount = 4; // TEMP placeholder!!
+	return instructionCycleCount;
 }
 
 void Generate8080Interrupt(State8080& state, unsigned int interruptNumber)

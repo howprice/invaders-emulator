@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-void PrintState(const State8080& state)
+void Print8080State(const State8080& state)
 {
 #if 0
 	printf("A: %02X  Flags: %02X\n", state.A, state.Flags);

@@ -54,8 +54,10 @@ solution "invaders-emulator"
 		kind "ConsoleApp"
 		language "C++"
 		files {
+			"../README.md",
 			"../src/invaders.cpp",
 			"../src/8080.*",
+			"../src/machine.*",
 			"../src/debugger.*",
 			"../src/Assert.*",
 			"../src/Helpers.*",

@@ -6,12 +6,11 @@
 // https://en.wikipedia.org/wiki/Intel_8080#Registers
 
 // #TODO: What is the correct initial value of registers? Zero or garbage?
-// #TODO: How to represent flags?
 
 typedef uint8_t(*ReadByteFromMemoryFuncPtr)(uint8_t* pMemory, size_t address, bool fatalOnFail);
 typedef bool(*WriteByteToMemoryFuncPtr)(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail);
-typedef uint8_t(*InFuncPtr)(uint8_t port);
-typedef void(*OutFuncPtr)(uint8_t port, uint8_t val);
+typedef uint8_t(*InFuncPtr)(uint8_t port, void* userdata);
+typedef void(*OutFuncPtr)(uint8_t port, uint8_t val, void* userdata);
 
 struct Flags8080
 {
@@ -45,6 +44,7 @@ struct State8080
 	uint16_t SP;
 	uint16_t PC;
 
+	// #TODO: Try to get rid of these - memory should be handled by the machine via callbacks
 	uint8_t* pMemory;
 	uint32_t memorySizeBytes;
 
@@ -54,12 +54,15 @@ struct State8080
 	WriteByteToMemoryFuncPtr writeByteToMemory;
 	InFuncPtr in;
 	OutFuncPtr out;
+	void* userdata = nullptr;
 };
 
 // returns instruction size in bytes
 unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, unsigned int pc);
 
-void Emulate8080Instruction(State8080& state);
+// returns the number of cycles that the instruction took to execute
+unsigned int Emulate8080Instruction(State8080& state);
+
 void Generate8080Interrupt(State8080& state, unsigned int interruptNumber);
 
 #endif
