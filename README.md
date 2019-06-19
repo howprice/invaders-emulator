@@ -16,16 +16,17 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Use point sampler in shader
-- Add timings to 8080 instructions 
-- Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
-- What is the correct point in the frame to generate the interrupts? See machine update function
-- Headless mode (command line arg)
-- Remove pMemory from State8080; it belongs in the Machine
+- Rotate screen 90 degrees anti-clockwise
 - Map host input (SDL) to port data
+- Add timings to 8080 instructions 
 - Return instruction cycle count from instruction execution functions
   - n.b. Can be different depending on what the instruction did e.g. jump or not jump
   - Best reference for this? Data Book?
+- Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
+- What is the correct point in the frame to generate the interrupts? See machine update function
+- Use point sampler in shader
+- Headless mode (command line arg)
+- Remove pMemory from State8080; it belongs in the Machine
 - Debugger
   - ImGui and/or command line
   - Show stack
@@ -35,3 +36,4 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 - Test with other 8080bw compatible ROMs See list in C:\GitHub\mamedev\mame\src\mame\drivers\mw8080bw.cpp
   - May need to implement more instructions and Auxiliary Carry Flag
 - What is the purpose of the RAM mirror? (It *is* used)
+- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
