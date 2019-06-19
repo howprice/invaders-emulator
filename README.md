@@ -12,6 +12,7 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 - http://www.emutalk.net/threads/38177-Space-Invaders
 - https://en.wikipedia.org/wiki/Intel_8080
 - Intel 8080 Assembly Language Programming Manual a.k.a. "The Data Book"
+- [Intel 8080 Microcomputer System User's Manual](http://www.nj7p.info/Manuals/PDFs/Intel/9800153B.pdf)
 
 ## TODO
 
