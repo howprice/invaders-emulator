@@ -17,7 +17,12 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 ## TODO
 
 - Render video memory to SDL window
+  - Use point sampler
+- Render a textured quad, and update it per frame with glTexSubImage2D
+  https://stackoverflow.com/questions/38824212/im-trying-to-update-a-texture-with-gltexsubimage2d
+- Approximate display buffer by copying instantaneously from RAM at and of frame. 
 - Add timings to 8080 instructions 
+- Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Headless mode (command line arg)
 - Remove pMemory from State8080; it belongs in the Machine

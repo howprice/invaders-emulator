@@ -133,9 +133,6 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 #include "Helpers.h"
 
 static const unsigned int kClockSpeed = 2000000; // 2MHz
-
-static const unsigned int kDisplayWidth = 256;
-static const unsigned int kDisplayHeight = 224;
 static const unsigned int kRefreshRate = 60; // Hz
 
 enum class MemoryType
@@ -495,6 +492,11 @@ bool CreateMachine(Machine** ppMachine)
 	pMachine->cpu.in = In;
 	pMachine->cpu.out = Out;
 
+	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
+	unsigned int displaySizeBytes = (Machine::kDisplayWidth / 8) * Machine::kDisplayHeight;
+	pMachine->pDisplayBuffer = new uint8_t[displaySizeBytes];
+	// #TODO: Zero display buffer?
+
 	*ppMachine = pMachine;
 	return true;
 }
@@ -505,6 +507,9 @@ void DestroyMachine(Machine* pMachine)
 
 	delete[] pMachine->cpu.pMemory;
 	pMachine->cpu.pMemory = nullptr;
+
+	delete[] pMachine->pDisplayBuffer;
+	pMachine->pDisplayBuffer = nullptr;
 
 	delete pMachine;
 }
@@ -517,7 +522,7 @@ bool StepFrame(Machine* pMachine, bool debug)
 	const double cyclesPerSecond = kClockSpeed;
 	const double secondsPerFrame = 1.0 / kRefreshRate;
 	const double cyclesPerFrame = cyclesPerSecond * secondsPerFrame;
-	const double cyclesPerScanLine = cyclesPerFrame / kDisplayHeight; // #TODO: Account for VBLANK time
+	const double cyclesPerScanLine = cyclesPerFrame / Machine::kDisplayHeight; // #TODO: Account for VBLANK time
 
 	unsigned int cycleCount = 0;
 	unsigned int prevScanLine = 0;
