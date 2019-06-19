@@ -114,12 +114,8 @@ static const char s_fragmentShaderSource[] =
 	"\n"
 	"void main()\n"
 	"{\n"
-	"	//	gl_FragColor = texture2D( diffuseSampler, In.texCoord );\n"
-#if 1
-	"	oColor0 = texture2D(diffuseSampler, In.texCoord);\n"
-#else
-	"oColor0 = vec4(1,0,0,1);\n"
-#endif
+	"	float r = texture2D(diffuseSampler, In.texCoord).r; // 1 channel texture\n"
+	"	oColor0 = vec4(r,r,r,1);\n"
 	"}\n";
 
 static void CheckShader(GLuint shader)
