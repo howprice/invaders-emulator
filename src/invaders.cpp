@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const unsigned int kScale = 4;
+static const unsigned int kScale = 3;
 static const unsigned int kDisplayWidth = Machine::kDisplayWidth * kScale;
 static const unsigned int kDisplayHeight = Machine::kDisplayHeight * kScale;
 
@@ -246,7 +246,7 @@ static void updateDisplayTexture(const Machine* pMachine)
 			uint8_t byteVal = pDisplayBuffer[(y * srcBytesPerRow) + srcRowByteIndex];
 
 			unsigned int bitIndex = x & 7;
-			uint8_t mask = 1 << (7 - bitIndex);
+			uint8_t mask = 1 << bitIndex;
 			s_pixels[y * Machine::kDisplayWidth + x] = (byteVal & mask) ? 255 : 0;
 		}
 	}
