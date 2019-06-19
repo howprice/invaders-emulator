@@ -7,9 +7,13 @@
 
 struct Machine
 {
+	static const unsigned int kDisplayWidth = 256;
+	static const unsigned int kDisplayHeight = 224;
+
 	State8080 cpu;
-	uint16_t shiftRegisterValue = 0x0000;
-	uint8_t shiftRegisterOffset = 0;        // [0,7]
+	uint16_t shiftRegisterValue;
+	uint8_t shiftRegisterOffset;        // [0,7]
+	uint8_t* pDisplayBuffer ;
 };
 
 bool CreateMachine(Machine** ppMachine);

@@ -28,8 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const unsigned int kDisplayWidth = 1280;
-static const unsigned int kDisplayHeight = 720;
+static const unsigned int kScale = 4;
+static const unsigned int kDisplayWidth = Machine::kDisplayWidth * kScale;
+static const unsigned int kDisplayHeight = Machine::kDisplayHeight * kScale;
 
 static bool s_debug = false;
 
@@ -66,6 +67,157 @@ static void parseCommandLine(int argc, char** argv)
 	}
 }
 
+static const char s_vertexShaderSource[] =
+	"#version 420\n"
+	"// n.b. This name \"block\" needs to match that of the PS input\n"
+	"out block\n"
+	"{\n"
+	"	vec2 texCoord;\n"
+	"} Out;\n"
+	"\n"
+	"// Generate single triangle in homogenous clip space that, when clipped, fills the screen\n"
+	"void main()\n"
+	"{\n"
+	"	vec2 positions[3] =\n"
+	"	{\n"
+	"		{ -1.0f, 1.0f },\n"
+	"		{ -1.0f, -3.0f },\n"
+	"		{ 3.0f, 1.0f }\n"
+	"	};\n"
+	"\n"
+	"	// calculate UVs such that screen space [0,1] is covered by triangle and UVs are correct (draw a picture)\n"
+	"	vec2 texCoords[3] =\n"
+	"	{\n"
+	"		{ 0.0f, 0.0f },\n"
+	"		{ 0.0f, 2.0f },\n"
+	"		{ 2.0f, 0.0f }\n"
+	"	};\n"
+	"\n"
+	"	vec4 posPS = vec4(positions[gl_VertexID], 0.0f, 1.0f);\n"
+	"	gl_Position = posPS;\n"
+	"\n"
+	"	Out.texCoord = texCoords[gl_VertexID];\n"
+	"}\n";
+
+static const char s_fragmentShaderSource[] =
+	"#version 420\n"
+	"uniform sampler2D diffuseSampler;\n"
+	"\n"
+	"// n.b. This name \"block\" needs to match that of the VS output!\n"
+	"// n.b. \"input\" is a reserved word\n"
+	"in block\n"
+	"{\n"
+	"	vec2 texCoord;\n"
+	"} In;\n"
+	"\n"
+	"layout(location = 0) out vec4 oColor0;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"	//	gl_FragColor = texture2D( diffuseSampler, In.texCoord );\n"
+#if 1
+	"	oColor0 = texture2D(diffuseSampler, In.texCoord);\n"
+#else
+	"oColor0 = vec4(1,0,0,1);\n"
+#endif
+	"}\n";
+
+static void CheckShader(GLuint shader)
+{
+	GLint status;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	if(status == GL_FALSE)
+	{
+		fprintf(stderr, "Failed to compile shader\n");
+		GLint logLength;
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+		if(logLength > 0)
+		{
+			GLchar szLog[1024];
+			GLsizei length;
+			glGetShaderInfoLog(shader, sizeof(szLog), &length, szLog);
+			fprintf(stderr, "%s", szLog);
+		}
+		glDeleteShader(shader);
+		HP_FATAL_ERROR("Shader compilation failed");
+	}
+}
+
+static void CheckProgram(GLuint program)
+{
+	GLint status;
+	glGetProgramiv(program, GL_LINK_STATUS, &status);
+	if(status == GL_FALSE)
+	{
+		GLint infoLogLength;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+		GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+		glGetProgramInfoLog(program, infoLogLength, NULL, strInfoLog);
+		HP_FATAL_ERROR("GL linker failure: %s\n", strInfoLog);
+	}
+}
+
+static GLuint s_vertexShader = 0;
+static GLuint s_fragmentShader = 0;
+static GLuint s_program = 0;
+static GLuint s_texture = 0;
+static GLuint s_vao = 0;
+
+static void createOpenGLObjects()
+{
+	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	const GLchar* vertexShaderSources[] = { s_vertexShaderSource };
+	glShaderSource(s_vertexShader, COUNTOF_ARRAY(vertexShaderSources), vertexShaderSources, NULL);
+	glCompileShader(s_vertexShader); // no return value
+	CheckShader(s_vertexShader);
+
+	s_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	const GLchar* fragmentShaderSources[] = { s_fragmentShaderSource };
+	glShaderSource(s_fragmentShader, COUNTOF_ARRAY(fragmentShaderSources), fragmentShaderSources, NULL);
+	glCompileShader(s_fragmentShader); // no return value
+	CheckShader(s_fragmentShader);
+
+	s_program = glCreateProgram();
+	glAttachShader(s_program, s_vertexShader);
+	glAttachShader(s_program, s_fragmentShader);
+	glLinkProgram(s_program);
+	CheckProgram(s_program);
+
+	// No need to keep the shaders attached now that the program is linked
+	glDetachShader(s_program, s_vertexShader);
+	glDetachShader(s_program, s_fragmentShader);
+
+	// When drawing "A non-zero Vertex Array Object must be bound (though no arrays have to be enabled, so it can be a freshly-created vertex array object)."
+	// https://devtalk.nvidia.com/default/topic/561172/opengl/gldrawarrays-without-vao-for-procedural-geometry-using-gl_vertexid-doesn-t-work-in-debug-context/#
+	glGenVertexArrays(1, &s_vao);
+	HP_ASSERT(s_vao != 0);
+
+	// display texture
+	glGenTextures(1, &s_texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, s_texture);
+	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, Machine::kDisplayWidth, Machine::kDisplayHeight);
+}
+
+static void deleteOpenGLObjects()
+{
+	glDeleteProgram(s_program);
+	s_program = 0;
+
+	glDeleteShader(s_vertexShader);
+	s_vertexShader = 0;
+
+	glDeleteShader(s_fragmentShader);
+	s_fragmentShader = 0;
+
+	glDeleteVertexArrays(1, &s_vao);
+	s_vao = 0;
+
+	glDeleteTextures(1, &s_texture);
+	s_texture = 0;
+}
+
 static void doCpuWindow(const State8080& state)
 {
 	ImGui::Begin("CPU");
@@ -78,6 +230,31 @@ static void doCpuWindow(const State8080& state)
 	ImGui::Text("PC: %04X\n", state.PC);
 
 	ImGui::End();
+}
+
+static void updateDisplayTexture(Machine* /*pMachine*/)
+{
+	// TEST:
+	uint8_t pixels[Machine::kDisplayWidth * Machine::kDisplayHeight];
+	for(unsigned int y = 0; y < Machine::kDisplayHeight; y++)
+	{
+		for(unsigned int x = 0; x < Machine::kDisplayWidth; x++)
+		{
+			uint8_t val = 0;
+			if(x == 0 || x == Machine::kDisplayWidth - 1 || y == 0 || y == Machine::kDisplayHeight - 1)
+				val = 0xff;
+			pixels[y * Machine::kDisplayWidth + x] = val;
+		}
+	}
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Machine::kDisplayWidth, Machine::kDisplayHeight, GL_RED, GL_UNSIGNED_BYTE, &pixels);
+}
+
+static void drawTexture()
+{
+	glBindVertexArray(s_vao);
+	glUseProgram(s_program);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 int main(int argc, char** argv)
@@ -153,6 +330,8 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	createOpenGLObjects();
+
 	static bool show_demo_window = true;
 	bool bDone = false;
 	uint64_t frameIndex = 0;
@@ -194,15 +373,20 @@ int main(int argc, char** argv)
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		updateDisplayTexture(pMachine);
+		drawTexture();
+
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(pWindow);
 
 		frameIndex++;
 	}
 
+	deleteOpenGLObjects();
+
 	DestroyMachine(pMachine);
 	pMachine = nullptr;
-
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
