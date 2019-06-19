@@ -7,7 +7,7 @@
 void Print8080State(const State8080& state)
 {
 #if 0
-	printf("A: %02X  Flags: %02X\n", state.A, state.Flags);
+	printf("A: %02X  Flags: %02X\n", state.A, state.flags);
 	printf("B: %02X  C: %02X\n", state.B, state.C);
 	printf("D: %02X  E: %02X\n", state.D, state.E);
 	printf("H: %02X  L: %02X\n", state.H, state.L);

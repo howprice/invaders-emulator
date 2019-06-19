@@ -2249,7 +2249,7 @@ void Generate8080Interrupt(State8080& state, unsigned int interruptNumber)
 
 	// Perform a manual RST instruction.
 	// 
-	// - The PC is pushed onto the stack, providing a return address for later use by a RETURN instruction.
+	// - The PC is pushed onto the stack, providing a return address for later use by a RETURN instruction within the interrupt handler
 	// - Call to one of 8 eight-byte subroutines located in the first 64 bytes of memory
 
 	// store return address in little-endian
