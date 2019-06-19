@@ -3,6 +3,6 @@
 
 struct State8080;
 
-void PrintState(const State8080& state);
+void Print8080State(const State8080& state);
 
 #endif
