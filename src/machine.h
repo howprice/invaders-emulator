@@ -13,7 +13,7 @@ struct Machine
 	State8080 cpu;
 	uint16_t shiftRegisterValue;
 	uint8_t shiftRegisterOffset;        // [0,7]
-	uint8_t* pDisplayBuffer ;
+	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
 };
 
 bool CreateMachine(Machine** ppMachine);

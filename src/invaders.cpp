@@ -232,21 +232,25 @@ static void doCpuWindow(const State8080& state)
 	ImGui::End();
 }
 
-static void updateDisplayTexture(Machine* /*pMachine*/)
+static void updateDisplayTexture(const Machine* pMachine)
 {
-	// TEST:
-	uint8_t pixels[Machine::kDisplayWidth * Machine::kDisplayHeight];
+	const uint8_t* pDisplayBuffer = pMachine->pDisplayBuffer; // src - 1 bit per pixel
+	static uint8_t s_pixels[Machine::kDisplayWidth * Machine::kDisplayHeight]; // dst - 1 byte per pixel
+	
+	const unsigned int srcBytesPerRow = Machine::kDisplayWidth >> 3; // div 8
 	for(unsigned int y = 0; y < Machine::kDisplayHeight; y++)
 	{
 		for(unsigned int x = 0; x < Machine::kDisplayWidth; x++)
 		{
-			uint8_t val = 0;
-			if(x == 0 || x == Machine::kDisplayWidth - 1 || y == 0 || y == Machine::kDisplayHeight - 1)
-				val = 0xff;
-			pixels[y * Machine::kDisplayWidth + x] = val;
+			unsigned int srcRowByteIndex = x >> 3; // div 8
+			uint8_t byteVal = pDisplayBuffer[(y * srcBytesPerRow) + srcRowByteIndex];
+
+			unsigned int bitIndex = x & 7;
+			uint8_t mask = 1 << (7 - bitIndex);
+			s_pixels[y * Machine::kDisplayWidth + x] = (byteVal & mask) ? 255 : 0;
 		}
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Machine::kDisplayWidth, Machine::kDisplayHeight, GL_RED, GL_UNSIGNED_BYTE, &pixels);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Machine::kDisplayWidth, Machine::kDisplayHeight, GL_RED, GL_UNSIGNED_BYTE, &s_pixels);
 }
 
 static void drawTexture()
@@ -332,7 +336,6 @@ int main(int argc, char** argv)
 
 	createOpenGLObjects();
 
-	static bool show_demo_window = true;
 	bool bDone = false;
 	uint64_t frameIndex = 0;
 	while(!bDone)
@@ -359,12 +362,7 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pWindow);
 		ImGui::NewFrame();
 
-		// update
-		if(show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
 		StepFrame(pMachine, s_debug);
-
 		doCpuWindow(pMachine->cpu);
 
 		// Rendering

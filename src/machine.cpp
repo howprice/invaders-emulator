@@ -493,7 +493,8 @@ bool CreateMachine(Machine** ppMachine)
 	pMachine->cpu.out = Out;
 
 	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
-	unsigned int displaySizeBytes = (Machine::kDisplayWidth / 8) * Machine::kDisplayHeight;
+	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
+	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
 	pMachine->pDisplayBuffer = new uint8_t[displaySizeBytes];
 	// #TODO: Zero display buffer?
 
@@ -512,6 +513,20 @@ void DestroyMachine(Machine* pMachine)
 	pMachine->pDisplayBuffer = nullptr;
 
 	delete pMachine;
+}
+
+static void copyVideoMemoryToDisplayBuffer(Machine& machine)
+{
+	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
+	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
+	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
+	for(unsigned int i = 0; i < displaySizeBytes; i++)
+	{
+		const unsigned int kVideoAddress = 0x2400;
+		unsigned int address = kVideoAddress + i;
+		uint8_t val = ReadByteFromMemory(machine.cpu.pMemory, address, /*fatalOnFail*/true);
+		machine.pDisplayBuffer[i] = val;
+	}
 }
 
 // returns true if still running
@@ -565,6 +580,10 @@ bool StepFrame(Machine* pMachine, bool debug)
 	unsigned int scanLine = (unsigned int)((double)cycleCount / cyclesPerScanLine);
 	HP_ASSERT(scanLine == 224);
 	Generate8080Interrupt(pMachine->cpu, 2);
+
+	// Approximate display buffer by copying instantaneously from RAM at and of frame.
+	// #TODO: Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
+	copyVideoMemoryToDisplayBuffer(*pMachine);
 
 	return true;
 }
