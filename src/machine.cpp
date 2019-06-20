@@ -8,8 +8,8 @@ CPU: Intel 8080 @ 2MHz (CPU similar to the (newer) Zilog Z80)
 
 Interrupts: $cf (RST 8) at the start of vblank, $d7 (RST $10) at the end of vblank.
 
-Video: 256(x)*224(y) @ 60Hz, vertical monitor. Colours are simulated with a
-plastic transparent overlay and a background picture.
+Video: 256(x)*224(y) @ 60Hz, vertical monitor.
+Colours are simulated with a plastic transparent overlay and a background picture.
 Video hardware is very simple: 7168 bytes 1bpp bitmap (32 bytes per scanline).
 
 Sound: SN76477 and samples.

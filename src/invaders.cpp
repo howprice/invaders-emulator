@@ -28,11 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const unsigned int kScale = 3;
-static const unsigned int kDisplayWidth = Machine::kDisplayWidth * kScale;
-static const unsigned int kDisplayHeight = Machine::kDisplayHeight * kScale;
-
 static bool s_debug = false;
+static bool s_rotateDisplay = false; // the invaders machine display is rotated 90 degrees anticlockwise
 
 static void printUsage()
 {
@@ -40,6 +37,7 @@ static void printUsage()
 	puts("Options:\n\n"
 		"  --help                       Shows this message\n"
 		"  -d <filename>                Use debugger\n"
+		"  -r                           Rotate display 90 degrees anticlockwise\n"
 	);
 }
 
@@ -57,6 +55,10 @@ static void parseCommandLine(int argc, char** argv)
 		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
 		{
 			s_debug = true;
+		}
+		else if(strcmp(arg, "-r") == 0 )
+		{
+			s_rotateDisplay = true;
 		}
 		else
 		{
@@ -160,7 +162,7 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
-static void createOpenGLObjects()
+static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureHeight)
 {
 	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	const GLchar* vertexShaderSources[] = { s_vertexShaderSource };
@@ -193,7 +195,8 @@ static void createOpenGLObjects()
 	glGenTextures(1, &s_texture);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, s_texture);
-	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, Machine::kDisplayWidth, Machine::kDisplayHeight);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, textureWidth, textureHeight);
 }
 
 static void deleteOpenGLObjects()
@@ -228,25 +231,49 @@ static void doCpuWindow(const State8080& state)
 	ImGui::End();
 }
 
-static void updateDisplayTexture(const Machine* pMachine)
+static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
 {
+	if(s_rotateDisplay)
+	{
+		HP_ASSERT(textureHeight == Machine::kDisplayWidth && textureWidth == Machine::kDisplayHeight);
+	}
+	else
+	{
+		HP_ASSERT(textureWidth == Machine::kDisplayWidth && textureHeight == Machine::kDisplayHeight);
+	}
+
 	const uint8_t* pDisplayBuffer = pMachine->pDisplayBuffer; // src - 1 bit per pixel
-	static uint8_t s_pixels[Machine::kDisplayWidth * Machine::kDisplayHeight]; // dst - 1 byte per pixel
+	static uint8_t s_texturePixelsR8[Machine::kDisplayWidth * Machine::kDisplayHeight]; // dst - 1 byte per pixel
 	
 	const unsigned int srcBytesPerRow = Machine::kDisplayWidth >> 3; // div 8
-	for(unsigned int y = 0; y < Machine::kDisplayHeight; y++)
+	for(unsigned int srcY = 0; srcY < Machine::kDisplayHeight; srcY++)
 	{
-		for(unsigned int x = 0; x < Machine::kDisplayWidth; x++)
+		for(unsigned int srcX = 0; srcX < Machine::kDisplayWidth; srcX++)
 		{
-			unsigned int srcRowByteIndex = x >> 3; // div 8
-			uint8_t byteVal = pDisplayBuffer[(y * srcBytesPerRow) + srcRowByteIndex];
-
-			unsigned int bitIndex = x & 7;
+			unsigned int srcRowByteIndex = srcX >> 3; // div 8
+			uint8_t byteVal = pDisplayBuffer[(srcY * srcBytesPerRow) + srcRowByteIndex];
+			unsigned int bitIndex = srcX & 7;
 			uint8_t mask = 1 << bitIndex;
-			s_pixels[y * Machine::kDisplayWidth + x] = (byteVal & mask) ? 255 : 0;
+			uint8_t val = (byteVal & mask) ? 255 : 0;
+
+			if(s_rotateDisplay)
+			{
+				// n.b. display is rotated 90 degrees so width and height are deliberately switched
+				unsigned int dstX = srcY;
+				unsigned int dstY = Machine::kDisplayWidth - 1 - srcX;
+				s_texturePixelsR8[dstY * textureWidth + dstX] = val;
+			}
+			else
+			{
+				// unrotated
+				unsigned int dstX = srcX;
+				unsigned int dstY = srcY;
+				s_texturePixelsR8[dstY * textureWidth + dstX] = val;
+			}
 		}
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Machine::kDisplayWidth, Machine::kDisplayHeight, GL_RED, GL_UNSIGNED_BYTE, &s_pixels);
+
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RED, GL_UNSIGNED_BYTE, &s_texturePixelsR8); // w and h deliberately swapped
 }
 
 static void drawTexture()
@@ -288,8 +315,17 @@ int main(int argc, char** argv)
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	
+	const unsigned int displayWidth = s_rotateDisplay ? Machine::kDisplayHeight : Machine::kDisplayWidth;
+	const unsigned int displayHeight = s_rotateDisplay ? Machine::kDisplayWidth : Machine::kDisplayHeight;
+
+	static const unsigned int kPixelScale = 3;
+	unsigned int windowWidth = kPixelScale * displayWidth;
+	unsigned int windowHeight = kPixelScale * displayHeight;
+
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kDisplayWidth, kDisplayHeight, window_flags);
+	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 
+		window_flags);
 
 	SDL_GLContext gl_context = SDL_GL_CreateContext(pWindow);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -330,7 +366,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	createOpenGLObjects();
+	createOpenGLObjects(displayWidth, displayHeight);
 
 	bool bDone = false;
 	uint64_t frameIndex = 0;
@@ -368,7 +404,7 @@ int main(int argc, char** argv)
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		updateDisplayTexture(pMachine);
+		updateDisplayTexture(pMachine, displayWidth, displayHeight);
 		drawTexture();
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
