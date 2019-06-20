@@ -14,10 +14,14 @@ struct Machine
 	uint16_t shiftRegisterValue;
 	uint8_t shiftRegisterOffset;        // [0,7]
 	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
+
+	bool coinInserted;
 };
 
 bool CreateMachine(Machine** ppMachine);
 void DestroyMachine(Machine* pMachine);
+
+void StartFrame(Machine* pMachine);
 
 // returns true if still running
 bool StepFrame(Machine* pMachine, bool debug);

@@ -286,14 +286,7 @@ static uint8_t In(uint8_t port, void* userdata)
 	// Space Invaders input ports
 
 	// Read 1
-	// BIT 0    coin(0 when active)
-	//     1    P2 start button
-	//     2    P1 start button
-	//     3 ?
-	//     4    P1 shoot button
-	//     5    P1 joystick left
-	//     6    P1 joystick right
-	//     7 ?
+
 	//     
 	// Read 2
 	// BIT 0, 1 dipswitch number of lives(0:3, 1 : 4, 2 : 5, 3 : 6)
@@ -309,7 +302,20 @@ static uint8_t In(uint8_t port, void* userdata)
 	// Read port 1=$01 and 2=$00 will make the game run, but but only in attract mode.
 
 	if(port == 1)
-		return 1;
+	{
+		// BIT 0    coin(0 when active)
+		//     1    P2 start button
+		//     2    P1 start button
+		//     3 ?
+		//     4    P1 shoot button
+		//     5    P1 joystick left
+		//     6    P1 joystick right
+		//     7 ?
+		uint8_t val = 0x00;
+		val |= pMachine->coinInserted ? 0 : (1 << 0);
+
+		return val;
+	}
 	else if(port == 2)
 		return 0;
 	else if(port == 3)
@@ -454,6 +460,20 @@ static bool loadRoms(uint8_t* pMemory, size_t memorySizeBytes)
 	return true;
 }
 
+static void copyVideoMemoryToDisplayBuffer(Machine& machine)
+{
+	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
+	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
+	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
+	for(unsigned int i = 0; i < displaySizeBytes; i++)
+	{
+		const unsigned int kVideoAddress = 0x2400;
+		unsigned int address = kVideoAddress + i;
+		uint8_t val = ReadByteFromMemory(machine.cpu.pMemory, address, /*fatalOnFail*/true);
+		machine.pDisplayBuffer[i] = val;
+	}
+}
+
 bool CreateMachine(Machine** ppMachine)
 {
 	Machine* pMachine = new Machine;
@@ -515,18 +535,10 @@ void DestroyMachine(Machine* pMachine)
 	delete pMachine;
 }
 
-static void copyVideoMemoryToDisplayBuffer(Machine& machine)
+void StartFrame(Machine* pMachine)
 {
-	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
-	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
-	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
-	for(unsigned int i = 0; i < displaySizeBytes; i++)
-	{
-		const unsigned int kVideoAddress = 0x2400;
-		unsigned int address = kVideoAddress + i;
-		uint8_t val = ReadByteFromMemory(machine.cpu.pMemory, address, /*fatalOnFail*/true);
-		machine.pDisplayBuffer[i] = val;
-	}
+	HP_ASSERT(pMachine);
+	pMachine->coinInserted = false;
 }
 
 // returns true if still running
