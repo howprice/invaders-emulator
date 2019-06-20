@@ -372,6 +372,8 @@ int main(int argc, char** argv)
 	uint64_t frameIndex = 0;
 	while(!bDone)
 	{
+		StartFrame(pMachine);
+		
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
 		{
@@ -383,6 +385,8 @@ int main(int argc, char** argv)
 			{
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					bDone = true;
+				else if(event.key.keysym.sym == SDLK_5)
+					pMachine->coinInserted = true;
 				else if(event.key.keysym.sym == SDLK_SPACE)
 				{
 				}

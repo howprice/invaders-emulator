@@ -16,7 +16,11 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## TODO
 
-- Rotate screen 90 degrees anti-clockwise
+- Implement DAA instruction
+  - Requires the Auxiliary Carry flag, so will need to fix up for all (or all preceding) instructions!
+- Understand decimal addition: Binary Coded Decimal, and the DAA
+  - See Programming Manual p56
+
 - Map host input (SDL) to port data
 - Add timings to 8080 instructions 
 - Return instruction cycle count from instruction execution functions
