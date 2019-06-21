@@ -10,7 +10,6 @@ typedef void(*ExecuteInstruction)(State8080& state);
 
 struct Instruction
 {
-	uint8_t opcode;
 	const char* mnemonic;
 	uint16_t sizeBytes;
 	ExecuteInstruction execute;
@@ -2264,262 +2263,262 @@ static void executeFE(State8080& state)
 
 static const Instruction s_instructions[] =
 {
-	{ 0x00, "NOP", 1, execute00 },
-	{ 0x01, "LXI B,%04X", 3, execute01 },
-	{ 0x02, "STAX B", 1, execute02 }, // aka LD (BC),A  (BC) <- A
-	{ 0x03, "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
-	{ 0x04, "INR B", 1, execute04 }, // aka INC B   B <- B + 1    Z, S, P, AC
-	{ 0x05, "DCR B", 1, execute05 }, // aka DEC B    B <- B - 1   Z, S, P, AC
-	{ 0x06, "MVI B, %02X", 2, execute06 }, // B <- byte 2
-	{ 0x07, "RLC",	1, execute07 }, // aka RLCA	  A = A << 1; bit 0 = prev bit 7; CY = prev bit 7   Sets Carry flag
-	{ 0x08, "-", 1, nullptr },
-	{ 0x09, "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
-	{ 0x0a, "LDAX B", 1, execute0A}, // aka LD A,(BC)  A <- (BC)
-	{ 0x0b, "DCX B", 1, execute0B }, // aka DEC BC    BC = BC - 1
-	{ 0x0c, "INR C", 1, execute0C }, // aka INC C    C <- C + 1    Z, S, P, AC
-	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C - 1    Z, S, P, AC
-	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
-	{ 0x0f, "RRC",	1, execute0F }, // aka RRCA  Rotate Accumulator Right
-	{ 0x10, "-", 1, nullptr }, //	
-	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
-	{ 0x12, "STAX D", 1, execute12 }, // aka LD (DE),A   (DE) <- A
-	{ 0x13, "INX D", 1, execute13 }, //			DE < -DE + 1
-	{ 0x14, "INR D", 1, execute14 }, // aka INC D    D <- D + 1   Z, S, P, AC	
-	{ 0x15, "DCR D", 1, execute15 }, // aka DEC D	 D <- D - 1    Z, S, P, AC
-	{ 0x16, "MVI D, %02X",	2, execute16 }, // D <- byte 2
-	{ 0x17, "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
-	{ 0x18, "-", 1, nullptr }, //	
-	{ 0x19, "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
-	{ 0x1a, "LDAX D", 1, execute1A }, // A <- (DE)
-	{ 0x1b, "DCX D", 1, execute1B }, // aka DEC DE   DE = DE - 1
-	{ 0x1c, "INR E", 1, execute1C }, // aka INC E    E <- E + 1    Z, S, P, AC
-	{ 0x1d, "DCR E", 1, execute1D }, // aka DEC E	 E <- E - 1    Z, S, P, AC
-	{ 0x1e, "MVI E,%02X",	2, nullptr }, //			E < -byte 2
-	{ 0x1f, "RAR",	1, execute1F }, // A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0		CY	
-	{ 0x20, "-", 1, nullptr }, //	
-	{ 0x21, "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
-	{ 0x22, "SHLD %04X", 3, execute22 }, // aka LD (adr),HL  (adr) < -L; (adr + 1) < -H
-	{ 0x23, "INX H",	1, execute23 }, // HL <- HL + 1
-	{ 0x24, "INR H", 1, execute24}, // aka INC H    H <- H + 1    Z, S, P, AC
-	{ 0x25, "DCR H", 1, execute25 }, // aka DEC H	 H <- H - 1    Z, S, P, AC
-	{ 0x26, "MVI H,%02X", 2, execute26 }, // H <- byte 2
-	{ 0x27, "DAA",	1, execute27 }, // Decimal Adjust Accumulator
-	{ 0x28, "-", 1, nullptr }, //	
-	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
-	{ 0x2a, "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
-	{ 0x2b, "DCX H", 1, execute2B }, // aka DEC HL   HL <- HL-1
-	{ 0x2c, "INR L", 1, execute2C }, // aka INC L    L <- L + 1    Z, S, P, AC
-	{ 0x2d, "DCR L", 1, execute2D }, // aka DEC L	 L <- L - 1    Z, S, P, AC
-	{ 0x2e, "MVI L, %02X", 2, execute2E }, // L <- byte 2
-	{ 0x2f, "CMA", 1, execute2F }, // aka CPL  A <- !A
-	{ 0x30, "-", 1, nullptr }, //	
-	{ 0x31, "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
-	{ 0x32, "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
-	{ 0x33, "INX SP",	1, nullptr }, //			SP = SP + 1
-	{ 0x34, "INR M", 1, execute34 }, // aka INC (HL)   (HL) <- (HL) + 1    Z, S, P, AC  
-	{ 0x35, "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL) - 1    Z, S, P, AC 
-	{ 0x36, "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
-	{ 0x37, "STC", 1, execute37 }, // Carry = 1
-	{ 0x38, "-", 1},
-	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
-	{ 0x3a, "LDA %04X",	3, execute3A }, // A <- (adr)
-	{ 0x3b, "DCX SP", 1, execute3B }, // aka DEC SP    SP = SP - 1
-	{ 0x3c, "INR A", 1, execute3C }, // aka INC A   A <- A+1   Z, S, P, AC
-	{ 0x3d, "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
-	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
-	{ 0x3f, "CMC",	1, nullptr }, //		CY	CY = !CY
-	{ 0x40, "MOV B,B", 1, execute40 }, // B <- B
-	{ 0x41, "MOV B,C", 1, execute41 }, // B <- C
-	{ 0x42, "MOV B,D", 1, execute42 }, // B <- D
-	{ 0x43, "MOV B,E", 1, execute43 }, // B <- E
-	{ 0x44, "MOV B,H", 1, execute44 }, // B <- H
-	{ 0x45, "MOV B,L", 1, execute45 }, // B <- L
-	{ 0x46, "MOV B,M", 1, execute46 }, // B <- (HL)
-	{ 0x47, "MOV B,A", 1, execute47 }, // B <- A
-	{ 0x48, "MOV C,B", 1, execute48 }, // C <- B
-	{ 0x49, "MOV C,C", 1, execute49 }, // C <- C
-	{ 0x4a, "MOV C,D", 1, execute4A }, // C <- D
-	{ 0x4b, "MOV C,E", 1, execute4B }, // C <- E
-	{ 0x4c, "MOV C,H", 1, execute4C }, // C <- H
-	{ 0x4d, "MOV C,L", 1, execute4D }, // C <- L
-	{ 0x4e, "MOV C,M", 1, execute4E }, // C <- (HL)
-	{ 0x4f, "MOV C,A", 1, execute4F }, // C <- A
-	{ 0x50, "MOV D,B", 1, execute50 }, // D <- B
-	{ 0x51, "MOV D,C", 1, execute51 }, // D <- C
-	{ 0x52, "MOV D,D", 1, execute52 }, // D <- D
-	{ 0x53, "MOV D,E", 1, execute53 }, // D <- E
-	{ 0x54, "MOV D,H", 1, execute54 }, // D <- H
-	{ 0x55, "MOV D,L", 1, execute55 }, // D <- L
-	{ 0x56, "MOV D,M", 1, execute56 }, // D <- (HL)
-	{ 0x57, "MOV D,A", 1, execute57 }, // D <- A
-	{ 0x58, "MOV E,B", 1, execute58 }, // E <- B
-	{ 0x59, "MOV E,C", 1, execute59 }, // E <- C
-	{ 0x5a, "MOV E,D", 1, execute5A }, // E <- D
-	{ 0x5b, "MOV E,E", 1, execute5B }, // E <- E
-	{ 0x5c, "MOV E,H", 1, execute5C }, // E <- H
-	{ 0x5d, "MOV E,L", 1, execute5D }, // E <- L
-	{ 0x5e, "MOV E,M", 1, execute5E }, // E < -(HL)
-	{ 0x5f, "MOV E,A", 1, execute5F }, // E <- A
-	{ 0x60, "MOV H,B", 1, execute60 }, // H <- B
-	{ 0x61, "MOV H,C", 1, execute61 }, // H <- C
-	{ 0x62, "MOV H,D", 1, execute62 }, // H <- D
-	{ 0x63, "MOV H,E", 1, execute63 }, // H <- E
-	{ 0x64, "MOV H,H", 1, execute64 }, // H <- H
-	{ 0x65, "MOV H,L", 1, execute65 }, // H <- L
-	{ 0x66, "MOV H,M", 1, execute66 }, // H <- (HL)
-	{ 0x67, "MOV H,A", 1, execute67 }, // H <- A
-	{ 0x68, "MOV L,B", 1, execute68 }, // L <- B
-	{ 0x69, "MOV L,C", 1, execute69 }, // L <- C
-	{ 0x6a, "MOV L,D", 1, execute6A }, // L <- D
-	{ 0x6b, "MOV L,E", 1, execute6B }, // L <- E
-	{ 0x6c, "MOV L,H", 1, execute6C }, // L <- H
-	{ 0x6d, "MOV L,L", 1, execute6D }, // L <- L
-	{ 0x6e, "MOV L,M", 1, execute6E }, // L <- (HL)
-	{ 0x6f, "MOV L,A", 1, execute6F }, // L <- A
-	{ 0x70, "MOV M,B", 1, execute70 }, // (HL) <- B
-	{ 0x71, "MOV M,C", 1, execute71 }, // (HL) <- C
-	{ 0x72, "MOV M,D", 1, execute72 }, // (HL) <- D
-	{ 0x73, "MOV M,E", 1, execute73 }, // (HL) <- E
-	{ 0x74, "MOV M,H", 1, execute74 }, // (HL) <- H
-	{ 0x75, "MOV M,L", 1, execute75 }, // (HL) <- L
-	{ 0x76, "HLT",	1, nullptr }, //			special
-	{ 0x77, "MOV M,A", 1, execute77 }, // (HL) <- A
-	{ 0x78, "MOV A,B", 1, execute78 }, // A <- B
-	{ 0x79, "MOV A,C", 1, execute79 }, // A <- C
-	{ 0x7a, "MOV A,D", 1, execute7A }, // A <- D
-	{ 0x7b, "MOV A,E", 1, execute7B }, // A <- E
-	{ 0x7c, "MOV A,H", 1, execute7C }, // A <- H
-	{ 0x7d, "MOV A,L", 1, execute7D }, // A <- L
-	{ 0x7e, "MOV A,M", 1, execute7E }, // A <- (HL)
-	{ 0x7f, "MOV A,A", 1, execute7F }, // A <- A
-	{ 0x80, "ADD B", 1, execute80 }, //	aka ADD A,B     A <- A + B     Z, S, P, CY, AC
-	{ 0x81, "ADD C", 1, execute81 }, //	aka ADD A,C     A <- A + C     Z, S, P, CY, AC
-	{ 0x82, "ADD D", 1, execute82 }, //	aka ADD A,D     A <- A + D     Z, S, P, CY, AC
-	{ 0x83, "ADD E", 1, execute83 }, //	aka ADD A,E     A <- A + E     Z, S, P, CY, AC
-	{ 0x84, "ADD H", 1, execute84 }, //	aka ADD A,H     A <- A + H     Z, S, P, CY, AC
-	{ 0x85, "ADD L", 1, execute85 }, // aka ADD A,L     A <- A + L     Z, S, P, CY, AC
-	{ 0x86, "ADD M", 1, execute86 }, // aka ADD A,(HL)  A <- A + (HL)  Z, S, P, CY, AC	
-	{ 0x87, "ADD A", 1, execute87 }, //	aka ADD A,A     A <- A + A     Z, S, P, CY, AC	
-	{ 0x88, "ADC B", 1, execute88 }, // A <- A + B + CY     Z, S, P, CY, AC	
-	{ 0x89, "ADC C", 1, execute89 }, // A <- A + C + CY     Z, S, P, CY, AC	
-	{ 0x8a, "ADC D", 1, execute8a }, // A <- A + D + CY     Z, S, P, CY, AC	
-	{ 0x8b, "ADC E", 1, execute8b }, // A <- A + E + CY     Z, S, P, CY, AC	
-	{ 0x8c, "ADC H", 1, execute8c }, // A <- A + H + CY     Z, S, P, CY, AC	
-	{ 0x8d, "ADC L", 1, execute8d }, // A <- A + L + CY     Z, S, P, CY, AC	
-	{ 0x8e, "ADC M", 1, execute8e }, // A <- A + (HL)+CY    Z, S, P, CY, AC	
-	{ 0x8f, "ADC A", 1, execute8f }, // A <- A + A + CY     Z, S, P, CY, AC	
-	{ 0x90, "SUB B", 1, execute90 }, // A <- A - B       Z, S, P, CY, AC	
-	{ 0x91, "SUB C", 1, execute91 }, // A <- A - C       Z, S, P, CY, AC	
-	{ 0x92, "SUB D", 1, execute92 }, // A <- A - D       Z, S, P, CY, AC	
-	{ 0x93, "SUB E", 1, execute93 }, // A <- A - E       Z, S, P, CY, AC	
-	{ 0x94, "SUB H", 1, execute94 }, // A <- A - H       Z, S, P, CY, AC	
-	{ 0x95, "SUB L", 1, execute95 }, // A <- A - L       Z, S, P, CY, AC	
-	{ 0x96, "SUB M", 1, execute96 }, // A <- A - (HL)    Z, S, P, CY, AC	
-	{ 0x97, "SUB A", 1, execute97 }, // A <- A - A       Z, S, P, CY, AC	
-	{ 0x98, "SBB B", 1, nullptr }, // A <- A - B - CY		Z, S, P, CY, AC	  Not used in invaders
-	{ 0x99, "SBB C", 1, nullptr }, // A <- A - C - CY		Z, S, P, CY, AC	
-	{ 0x9a, "SBB D", 1, nullptr }, // A <- A - D - CY		Z, S, P, CY, AC	
-	{ 0x9b, "SBB E", 1, nullptr }, // A <- A - E - CY		Z, S, P, CY, AC	
-	{ 0x9c, "SBB H", 1, nullptr }, // A <- A - H - CY		Z, S, P, CY, AC	
-	{ 0x9d, "SBB L", 1, nullptr }, // A <- A - L - CY		Z, S, P, CY, AC	
-	{ 0x9e, "SBB M", 1, nullptr }, // A <- A - (HL) - CY		Z, S, P, CY, AC	
-	{ 0x9f, "SBB A", 1, nullptr }, // A <- A - A - CY		Z, S, P, CY, AC	
-	{ 0xa0, "ANA B", 1, executeA0 }, // aka AND B     A <- A&B          Z, S, P, CY, AC	
-	{ 0xa1, "ANA C", 1, executeA1 }, //	aka AND C     A <- A & C        Z, S, P, CY, AC	
-	{ 0xa2, "ANA D", 1, executeA2 }, //	aka AND D     A <- A & D        Z, S, P, CY, AC	
-	{ 0xa3, "ANA E", 1, executeA3 }, //	aka AND E     A <- A & E        Z, S, P, CY, AC	
-	{ 0xa4, "ANA H", 1, executeA4 }, //	aka AND H     A <- A & H        Z, S, P, CY, AC	
-	{ 0xa5, "ANA L", 1, executeA5 }, //	aka AND L     A <- A & L        Z, S, P, CY, AC	
-	{ 0xa6, "ANA M", 1, executeA6 }, // aka AND (HL)  A <- A & (HL)     Z, S, P, CY, AC
-	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A     A <- A & A        Z, S, P, CY, AC
-	{ 0xa8, "XRA B", 1, executeA8 }, // aka XOR B     A <- A^B          Z, S, P, CY, AC
-	{ 0xa9, "XRA C", 1, executeA9 }, //	aka XOR C     A <- A ^ C        Z, S, P, CY, AC
-	{ 0xaa, "XRA D", 1, executeAA }, //	aka XOR D     A <- A ^ D        Z, S, P, CY, AC
-	{ 0xab, "XRA E", 1, executeAB }, //	aka XOR E     A <- A ^ E        Z, S, P, CY, AC
-	{ 0xac, "XRA H", 1, executeAC }, //	aka XOR H     A <- A ^ H        Z, S, P, CY, AC
-	{ 0xad, "XRA L", 1, executeAD }, //	aka XOR L     A <- A ^ L        Z, S, P, CY, AC
-	{ 0xae, "XRA M", 1, executeAE }, //	aka XOR (HL)  A <- A ^ (HL)     Z, S, P, CY, AC
-	{ 0xaf, "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A    (A <- 0)    Z, S, P, CY, AC	
-	{ 0xb0, "ORA B", 1, executeB0 }, // aka OR B     A <- A | B     Z, S, P, CY, AC
-	{ 0xb1, "ORA C", 1, executeB1 }, //	aka OR C     A <- A | C     Z, S, P, CY, AC
-	{ 0xb2, "ORA D", 1, executeB2 }, //	aka OR D     A <- A | D     Z, S, P, CY, AC
-	{ 0xb3, "ORA E", 1, executeB3 }, //	aka OR E     A <- A | E     Z, S, P, CY, AC
-	{ 0xb4, "ORA H", 1, executeB4 }, // aka OR H     A <- A|H       Z, S, P, CY, AC
-	{ 0xb5, "ORA L", 1, executeB5 }, //	aka OR L     A < -A | L     Z, S, P, CY, AC
-	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A | (HL)  Z, S, P, CY, AC
-	{ 0xb7, "ORA A", 1, executeB7 }, // aka OR A     A < -A | A     Z, S, P, CY, AC
-	{ 0xb8, "CMP B", 1, executeB8 }, // aka CP B     A-B   Z, S, P, CY, AC
-	{ 0xb9, "CMP C", 1, executeB9 }, //	aka CP C     A-B   Z, S, P, CY, AC
-	{ 0xba, "CMP D", 1, executeBA }, //	aka CP D     A-B   Z, S, P, CY, AC
-	{ 0xbb, "CMP E", 1, executeBB }, //	aka CP E     A-B   Z, S, P, CY, AC
-	{ 0xbc, "CMP H", 1, executeBC }, //	aka CP H     A-B   Z, S, P, CY, AC
-	{ 0xbd, "CMP L", 1, executeBD }, //	aka CP L     A-B   Z, S, P, CY, AC
-	{ 0xbe, "CMP M", 1, executeBE }, //	aka CP (HL)  A-B   Z, S, P, CY, AC
-	{ 0xbf, "CMP A", 1, executeBF }, //	aka CP A     A-B   Z, S, P, CY, AC
-	{ 0xc0, "RNZ", 1, executeC0 }, // if NZ, RET
-	{ 0xc1, "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
-	{ 0xc2, "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
-	{ 0xc3, "JMP %04X", 3, executeC3 }, //			PC <= adr
-	{ 0xc4, "CNZ %04X", 3, executeC4 }, // if NZ, CALL adr
-	{ 0xc5, "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
-	{ 0xc6, "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
-	{ 0xc7, "RST 0",	1, nullptr }, //			CALL $0
-	{ 0xc8, "RZ	1",	1, executeC8 }, // if Z, RET
-	{ 0xc9, "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
-	{ 0xca, "JZ %04X", 3, executeCA }, // if Z, PC <- adr
-	{ 0xcb, "-", 1, nullptr }, //	
-	{ 0xcc, "CZ %04X",	3, executeCC }, // if Z, CALL adr
-	{ 0xcd, "CALL %04X", 3, executeCD }, // (SP - 1) <- PC.hi; (SP - 2) <- PC.lo; SP <- SP - 2; PC = adr
-	{ 0xce, "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
-	{ 0xcf, "RST 1", 1, nullptr }, //			CALL $8
-	{ 0xd0, "RNC",	1, executeD0 }, // if NCY, RET
-	{ 0xd1, "POP DE", 1, executeD1 }, // E < -(sp); D < -(sp + 1); sp < -sp + 2
-	{ 0xd2, "JNC %04X", 3, executeD2 }, // if NCY, PC <- adr
-	{ 0xd3, "OUT %02X",	2, executeD3 },
-	{ 0xd4, "CNC %04X",	3, executeD4 }, // aka CALL NC,<address>  if NCY, CALL adr
-	{ 0xd5, "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
-	{ 0xd6, "SUI %02X", 2, executeD6 }, // aka SUB  A <- A-d8   Z, S, P, CY, AC	
-	{ 0xd7, "RST 2",	1, nullptr }, //			CALL $10
-	{ 0xd8, "RC", 1, executeD8 }, // if Carry set, RET
-	{ 0xd9, "-", 1, nullptr }, //	
-	{ 0xda, "JC %04X",	3, executeDA }, // if CY, PC < -adr
-	{ 0xdb, "IN %02X", 2, executeDB },
-	{ 0xdc, "CC %04X",	3, executeDC }, // if CY, CALL adr
-	{ 0xdd, "-", 1, nullptr }, //	
-	{ 0xde, "SBI %02X",	2, executeDE }, // aka SBC A,d8   A <- A-d8-CY   Z, S, P, CY, AC	
-	{ 0xdf, "RST 3",	1, nullptr }, //			CALL $18
-	{ 0xe0, "RPO",	1, nullptr }, //			if PO, RET
-	{ 0xe1, "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
-	{ 0xe2, "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
-	{ 0xe3, "XTHL",	1, executeE3 }, // L <-> (SP); H <-> (SP + 1)
-	{ 0xe4, "CPO %04X", 3, executeE4 }, //			if PO, CALL adr
-	{ 0xe5, "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
-	{ 0xe6, "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
-	{ 0xe7, "RST 4",	1, nullptr }, //			CALL $20
-	{ 0xe8, "RPE",	1, nullptr }, //			if PE, RET
-	{ 0xe9, "PCHL",	1, executeE9 }, // aka JP (HL)  PC.hi <- H; PC.lo <- L
-	{ 0xea, "JPE %04X",	3, nullptr }, //			if PE, PC < -adr
-	{ 0xeb, "XCHG",	1, executeEB }, // H <-> D; L <-> E
-	{ 0xec, "CPE %04X", 3, executeEC }, //			if PE, CALL adr
-	{ 0xed, "-", 1, nullptr }, //	
-	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data  "XRI also resets the carry and auxiliary carry flags to zero" - Intel 8080/8085 Assembly Language Programming
-	{ 0xef, "RST 5",	1, nullptr }, //			CALL $28
-	{ 0xf0, "RP", 1, nullptr }, //			if P, RET
-	{ 0xf1, "POP PSW",	1, executeF1 }, // aka POP AF
-	{ 0xf2, "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
-	{ 0xf3, "DI",	1, nullptr }, //			special
-	{ 0xf4, "CP %04X",	3, executeF4 }, //			if P, PC < -adr
-	{ 0xf5, "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
-	{ 0xf6, "ORI %02X", 2, executeF6 }, // A <- A | data    Z, S, P, CY, AC	
-	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
-	{ 0xf8, "RM",	1, nullptr }, //			if M, RET
-	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL
-	{ 0xfa, "JM %04X", 3, executeFA }, // Jump If Minus aka JP M,<adr>  if M, PC <- adr
-	{ 0xfb, "EI", 1, executeFB }, // enable interrupts
-	{ 0xfc, "CM %04X",	3, executeFC }, //			if M, CALL adr
-	{ 0xfd, "-", 1, nullptr }, //	
-	{ 0xfe, "CPI %02X",	2, executeFE }, // Compare immediate with accumulator  Z, S, P, CY, AC    A - data
-	{ 0xff, "RST 7",	1, nullptr }, //			CALL $38
+	/* 0x00 */ { "NOP", 1, execute00 },
+	/* 0x01 */ { "LXI B,%04X", 3, execute01 },
+	/* 0x02 */ { "STAX B", 1, execute02 }, // aka LD (BC),A  (BC) <- A
+	/* 0x03 */ { "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
+	/* 0x04 */ { "INR B", 1, execute04 }, // aka INC B   B <- B + 1    Z, S, P, AC
+	/* 0x05 */ { "DCR B", 1, execute05 }, // aka DEC B    B <- B - 1   Z, S, P, AC
+	/* 0x06 */ { "MVI B, %02X", 2, execute06 }, // B <- byte 2
+	/* 0x07 */ { "RLC",	1, execute07 }, // aka RLCA	  A = A << 1; bit 0 = prev bit 7; CY = prev bit 7   Sets Carry flag
+	/* 0x08 */ { "-", 1, nullptr },
+	/* 0x09 */ { "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
+	/* 0x0a */ { "LDAX B", 1, execute0A}, // aka LD A,(BC)  A <- (BC)
+	/* 0x0b */ { "DCX B", 1, execute0B }, // aka DEC BC    BC = BC - 1
+	/* 0x0c */ { "INR C", 1, execute0C }, // aka INC C    C <- C + 1    Z, S, P, AC
+	/* 0x0d */ { "DCR C", 1, execute0D }, // aka DEC C	 C <- C - 1    Z, S, P, AC
+	/* 0x0e */ { "MVI C,%02X", 2, execute0E }, // C <- byte 2
+	/* 0x0f */ { "RRC",	1, execute0F }, // aka RRCA  Rotate Accumulator Right
+	/* 0x10 */ { "-", 1, nullptr }, //	
+	/* 0x11 */ { "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
+	/* 0x12 */ { "STAX D", 1, execute12 }, // aka LD (DE),A   (DE) <- A
+	/* 0x13 */ { "INX D", 1, execute13 }, //			DE < -DE + 1
+	/* 0x14 */ { "INR D", 1, execute14 }, // aka INC D    D <- D + 1   Z, S, P, AC	
+	/* 0x15 */ { "DCR D", 1, execute15 }, // aka DEC D	 D <- D - 1    Z, S, P, AC
+	/* 0x16 */ { "MVI D, %02X",	2, execute16 }, // D <- byte 2
+	/* 0x17 */ { "RAL",	1, nullptr }, //		CY	A = A << 1; bit 0 = prev CY; CY = prev bit 7
+	/* 0x18 */ { "-", 1, nullptr }, //	
+	/* 0x19 */ { "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
+	/* 0x1a */ { "LDAX D", 1, execute1A }, // A <- (DE)
+	/* 0x1b */ { "DCX D", 1, execute1B }, // aka DEC DE   DE = DE - 1
+	/* 0x1c */ { "INR E", 1, execute1C }, // aka INC E    E <- E + 1    Z, S, P, AC
+	/* 0x1d */ { "DCR E", 1, execute1D }, // aka DEC E	 E <- E - 1    Z, S, P, AC
+	/* 0x1e */ { "MVI E,%02X",	2, nullptr }, //			E < -byte 2
+	/* 0x1f */ { "RAR",	1, execute1F }, // A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0		CY	
+	/* 0x20 */ { "-", 1, nullptr }, //	
+	/* 0x21 */ { "LXI H,%04X", 3, execute21 }, // H <- byte 3, L <-byte 2
+	/* 0x22 */ { "SHLD %04X", 3, execute22 }, // aka LD (adr),HL  (adr) < -L; (adr + 1) < -H
+	/* 0x23 */ { "INX H",	1, execute23 }, // HL <- HL + 1
+	/* 0x24 */ { "INR H", 1, execute24}, // aka INC H    H <- H + 1    Z, S, P, AC
+	/* 0x25 */ { "DCR H", 1, execute25 }, // aka DEC H	 H <- H - 1    Z, S, P, AC
+	/* 0x26 */ { "MVI H,%02X", 2, execute26 }, // H <- byte 2
+	/* 0x27 */ { "DAA",	1, execute27 }, // Decimal Adjust Accumulator
+	/* 0x28 */ { "-", 1, nullptr }, //	
+	/* 0x29 */ { "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
+	/* 0x2a */ { "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
+	/* 0x2b */ { "DCX H", 1, execute2B }, // aka DEC HL   HL <- HL-1
+	/* 0x2c */ { "INR L", 1, execute2C }, // aka INC L    L <- L + 1    Z, S, P, AC
+	/* 0x2d */ { "DCR L", 1, execute2D }, // aka DEC L	 L <- L - 1    Z, S, P, AC
+	/* 0x2e */ { "MVI L, %02X", 2, execute2E }, // L <- byte 2
+	/* 0x2f */ { "CMA", 1, execute2F }, // aka CPL  A <- !A
+	/* 0x30 */ { "-", 1, nullptr }, //	
+	/* 0x31 */ { "LXI SP, %04X",	3, execute31 }, // SP.hi <- byte 3, SP.lo <- byte 2
+	/* 0x32 */ { "STA %04X",	3, execute32 }, // aka LD (adr),A    (adr) <- A
+	/* 0x33 */ { "INX SP",	1, nullptr }, //			SP = SP + 1
+	/* 0x34 */ { "INR M", 1, execute34 }, // aka INC (HL)   (HL) <- (HL) + 1    Z, S, P, AC  
+	/* 0x35 */ { "DCR M", 1, execute35 }, // aka DEC (HL)   (HL) <- (HL) - 1    Z, S, P, AC 
+	/* 0x36 */ { "MVI M,%02X",	2, execute36 }, // (HL) <- byte 2
+	/* 0x37 */ { "STC", 1, execute37 }, // Carry = 1
+	/* 0x38 */ { "-", 1},
+	/* 0x39 */ { "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
+	/* 0x3a */ { "LDA %04X",	3, execute3A }, // A <- (adr)
+	/* 0x3b */ { "DCX SP", 1, execute3B }, // aka DEC SP    SP = SP - 1
+	/* 0x3c */ { "INR A", 1, execute3C }, // aka INC A   A <- A+1   Z, S, P, AC
+	/* 0x3d */ { "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
+	/* 0x3e */ { "MVI A,%02X", 2, execute3E }, // A <- byte 2
+	/* 0x3f */ { "CMC",	1, nullptr }, //		CY	CY = !CY
+	/* 0x40 */ { "MOV B,B", 1, execute40 }, // B <- B
+	/* 0x41 */ { "MOV B,C", 1, execute41 }, // B <- C
+	/* 0x42 */ { "MOV B,D", 1, execute42 }, // B <- D
+	/* 0x43 */ { "MOV B,E", 1, execute43 }, // B <- E
+	/* 0x44 */ { "MOV B,H", 1, execute44 }, // B <- H
+	/* 0x45 */ { "MOV B,L", 1, execute45 }, // B <- L
+	/* 0x46 */ { "MOV B,M", 1, execute46 }, // B <- (HL)
+	/* 0x47 */ { "MOV B,A", 1, execute47 }, // B <- A
+	/* 0x48 */ { "MOV C,B", 1, execute48 }, // C <- B
+	/* 0x49 */ { "MOV C,C", 1, execute49 }, // C <- C
+	/* 0x4a */ { "MOV C,D", 1, execute4A }, // C <- D
+	/* 0x4b */ { "MOV C,E", 1, execute4B }, // C <- E
+	/* 0x4c */ { "MOV C,H", 1, execute4C }, // C <- H
+	/* 0x4d */ { "MOV C,L", 1, execute4D }, // C <- L
+	/* 0x4e */ { "MOV C,M", 1, execute4E }, // C <- (HL)
+	/* 0x4f */ { "MOV C,A", 1, execute4F }, // C <- A
+	/* 0x50 */ { "MOV D,B", 1, execute50 }, // D <- B
+	/* 0x51 */ { "MOV D,C", 1, execute51 }, // D <- C
+	/* 0x52 */ { "MOV D,D", 1, execute52 }, // D <- D
+	/* 0x53 */ { "MOV D,E", 1, execute53 }, // D <- E
+	/* 0x54 */ { "MOV D,H", 1, execute54 }, // D <- H
+	/* 0x55 */ { "MOV D,L", 1, execute55 }, // D <- L
+	/* 0x56 */ { "MOV D,M", 1, execute56 }, // D <- (HL)
+	/* 0x57 */ { "MOV D,A", 1, execute57 }, // D <- A
+	/* 0x58 */ { "MOV E,B", 1, execute58 }, // E <- B
+	/* 0x59 */ { "MOV E,C", 1, execute59 }, // E <- C
+	/* 0x5a */ { "MOV E,D", 1, execute5A }, // E <- D
+	/* 0x5b */ { "MOV E,E", 1, execute5B }, // E <- E
+	/* 0x5c */ { "MOV E,H", 1, execute5C }, // E <- H
+	/* 0x5d */ { "MOV E,L", 1, execute5D }, // E <- L
+	/* 0x5e */ { "MOV E,M", 1, execute5E }, // E < -(HL)
+	/* 0x5f */ { "MOV E,A", 1, execute5F }, // E <- A
+	/* 0x60 */ { "MOV H,B", 1, execute60 }, // H <- B
+	/* 0x61 */ { "MOV H,C", 1, execute61 }, // H <- C
+	/* 0x62 */ { "MOV H,D", 1, execute62 }, // H <- D
+	/* 0x63 */ { "MOV H,E", 1, execute63 }, // H <- E
+	/* 0x64 */ { "MOV H,H", 1, execute64 }, // H <- H
+	/* 0x65 */ { "MOV H,L", 1, execute65 }, // H <- L
+	/* 0x66 */ { "MOV H,M", 1, execute66 }, // H <- (HL)
+	/* 0x67 */ { "MOV H,A", 1, execute67 }, // H <- A
+	/* 0x68 */ { "MOV L,B", 1, execute68 }, // L <- B
+	/* 0x69 */ { "MOV L,C", 1, execute69 }, // L <- C
+	/* 0x6a */ { "MOV L,D", 1, execute6A }, // L <- D
+	/* 0x6b */ { "MOV L,E", 1, execute6B }, // L <- E
+	/* 0x6c */ { "MOV L,H", 1, execute6C }, // L <- H
+	/* 0x6d */ { "MOV L,L", 1, execute6D }, // L <- L
+	/* 0x6e */ { "MOV L,M", 1, execute6E }, // L <- (HL)
+	/* 0x6f */ { "MOV L,A", 1, execute6F }, // L <- A
+	/* 0x70 */ { "MOV M,B", 1, execute70 }, // (HL) <- B
+	/* 0x71 */ { "MOV M,C", 1, execute71 }, // (HL) <- C
+	/* 0x72 */ { "MOV M,D", 1, execute72 }, // (HL) <- D
+	/* 0x73 */ { "MOV M,E", 1, execute73 }, // (HL) <- E
+	/* 0x74 */ { "MOV M,H", 1, execute74 }, // (HL) <- H
+	/* 0x75 */ { "MOV M,L", 1, execute75 }, // (HL) <- L
+	/* 0x76 */ { "HLT",	1, nullptr }, //			special
+	/* 0x77 */ { "MOV M,A", 1, execute77 }, // (HL) <- A
+	/* 0x78 */ { "MOV A,B", 1, execute78 }, // A <- B
+	/* 0x79 */ { "MOV A,C", 1, execute79 }, // A <- C
+	/* 0x7a */ { "MOV A,D", 1, execute7A }, // A <- D
+	/* 0x7b */ { "MOV A,E", 1, execute7B }, // A <- E
+	/* 0x7c */ { "MOV A,H", 1, execute7C }, // A <- H
+	/* 0x7d */ { "MOV A,L", 1, execute7D }, // A <- L
+	/* 0x7e */ { "MOV A,M", 1, execute7E }, // A <- (HL)
+	/* 0x7f */ { "MOV A,A", 1, execute7F }, // A <- A
+	/* 0x80 */ { "ADD B", 1, execute80 }, //	aka ADD A,B     A <- A + B     Z, S, P, CY, AC
+	/* 0x81 */ { "ADD C", 1, execute81 }, //	aka ADD A,C     A <- A + C     Z, S, P, CY, AC
+	/* 0x82 */ { "ADD D", 1, execute82 }, //	aka ADD A,D     A <- A + D     Z, S, P, CY, AC
+	/* 0x83 */ { "ADD E", 1, execute83 }, //	aka ADD A,E     A <- A + E     Z, S, P, CY, AC
+	/* 0x84 */ { "ADD H", 1, execute84 }, //	aka ADD A,H     A <- A + H     Z, S, P, CY, AC
+	/* 0x85 */ { "ADD L", 1, execute85 }, // aka ADD A,L     A <- A + L     Z, S, P, CY, AC
+	/* 0x86 */ { "ADD M", 1, execute86 }, // aka ADD A,(HL)  A <- A + (HL)  Z, S, P, CY, AC	
+	/* 0x87 */ { "ADD A", 1, execute87 }, //	aka ADD A,A     A <- A + A     Z, S, P, CY, AC	
+	/* 0x88 */ { "ADC B", 1, execute88 }, // A <- A + B + CY     Z, S, P, CY, AC	
+	/* 0x89 */ { "ADC C", 1, execute89 }, // A <- A + C + CY     Z, S, P, CY, AC	
+	/* 0x8a */ { "ADC D", 1, execute8a }, // A <- A + D + CY     Z, S, P, CY, AC	
+	/* 0x8b */ { "ADC E", 1, execute8b }, // A <- A + E + CY     Z, S, P, CY, AC	
+	/* 0x8c */ { "ADC H", 1, execute8c }, // A <- A + H + CY     Z, S, P, CY, AC	
+	/* 0x8d */ { "ADC L", 1, execute8d }, // A <- A + L + CY     Z, S, P, CY, AC	
+	/* 0x8e */ { "ADC M", 1, execute8e }, // A <- A + (HL)+CY    Z, S, P, CY, AC	
+	/* 0x8f */ { "ADC A", 1, execute8f }, // A <- A + A + CY     Z, S, P, CY, AC	
+	/* 0x90 */ { "SUB B", 1, execute90 }, // A <- A - B       Z, S, P, CY, AC	
+	/* 0x91 */ { "SUB C", 1, execute91 }, // A <- A - C       Z, S, P, CY, AC	
+	/* 0x92 */ { "SUB D", 1, execute92 }, // A <- A - D       Z, S, P, CY, AC	
+	/* 0x93 */ { "SUB E", 1, execute93 }, // A <- A - E       Z, S, P, CY, AC	
+	/* 0x94 */ { "SUB H", 1, execute94 }, // A <- A - H       Z, S, P, CY, AC	
+	/* 0x95 */ { "SUB L", 1, execute95 }, // A <- A - L       Z, S, P, CY, AC	
+	/* 0x96 */ { "SUB M", 1, execute96 }, // A <- A - (HL)    Z, S, P, CY, AC	
+	/* 0x97 */ { "SUB A", 1, execute97 }, // A <- A - A       Z, S, P, CY, AC	
+	/* 0x98 */ { "SBB B", 1, nullptr }, // A <- A - B - CY		Z, S, P, CY, AC	  Not used in invaders
+	/* 0x99 */ { "SBB C", 1, nullptr }, // A <- A - C - CY		Z, S, P, CY, AC	
+	/* 0x9a */ { "SBB D", 1, nullptr }, // A <- A - D - CY		Z, S, P, CY, AC	
+	/* 0x9b */ { "SBB E", 1, nullptr }, // A <- A - E - CY		Z, S, P, CY, AC	
+	/* 0x9c */ { "SBB H", 1, nullptr }, // A <- A - H - CY		Z, S, P, CY, AC	
+	/* 0x9d */ { "SBB L", 1, nullptr }, // A <- A - L - CY		Z, S, P, CY, AC	
+	/* 0x9e */ { "SBB M", 1, nullptr }, // A <- A - (HL) - CY		Z, S, P, CY, AC	
+	/* 0x9f */ { "SBB A", 1, nullptr }, // A <- A - A - CY		Z, S, P, CY, AC	
+	/* 0xa0 */ { "ANA B", 1, executeA0 }, // aka AND B     A <- A&B          Z, S, P, CY, AC	
+	/* 0xa1 */ { "ANA C", 1, executeA1 }, //	aka AND C     A <- A & C        Z, S, P, CY, AC	
+	/* 0xa2 */ { "ANA D", 1, executeA2 }, //	aka AND D     A <- A & D        Z, S, P, CY, AC	
+	/* 0xa3 */ { "ANA E", 1, executeA3 }, //	aka AND E     A <- A & E        Z, S, P, CY, AC	
+	/* 0xa4 */ { "ANA H", 1, executeA4 }, //	aka AND H     A <- A & H        Z, S, P, CY, AC	
+	/* 0xa5 */ { "ANA L", 1, executeA5 }, //	aka AND L     A <- A & L        Z, S, P, CY, AC	
+	/* 0xa6 */ { "ANA M", 1, executeA6 }, // aka AND (HL)  A <- A & (HL)     Z, S, P, CY, AC
+	/* 0xa7 */ { "ANA A", 1, executeA7 }, // aka AND A     A <- A & A        Z, S, P, CY, AC
+	/* 0xa8 */ { "XRA B", 1, executeA8 }, // aka XOR B     A <- A^B          Z, S, P, CY, AC
+	/* 0xa9 */ { "XRA C", 1, executeA9 }, //	aka XOR C     A <- A ^ C        Z, S, P, CY, AC
+	/* 0xaa */ { "XRA D", 1, executeAA }, //	aka XOR D     A <- A ^ D        Z, S, P, CY, AC
+	/* 0xab */ { "XRA E", 1, executeAB }, //	aka XOR E     A <- A ^ E        Z, S, P, CY, AC
+	/* 0xac */ { "XRA H", 1, executeAC }, //	aka XOR H     A <- A ^ H        Z, S, P, CY, AC
+	/* 0xad */ { "XRA L", 1, executeAD }, //	aka XOR L     A <- A ^ L        Z, S, P, CY, AC
+	/* 0xae */ { "XRA M", 1, executeAE }, //	aka XOR (HL)  A <- A ^ (HL)     Z, S, P, CY, AC
+	/* 0xaf */ { "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A    (A <- 0)    Z, S, P, CY, AC	
+	/* 0xb0 */ { "ORA B", 1, executeB0 }, // aka OR B     A <- A | B     Z, S, P, CY, AC
+	/* 0xb1 */ { "ORA C", 1, executeB1 }, //	aka OR C     A <- A | C     Z, S, P, CY, AC
+	/* 0xb2 */ { "ORA D", 1, executeB2 }, //	aka OR D     A <- A | D     Z, S, P, CY, AC
+	/* 0xb3 */ { "ORA E", 1, executeB3 }, //	aka OR E     A <- A | E     Z, S, P, CY, AC
+	/* 0xb4 */ { "ORA H", 1, executeB4 }, // aka OR H     A <- A|H       Z, S, P, CY, AC
+	/* 0xb5 */ { "ORA L", 1, executeB5 }, //	aka OR L     A < -A | L     Z, S, P, CY, AC
+	/* 0xb6 */ { "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A | (HL)  Z, S, P, CY, AC
+	/* 0xb7 */ { "ORA A", 1, executeB7 }, // aka OR A     A < -A | A     Z, S, P, CY, AC
+	/* 0xb8 */ { "CMP B", 1, executeB8 }, // aka CP B     A-B   Z, S, P, CY, AC
+	/* 0xb9 */ { "CMP C", 1, executeB9 }, //	aka CP C     A-B   Z, S, P, CY, AC
+	/* 0xba */ { "CMP D", 1, executeBA }, //	aka CP D     A-B   Z, S, P, CY, AC
+	/* 0xbb */ { "CMP E", 1, executeBB }, //	aka CP E     A-B   Z, S, P, CY, AC
+	/* 0xbc */ { "CMP H", 1, executeBC }, //	aka CP H     A-B   Z, S, P, CY, AC
+	/* 0xbd */ { "CMP L", 1, executeBD }, //	aka CP L     A-B   Z, S, P, CY, AC
+	/* 0xbe */ { "CMP M", 1, executeBE }, //	aka CP (HL)  A-B   Z, S, P, CY, AC
+	/* 0xbf */ { "CMP A", 1, executeBF }, //	aka CP A     A-B   Z, S, P, CY, AC
+	/* 0xc0 */ { "RNZ", 1, executeC0 }, // if NZ, RET
+	/* 0xc1 */ { "POP BC", 1, executeC1 }, // C < -(sp); B < -(sp + 1); sp < -sp + 2
+	/* 0xc2 */ { "JNZ %04X", 3, executeC2 }, // if NZ, PC <- adr
+	/* 0xc3 */ { "JMP %04X", 3, executeC3 }, //			PC <= adr
+	/* 0xc4 */ { "CNZ %04X", 3, executeC4 }, // if NZ, CALL adr
+	/* 0xc5 */ { "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
+	/* 0xc6 */ { "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
+	/* 0xc7 */ { "RST 0",	1, nullptr }, //			CALL $0
+	/* 0xc8 */ { "RZ	1",	1, executeC8 }, // if Z, RET
+	/* 0xc9 */ { "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
+	/* 0xca */ { "JZ %04X", 3, executeCA }, // if Z, PC <- adr
+	/* 0xcb */ { "-", 1, nullptr }, //	
+	/* 0xcc */ { "CZ %04X",	3, executeCC }, // if Z, CALL adr
+	/* 0xcd */ { "CALL %04X", 3, executeCD }, // (SP - 1) <- PC.hi; (SP - 2) <- PC.lo; SP <- SP - 2; PC = adr
+	/* 0xce */ { "ACI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A + data + CY
+	/* 0xcf */ { "RST 1", 1, nullptr }, //			CALL $8
+	/* 0xd0 */ { "RNC",	1, executeD0 }, // if NCY, RET
+	/* 0xd1 */ { "POP DE", 1, executeD1 }, // E < -(sp); D < -(sp + 1); sp < -sp + 2
+	/* 0xd2 */ { "JNC %04X", 3, executeD2 }, // if NCY, PC <- adr
+	/* 0xd3 */ { "OUT %02X",	2, executeD3 },
+	/* 0xd4 */ { "CNC %04X",	3, executeD4 }, // aka CALL NC,<address>  if NCY, CALL adr
+	/* 0xd5 */ { "PUSH DE",	1, executeD5 }, // (sp - 2) <- E; (sp - 1) <- D; sp <- sp-2
+	/* 0xd6 */ { "SUI %02X", 2, executeD6 }, // aka SUB  A <- A-d8   Z, S, P, CY, AC	
+	/* 0xd7 */ { "RST 2",	1, nullptr }, //			CALL $10
+	/* 0xd8 */ { "RC", 1, executeD8 }, // if Carry set, RET
+	/* 0xd9 */ { "-", 1, nullptr }, //	
+	/* 0xda */ { "JC %04X",	3, executeDA }, // if CY, PC < -adr
+	/* 0xdb */ { "IN %02X", 2, executeDB },
+	/* 0xdc */ { "CC %04X",	3, executeDC }, // if CY, CALL adr
+	/* 0xdd */ { "-", 1, nullptr }, //	
+	/* 0xde */ { "SBI %02X",	2, executeDE }, // aka SBC A,d8   A <- A-d8-CY   Z, S, P, CY, AC	
+	/* 0xdf */ { "RST 3",	1, nullptr }, //			CALL $18
+	/* 0xe0 */ { "RPO",	1, nullptr }, //			if PO, RET
+	/* 0xe1 */ { "POP HL", 1, executeE1 }, // L <- (sp); H <- (sp+1); sp <- sp+2
+	/* 0xe2 */ { "JPO %04X", 3, nullptr }, //			if PO, PC < -adr
+	/* 0xe3 */ { "XTHL",	1, executeE3 }, // L <-> (SP); H <-> (SP + 1)
+	/* 0xe4 */ { "CPO %04X", 3, executeE4 }, //			if PO, CALL adr
+	/* 0xe5 */ { "PUSH HL",	1, executeE5 }, // (sp-2) <-L ; (sp-1) <- H; sp <- sp-2
+	/* 0xe6 */ { "ANI %02X", 2, executeE6 }, // aka AND <d8>   A <- A & d8	
+	/* 0xe7 */ { "RST 4",	1, nullptr }, //			CALL $20
+	/* 0xe8 */ { "RPE",	1, nullptr }, //			if PE, RET
+	/* 0xe9 */ { "PCHL",	1, executeE9 }, // aka JP (HL)  PC.hi <- H; PC.lo <- L
+	/* 0xea */ { "JPE %04X",	3, nullptr }, //			if PE, PC < -adr
+	/* 0xeb */ { "XCHG",	1, executeEB }, // H <-> D; L <-> E
+	/* 0xec */ { "CPE %04X", 3, executeEC }, //			if PE, CALL adr
+	/* 0xed */ { "-", 1, nullptr }, //	
+	/* 0xee */ { "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data  "XRI also resets the carry and auxiliary carry flags to zero" - Intel 8080/8085 Assembly Language Programming
+	/* 0xef */ { "RST 5",	1, nullptr }, //			CALL $28
+	/* 0xf0 */ { "RP", 1, nullptr }, //			if P, RET
+	/* 0xf1 */ { "POP PSW",	1, executeF1 }, // aka POP AF
+	/* 0xf2 */ { "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
+	/* 0xf3 */ { "DI",	1, nullptr }, //			special
+	/* 0xf4 */ { "CP %04X",	3, executeF4 }, //			if P, PC < -adr
+	/* 0xf5 */ { "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
+	/* 0xf6 */ { "ORI %02X", 2, executeF6 }, // A <- A | data    Z, S, P, CY, AC	
+	/* 0xf7 */ { "RST 6",	1, nullptr }, //			CALL $30
+	/* 0xf8 */ { "RM",	1, nullptr }, //			if M, RET
+	/* 0xf9 */ { "SPHL",	1, nullptr }, //			SP = HL
+	/* 0xfa */ { "JM %04X", 3, executeFA }, // Jump If Minus aka JP M,<adr>  if M, PC <- adr
+	/* 0xfb */ { "EI", 1, executeFB }, // enable interrupts
+	/* 0xfc */ { "CM %04X",	3, executeFC }, //			if M, CALL adr
+	/* 0xfd */ { "-", 1, nullptr }, //	
+	/* 0xfe */ { "CPI %02X",	2, executeFE }, // Compare immediate with accumulator  Z, S, P, CY, AC    A - data
+	/* 0xff */ { "RST 7",	1, nullptr }, //			CALL $38
 };
 static_assert(COUNTOF_ARRAY(s_instructions) == 256, "Array size incorrect");
 
@@ -2532,7 +2531,6 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	const uint8_t* pPC = &buffer[pc];
 	const uint8_t opcode = *pPC;
 	const Instruction& instruction = s_instructions[opcode];
-	HP_ASSERT(instruction.opcode == opcode);
 	HP_ASSERT(instruction.sizeBytes > 0 && instruction.sizeBytes <= kMaxInstructionSizeBytes);
 
 	// address
@@ -2570,9 +2568,8 @@ unsigned int Emulate8080Instruction(State8080& state)
 {
 	const uint8_t opcode = readByteFromMemory(state, state.PC);
 	const Instruction& instruction = s_instructions[opcode];
-	HP_ASSERT(instruction.opcode == opcode);
 	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
-	HP_ASSERT(instruction.execute, "Unimplemented instruction 0x%02X at PC=%04X", instruction.opcode, state.PC);
+	HP_ASSERT(instruction.execute, "Unimplemented instruction 0x%02X at PC=%04X", opcode, state.PC);
 
 	// "Just before each instruction is executed, the Program Counter is advanced to the
 	// next sequential instruction." - Data Book, p2.
