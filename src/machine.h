@@ -16,6 +16,11 @@ struct Machine
 	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
 
 	bool coinInserted;
+	bool player2StartButton;
+	bool player1StartButton;
+	bool player1ShootButton;
+	bool player1JoystickLeft;
+	bool player1JoystickRight;
 };
 
 bool CreateMachine(Machine** ppMachine);

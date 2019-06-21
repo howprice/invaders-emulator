@@ -304,16 +304,20 @@ static uint8_t In(uint8_t port, void* userdata)
 	if(port == 1)
 	{
 		// BIT 0    coin(0 when active)
-		//     1    P2 start button
-		//     2    P1 start button
-		//     3 ?
-		//     4    P1 shoot button
-		//     5    P1 joystick left
-		//     6    P1 joystick right
-		//     7 ?
+		// BIT 1    P2 start button
+		// BIT 2    P1 start button
+		// BIT 3 ?
+		// BIT 4    P1 shoot button
+		// BIT 5    P1 joystick left
+		// BIT 6    P1 joystick right
+		// BIT 7 ?
 		uint8_t val = 0x00;
 		val |= pMachine->coinInserted ? 0 : (1 << 0);
-
+		val |= pMachine->player2StartButton ? (1 << 1) : 0;
+		val |= pMachine->player1StartButton ? (1 << 2) : 0;
+		val |= pMachine->player1ShootButton ? (1 << 4) : 0;
+		val |= pMachine->player1JoystickLeft ? (1 << 5) : 0;
+		val |= pMachine->player1JoystickRight ? (1 << 6) : 0;
 		return val;
 	}
 	else if(port == 2)
@@ -538,7 +542,13 @@ void DestroyMachine(Machine* pMachine)
 void StartFrame(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
+
 	pMachine->coinInserted = false;
+	pMachine->player2StartButton = false;
+	pMachine->player1StartButton = false;
+	pMachine->player1ShootButton = false;
+	pMachine->player1JoystickLeft = false;
+	pMachine->player1JoystickRight = false;
 }
 
 // returns true if still running
