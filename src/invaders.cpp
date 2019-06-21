@@ -30,8 +30,13 @@
 
 static bool s_debug = false;
 static bool s_rotateDisplay = false; // the invaders machine display is rotated 90 degrees anticlockwise
-
 static bool s_keyState[SDL_NUM_SCANCODES] = {};
+
+static GLuint s_vertexShader = 0;
+static GLuint s_fragmentShader = 0;
+static GLuint s_program = 0;
+static GLuint s_texture = 0;
+static GLuint s_vao = 0;
 
 static void printUsage()
 {
@@ -158,12 +163,6 @@ static void CheckProgram(GLuint program)
 	}
 }
 
-static GLuint s_vertexShader = 0;
-static GLuint s_fragmentShader = 0;
-static GLuint s_program = 0;
-static GLuint s_texture = 0;
-static GLuint s_vao = 0;
-
 static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureHeight)
 {
 	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -229,6 +228,26 @@ static void doCpuWindow(const State8080& state)
 	ImGui::Text("H: %02X  L: %02X\n", state.H, state.L);
 	ImGui::Text("SP: %04X\n", state.SP);
 	ImGui::Text("PC: %04X\n", state.PC);
+
+	ImGui::End();
+}
+
+static void doDipSwitchesWindow(uint8_t& dipSwitchBits)
+{
+	ImGui::Begin("DIP Switches");
+
+	for(unsigned int i = 0; i < 8; i++)
+	{
+		bool val = ((dipSwitchBits >> i) & 1) == 1 ? true : false;
+		char label[16];
+		SDL_snprintf(label, sizeof(label), "%u", i + 1); // they seem to be numbered 1..8 by convention
+		if(ImGui::Checkbox(label, &val))
+		{
+			dipSwitchBits &= ~(1 << i); // clear bit
+			if(val)
+				dipSwitchBits |= (1 << i); // set bit
+		}
+	}
 
 	ImGui::End();
 }
@@ -396,6 +415,8 @@ int main(int argc, char** argv)
 					pMachine->player2StartButton = true;
 				else if(event.key.keysym.sym == SDLK_5)
 					pMachine->coinInserted = true;
+				else if(event.key.keysym.sym == SDLK_t)
+					pMachine->tilt = true;
 			}
 			else if(event.type == SDL_KEYUP)
 			{
@@ -407,6 +428,17 @@ int main(int argc, char** argv)
 		pMachine->player1JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
 		pMachine->player1JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
 
+#if 1
+		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_Q];
+		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_O];
+		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_P];
+#else
+		// share with Player 1
+		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_SPACE];
+		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
+		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
+#endif
+
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(pWindow);
@@ -414,6 +446,7 @@ int main(int argc, char** argv)
 
 		StepFrame(pMachine, s_debug);
 		doCpuWindow(pMachine->cpu);
+		doDipSwitchesWindow(pMachine->dipSwitchBits);
 
 		// Rendering
 		ImGui::Render();
