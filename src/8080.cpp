@@ -573,13 +573,60 @@ static void execute26(State8080& state)
 	state.H = d8;
 }
 
+//------------------------------------------------------------------------------
 // 0x27  DAA
-// Decimal Adjust Accumulator
-static void execute27(State8080& /*state*/)
+//
+// Decimal Adiust Accumulator
+//
+// The eight-bit hexadecimal number in the accumulator is adjusted to form two
+// four-bit binary-coded-decimal (BCD) digits by the following process:
+//
+// 1. If the least significant four bits of the accumulator represents a number 
+//    greater than 9, or if the Auxiliary Carry bit is equal to one, the accumulator 
+//    is incremented by six. Otherwise, no incrementing occurs.
+//
+// 2. If the most significant four bits of the accumulator now represent a number 
+//    greater than 9, or if the normal carry bit is equal to one, the most
+//    significant four bits of the accumulator are incremented by six. Otherwise,
+//    no incrementing occurs.
+//
+// If a carry out of the least significant four bits occurs during Step(1), the 
+// Auxiliary Carry bit is set; otherwise it is reset. Likewise, if a carry out of 
+// the most significant four bits occurs during Step (2) the normal Carry bit is 
+// set otherwise, it is unaffected.
+//
+// Condition bits affected: Zero, Sign, Parity, Carry, Auxiliary Carry
+
+static void execute27(State8080& state)
 {
-	HP_FATAL_ERROR("Implement me");
+	uint16_t result16 = (uint16_t)state.A; // 16 bit arithmetic so can detect carry easily
+
+	bool setAC = false;
+	bool setC = false;
+	uint8_t lowerNibble = (result16 & 0xf);
+	if(lowerNibble > 9 || state.flags.AC == 1)
+	{
+		// add 6 to the lower nibble for ease setting the AC flag
+		lowerNibble += 6; // 16 - 10 - 6
+		setAC = (lowerNibble > 0xf);
+
+		// now add 6 to the actual result
+		result16 += 6;
+
+		uint8_t upperNibble = (result16 & 0xf0) >> 4;
+		if(upperNibble > 9 || state.flags.C == 1)
+		{
+			result16 += 0x60;
+			setC = (result16 > 0xff);
+		}
+	}
+
+	state.flags.AC = setAC ? 1 : 0;
+	state.flags.C = setC ? 1 : 0;
+	state.A = (uint8_t)result16;
 }
 
+//------------------------------------------------------------------------------
 // 0x29  DAD HL aka ADD HL,HL 
 // HL <- HL + HL
 // Sets Carry flag

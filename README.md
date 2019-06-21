@@ -6,6 +6,10 @@
 
 Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com)
 
+## Controls
+
+Press 5 to insert coin
+
 ## Links
 
 - [Emulator 101](http://emulator101.com)
