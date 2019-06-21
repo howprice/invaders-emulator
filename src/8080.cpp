@@ -121,6 +121,32 @@ static void execute00(State8080& /*state*/)
 }
 
 //-----------------------------------------------------------------------------
+// STAX
+//
+// Store Accumulator
+//
+// The contents of the accumulator are stored in the memory location addressed 
+// by registers B and C, or by registers D and E.
+//
+// Condition bits affected : None
+
+// 0x02  STAX B  aka LD (BC),A
+// (BC) <- A
+static void execute02(State8080& state)
+{
+	uint16_t BC = ((uint16_t)state.B << 8) | (state.C);
+	writeByteToMemory(state, BC, state.A);
+}
+
+// 0x12  STAX D  aka LD (DE),A
+// (DE) <- A
+static void execute12(State8080& state)
+{
+	uint16_t DE = ((uint16_t)state.D << 8) | (state.E);
+	writeByteToMemory(state, DE, state.A);
+}
+
+//-----------------------------------------------------------------------------
 // INR
 //
 // Increment Register or Memory
@@ -2240,7 +2266,7 @@ static const Instruction s_instructions[] =
 {
 	{ 0x00, "NOP", 1, execute00 },
 	{ 0x01, "LXI B,%04X", 3, execute01 },
-	{ 0x02, "STAX B", 1, nullptr }, //		(BC) <- A
+	{ 0x02, "STAX B", 1, execute02 }, // aka LD (BC),A  (BC) <- A
 	{ 0x03, "INX B", 1, execute03 }, // aka INC BC    BC <- BC+1
 	{ 0x04, "INR B", 1, execute04 }, // aka INC B   B <- B + 1    Z, S, P, AC
 	{ 0x05, "DCR B", 1, execute05 }, // aka DEC B    B <- B - 1   Z, S, P, AC
@@ -2256,7 +2282,7 @@ static const Instruction s_instructions[] =
 	{ 0x0f, "RRC",	1, execute0F }, // aka RRCA  Rotate Accumulator Right
 	{ 0x10, "-", 1, nullptr }, //	
 	{ 0x11, "LXI D,%04X",	3, execute11 }, // D <- byte 3, E <- byte 2
-	{ 0x12, "STAX D",	1, nullptr }, //			(DE) < -A
+	{ 0x12, "STAX D", 1, execute12 }, // aka LD (DE),A   (DE) <- A
 	{ 0x13, "INX D", 1, execute13 }, //			DE < -DE + 1
 	{ 0x14, "INR D", 1, execute14 }, // aka INC D    D <- D + 1   Z, S, P, AC	
 	{ 0x15, "DCR D", 1, execute15 }, // aka DEC D	 D <- D - 1    Z, S, P, AC
