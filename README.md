@@ -26,10 +26,6 @@ Press 5 to insert coin
 
 ## TODO
 
-- Understand decimal addition: Binary Coded Decimal, and the DAA
-  - See the two Programming Manuals 
-- Implement DAA instruction
-
 - Map host input (SDL) to port data
 - Add timings to 8080 instructions 
 - Return instruction cycle count from instruction execution functions
