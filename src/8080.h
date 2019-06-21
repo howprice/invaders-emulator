@@ -19,7 +19,7 @@ struct Flags8080
 	uint8_t unusedBit1 : 1;
 	uint8_t P : 1;          // Parity - Set if the number of 1 bits in the result is even.
 	uint8_t unusedBit3 : 1;
-	uint8_t AC : 1;         // Auxiliary Carry - used for binary-coded decimal arithmetic (BCD). Not required for Space Invaders
+	uint8_t AC : 1;         // Auxiliary Carry. Affected by all add, subtract, increment, decrement, compare, and all logical AND, OR, XOR instructions. Only read by DAA instruction.
 	uint8_t unusedBit5 : 1;
 	uint8_t Z : 1;          // Zero - Set if the result is zero
 	uint8_t S : 1;          // Sign - Set if the result is negative i.e. bit 7 is set

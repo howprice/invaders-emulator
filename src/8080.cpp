@@ -132,11 +132,14 @@ static void execute00(State8080& /*state*/)
 
 static void executeINR(State8080& state, uint8_t& regOrMemoryByte)
 {
-	regOrMemoryByte++;
-	state.flags.Z = calculateZeroFlag(regOrMemoryByte);
-	state.flags.S = calculateSignFlag(regOrMemoryByte);
-	state.flags.P = calculateParityFlag(regOrMemoryByte);
-	// #TODO: Set AC flag
+	uint8_t result = regOrMemoryByte + 1;
+
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.S = calculateSignFlag(result);
+	state.flags.P = calculateParityFlag(result);
+	state.flags.AC = ((regOrMemoryByte & 0xf) + 1) > 0xf;
+
+	regOrMemoryByte = result;
 }
 
 // 0x04  INR B  aka INC B
@@ -202,11 +205,19 @@ static void execute3C(State8080& state)
 
 static void executeDCR(State8080& state, uint8_t& val)
 {
-	val--;
-	state.flags.Z = calculateZeroFlag(val);
-	state.flags.S = calculateSignFlag(val);
-	state.flags.P = calculateParityFlag(val);
-	//	state.flags.AC = ; #TODO: Implement if required
+	uint8_t result = val - 1;
+
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.S = calculateSignFlag(result);
+	state.flags.P = calculateParityFlag(result);
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	// We are subtracting 1, so the we will only borrow when the lower 4 bits of val are zero
+	state.flags.AC = ((val & 0x0f) == 0) ? 1 : 0;
+
+	val = result;
 }
 
 // 0x05 DCR B  aka DEC B
@@ -560,6 +571,13 @@ static void execute26(State8080& state)
 {
 	uint8_t d8 = getInstructionD8(state);
 	state.H = d8;
+}
+
+// 0x27  DAA
+// Decimal Adjust Accumulator
+static void execute27(State8080& /*state*/)
+{
+	HP_FATAL_ERROR("Implement me");
 }
 
 // 0x29  DAD HL aka ADD HL,HL 
@@ -1135,13 +1153,15 @@ static void execute7F(State8080& /*state*/)
 static void executeADD(State8080& state, uint8_t val)
 {
 	uint16_t result16 = (uint16_t)state.A + (uint16_t)val; // 16 bit arithmetic so can test for carry
-	state.A = (uint8_t)result16;
+	uint8_t result8 = (uint8_t)result16;
 
 	state.flags.C = result16 > 0xff;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: AC flag
+	state.flags.Z = calculateZeroFlag(result8);
+	state.flags.S = calculateSignFlag(result8);
+	state.flags.P = calculateParityFlag(result8);
+	state.flags.AC = ((state.A & 0xf) + (val & 0xf)) > 0xf ? 1 : 0;
+
+	state.A = result8;
 }
 
 // 0x80  ADD B  aka ADD A,B
@@ -1203,6 +1223,88 @@ static void execute87(State8080& state)
 }
 
 //------------------------------------------------------------------------------
+// ADC
+//
+// ADD Register or Memory To Accumulator With Carry
+// 
+// The specified byte plus the content of the Carry bit is added to the contents 
+// of the accumulator.
+// 
+// Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
+
+static void executeADC(State8080& state, uint8_t val)
+{
+	uint16_t result16 = (uint16_t)state.A + (uint16_t)val + (uint16_t)state.flags.C; // 16 bit arithmetic so can test for carry
+	uint8_t result8 = (uint8_t)result16;
+
+	state.flags.C = result16 > 0xff;
+	state.flags.Z = calculateZeroFlag(result8);
+	state.flags.S = calculateSignFlag(result8);
+	state.flags.P = calculateParityFlag(result8);
+	state.flags.AC = ((state.A & 0xf) + (val & 0xf) + state.flags.C) > 0xf ? 1 : 0;
+
+	state.A = result8;
+}
+
+// 0x88  ADC B
+// A <- A + B + CY
+static void execute88(State8080& state)
+{
+	executeADC(state, state.B);
+}
+
+// 0x89  ADC C
+// A <- A + C + CY
+static void execute89(State8080& state)
+{
+	executeADC(state, state.C);
+} 
+
+// 0x8a  ADC D
+// A <- A + D + CY
+static void execute8a(State8080& state)
+{
+	executeADC(state, state.D);
+}
+
+// 0x8b  ADC E
+// A <- A + E + CY
+static void execute8b(State8080& state)
+{
+	executeADC(state, state.E);
+} 
+
+// 0x8c  ADC H
+// A <- A + H + CY
+static void execute8c(State8080& state)
+{
+	executeADC(state, state.H);
+} 
+
+// 0x8d  ADC L
+// A <- A + L + CY
+static void execute8d(State8080& state)
+{
+	executeADC(state, state.L);
+} 
+
+// 0x8e  ADC M
+// A <- A + (HL) + CY
+static void execute8e(State8080& state)
+{
+	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
+	uint8_t val = readByteFromMemory(state, HL);
+	executeADC(state, val);
+} 
+
+// 0x8f  ADC A
+// A <- A + A + CY
+static void execute8f(State8080& state)
+{
+	executeADC(state, state.A);
+} 
+
+//------------------------------------------------------------------------------
 // SUB
 //
 // Subtract Register or Memory From Accumulator
@@ -1212,7 +1314,7 @@ static void execute87(State8080& state)
 //
 // Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
 
-static void executeSUB(State8080& state, uint8_t& val)
+static void executeSUB(State8080& state, uint8_t val)
 {
 	uint8_t result = state.A - val;
 
@@ -1220,11 +1322,11 @@ static void executeSUB(State8080& state, uint8_t& val)
 	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
 	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
 	state.flags.C = (val > state.A) ? 1 : 0;
+	state.flags.AC = (val & 0xf) > (state.A & 0xf) ? 1 : 0;
 
 	state.flags.S = calculateSignFlag(result);
 	state.flags.Z = calculateZeroFlag(result);
 	state.flags.P = calculateParityFlag(result);
-	// #TODO: Set AC flag
 
 	state.A = result;
 }
@@ -1282,87 +1384,196 @@ static void execute97(State8080& state)
 }
 
 //------------------------------------------------------------------------------
+// ANA
+//
+// Logical and Register or Memory With Accumulator
+//
+// The specified byte is logically ANDed bit by bit with the contents of the 
+// accumulator.The Carry bit is reset to zero.
+//
+// Condition bits affected: Carry, Zero, Sign, Parity
+//
+// n.b. The "Intel 8080 Assembly Language Programming Manual" states that the
+// Auxiliary Carry flag is not affected, but the "Intel 8080-8085 Assembly 
+// Language Programming 1977 Intel" states:
+//
+// "There is some difference in the handling of the auxiliary carry flag by 
+// the logical AND instructions In the 8080 processor and the 8085 processor.
+// The 8085 logical AND instructions always set the auxiliary flag ON. The 8080 
+// logical AND instructions sets the flag to reflect the logical OR of bit 3 
+// of the values involved in the AND operation.
 
-// 0xA0  ANA B  aka AND B
-// A <- A&B
-// Z, S, P, CY, AC	
-static void executeA0(State8080& state)
+static void executeANA(State8080& state, uint8_t val)
 {
-	state.A &= state.B;
+	uint8_t result = state.A & val;
+	
 	state.flags.C = 0;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: state.flags.AC
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.S = calculateSignFlag(result);
+	state.flags.P = calculateParityFlag(result);
+
+	// logical OR of bit 3 of the values involved in the AND operation (see above note)
+	state.flags.AC = ((state.A & (1<<3)) | (val & (1<<3))) >> 3;
+
+	state.A = result;
 }
 
+// 0xA0  ANA B  aka AND B
+// A <- A & B
+static void executeA0(State8080& state)
+{
+	executeANA(state, state.B);
+}
+
+// 0xA1  ANA C  aka AND C
+// A <- A & C	
+static void executeA1(State8080& state)
+{
+	executeANA(state, state.C);
+} 
+
+// 0xA2  ANA D  aka AND D
+// A <- A & D	
+static void executeA2(State8080& state)
+{
+	executeANA(state, state.D);
+} 
+
+// 0xA3  ANA E  aka AND E
+// A <- A & E	
+static void executeA3(State8080& state)
+{
+	executeANA(state, state.D);
+} 
+
+// 0xA4  ANA H  aka AND H
+// A <- A & H
+static void executeA4(State8080& state)
+{
+	executeANA(state, state.H);
+}
+
+// 0xA5  ANA L  aka AND L
+// A <- A & L	
+static void executeA5(State8080& state)
+{
+	executeANA(state, state.L);
+} 
 
 // 0xA6  ANA M  aka AND (HL)
-// A <- A&(HL)
-// Condition bits affected: Carry, Zero, Sign, Parity, AC
-// The Carry bit is reset to zero.
+// A <- A & (HL)
 static void executeA6(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
-	state.A &= val;
-
-	state.flags.C = 0;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
+	executeANA(state, val);
 }
 
 // 0xA7  ANA A  aka AND A
 // A <- A & A  (does not change value of A)
-// Condition bits affected: Carry, Zero, Sign, Parity
-// The Carry bit is reset to zero.
 // n.b. This is a convenient way of testing if A is zero; it doesn't affect the value but does affect the flags
 static void executeA7(State8080& state)
 {
-	// value of A does not change
+	executeANA(state, state.A);
+}
+
+//------------------------------------------------------------------------------
+// XRA 
+//
+// Logical Exclusive-Or Register or Memory With Accumulator(Zero Accumulator)
+//
+// The specified byte is EXCLUSIVE-ORed bit by bit with the contents of the 
+// accumulator. The Carry bit is reset to zero.
+//
+// Condition bits affected: Carry, Zero, Sign, Parity[, Auxiliary Carry (see below)]
+//
+
+static void executeXOR(State8080& state, uint8_t val)
+{
+	state.A = state.A ^ val;
 	state.flags.C = 0;
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
+	state.flags.AC = 0; // "The carry and auxilary carry flags are reset to zero." - Intel 8080/8085 Assembly Language Programming
 }
 
 // 0xA8  XRA B  aka XOR B
-// B EXCLUSIVE-ORed
-// bit by bit with the contents of the accumulator.
-// The Carry bit is reset to zero.
 // A <- A^B
-//Condition bits affected : Carry, Zero, Sign, Parity, Auxiliary Carry
 static void executeA8(State8080& state)
 {
-	state.A = state.A ^ state.B;
-	state.flags.C = 0;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: AC flag
+	executeXOR(state, state.B);
+}
+
+// 0xA9  XRA C  aka XOR C
+// A <- A ^ C
+static void executeA9(State8080& state)
+{
+	executeXOR(state, state.C);
+}
+
+// 0xAA  XRA D  aka XOR D
+// A <- A ^ D
+static void executeAA(State8080& state)
+{
+	executeXOR(state, state.D);
+}
+
+// 0xAB  XRA E  aka XOR E
+// A <- A ^ E
+static void executeAB(State8080& state)
+{
+	executeXOR(state, state.E);
+}
+
+// 0xAC  XRA H  aka XOR H
+// A <- A ^ H
+static void executeAC(State8080& state)
+{
+	executeXOR(state, state.H);
+}
+
+// 0xAD  XRA L  aka XOR L
+// A <- A ^ L
+static void executeAD(State8080& state)
+{
+	executeXOR(state, state.L);
+}
+
+// 0xAE  XRA M  aka XOR (HL)
+// A <- A ^ (HL)
+static void executeAE(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	uint8_t val = readByteFromMemory(state, HL);
+	executeXOR(state, val);
 }
 
 // 0xAF  XRA A  aka XOR A
 // Logical Exclusive-Or Accumulator with self 
 // A <- A ^ A
-// Condition bits affected: Z, S, P, CY, AC	
 // n.b. A XOR A will always be zero. This is the best choice for zeroing a register on all CPUs!
 // https://stackoverflow.com/questions/33666617/what-is-the-best-way-to-set-a-register-to-zero-in-x86-assembly-xor-mov-or-and
 static void executeAF(State8080& state)
 {
-	state.A = 0;
-	state.flags.Z = 1;
-	state.flags.S = 0;
-	state.flags.P = 1;
-	state.flags.C = 0;
-	// #TODO: Set AC flag
+	executeXOR(state, state.A);
 }
 
-// 0xB0  ORA <data>
-// The Carry bit is reset to zero.
-// A <- A|<data>
-// Z, S, P, CY, AC	
+//------------------------------------------------------------------------------
+// ORA 
+//
+// Logical or Register or Memory With Accumulator
+// 
+// The specified byte is logically ORed bit by bit with the contents of the 
+// accumulator. The carry bit is reset to zero.
+//
+// Condition bits affected : Carry, zero, sign, parity
+//
+// n.b. The "Intel 8080 Assembly Language Programming Manual" states that the
+// Auxiliary Carry flag is not affected, but the "Intel 8080-8085 Assembly 
+// Language Programming 1977 Intel" states "The carry and auxiliary carry
+// flags are reset to zero"
+
 static void executeORA(State8080& state, uint8_t data)
 {
 	state.A |= data;
@@ -1370,39 +1581,65 @@ static void executeORA(State8080& state, uint8_t data)
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
 	state.flags.C = 0;
-	// #TODO: AC flag
+	state.flags.AC = 0; // "Intel 8080-8085 Assembly Language Programming 1977 Intel"
 }
 
 // 0xB0  ORA B
-// The Carry bit is reset to zero.
 // A <- A|B
-// Z, S, P, CY, AC	
 static void executeB0(State8080& state)
 {
 	executeORA(state, state.B);
 }
 
-// 0xB4  ORA H
+// 0xB1  ORA C  aka OR C
+// A <- A | C
+static void executeB1(State8080& state)
+{
+	executeORA(state, state.C);
+}
+
+// 0xB2  ORA D  aka OR D
+// A <- A | D
+static void executeB2(State8080& state)
+{
+	executeORA(state, state.D);
+}
+
+// 0xB3  ORA E  aka OR E
+// A <- A | E
+static void executeB3(State8080& state)
+{
+	executeORA(state, state.E);
+}
+
+// 0xB4  ORA H  aka OR H
+// A <- A | H
 static void executeB4(State8080& state)
 {
 	executeORA(state, state.H);
 }
 
-// 0xb6  ORA M  aka OR (HL)
-// The specified bytes is logically ORed with A.
-// The Carry bit is rest to zero.
+// 0xB5  ORA L  aka OR L 
+// A < -A | L
+static void executeB5(State8080& state)
+{
+	executeORA(state, state.L);
+}
+
+// 0xB6  ORA M  aka OR (HL)
 // A <- A|(HL)
-// Z, S, P, CY, AC	
 static void executeB6(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
-	state.A = state.A | val;
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	state.flags.C = 0;
-	// #TODO: Set AC flag
+	executeORA(state, val);
+}
+
+// 0xB7  ORA A  aka OR A 
+// A < -A | A
+static void executeB7(State8080& state)
+{
+	executeORA(state, state.A);
 }
 
 //------------------------------------------------------------------------------
@@ -1431,11 +1668,11 @@ static void executeCMP(State8080& state, uint8_t val)
 	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
 	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
 	state.flags.C = val > state.A ? 1 : 0;
+	state.flags.AC = (val & 0xf) > (state.A & 0xf) ? 1 : 0;
 
 	state.flags.S = calculateSignFlag(diff);
 	state.flags.Z = calculateZeroFlag(diff);
 	state.flags.P = calculateParityFlag(diff);
-	// #TODO: state.flags.A
 }
 
 // 0xB8  CMP B  aka CP B
@@ -1650,18 +1887,19 @@ static void executeD5(State8080& state)
 // Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
 static void executeD6(State8080& state)
 {
-	uint8_t d8 = getInstructionD8(state);
-	uint8_t result = state.A - d8;
+	uint8_t val = getInstructionD8(state);
+	uint8_t result = state.A - val;
 
 	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
 	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
 	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
-	state.flags.C = (d8 > state.A) ? 1 : 0;
+	state.flags.C = (val > state.A) ? 1 : 0;
+
+	state.flags.AC = (val & 0xf) > (state.A & 0xf) ? 1 : 0;
 
 	state.flags.S = calculateSignFlag(result);
 	state.flags.Z = calculateZeroFlag(result);
 	state.flags.P = calculateParityFlag(result);
-	// #TODO: Set AC flag
 
 	state.A = result;
 }
@@ -1849,24 +2087,32 @@ static void executeF5(State8080& state)
 	state.SP -= 2;
 }
 
+//------------------------------------------------------------------------------
 // 0xF6  ORI d8
+//
 // Or Immediate With Accumulator
-// The byte of immediate data is logically
-// ORed with the contents of the accumulator.
+// 
+// The byte of immediate data is logically ORed with the contents of the accumulator.
 // The result is stored in the accumulator. The Carry bit
 // is reset to zero, while the Zero, Sign, and Parity bits are set
 // according to the result.
-// Condition bits affected : Carry, Zero, Sign, Parity
+//
+// Condition bits affected : Carry, Zero, Sign, Parity[, Auxiliary Carry (see below)]
+
 // A <- A|data
+
 static void executeF6(State8080& state)
 {
 	uint8_t d8 = getInstructionD8(state);
 	state.A |= d8;
 	state.flags.C = 0;
+	state.flags.AC = 0; // "ORI also resets the carry and auxiliary carry flags to zero." - "Intel 8080 / 8085 Assembly Language Programming"
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
 }
+
+//------------------------------------------------------------------------------
 
 // 0xFA  JM <address>   aka JP M,<adr>
 // Jump If Minus
@@ -1950,7 +2196,7 @@ static const Instruction s_instructions[] =
 	{ 0x24, "INR H", 1, execute24}, // aka INC H    H <- H + 1    Z, S, P, AC
 	{ 0x25, "DCR H", 1, execute25 }, // aka DEC H	 H <- H - 1    Z, S, P, AC
 	{ 0x26, "MVI H,%02X", 2, execute26 }, // H <- byte 2
-	{ 0x27, "DAA",	1, nullptr }, //			special
+	{ 0x27, "DAA",	1, execute27 }, // Decimal Adjust Accumulator
 	{ 0x28, "-", 1, nullptr }, //	
 	{ 0x29, "DAD HL", 1, execute29 }, // aka ADD HL,HL   HL <- HL + HL   Sets Carry flag
 	{ 0x2a, "LHLD %04X", 3, execute2A }, // L <- (adr); H <- (adr + 1)
@@ -2047,14 +2293,14 @@ static const Instruction s_instructions[] =
 	{ 0x85, "ADD L", 1, execute85 }, // aka ADD A,L     A <- A + L     Z, S, P, CY, AC
 	{ 0x86, "ADD M", 1, execute86 }, // aka ADD A,(HL)  A <- A + (HL)  Z, S, P, CY, AC	
 	{ 0x87, "ADD A", 1, execute87 }, //	aka ADD A,A     A <- A + A     Z, S, P, CY, AC	
-	{ 0x88, "ADC B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + B + CY
-	{ 0x89, "ADC C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + C + CY
-	{ 0x8a, "ADC D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + D + CY
-	{ 0x8b, "ADC E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + E + CY
-	{ 0x8c, "ADC H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + H + CY
-	{ 0x8d, "ADC L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + L + CY
-	{ 0x8e, "ADC M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + (HL)+CY
-	{ 0x8f, "ADC A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A + A + CY
+	{ 0x88, "ADC B", 1, execute88 }, // A <- A + B + CY     Z, S, P, CY, AC	
+	{ 0x89, "ADC C", 1, execute89 }, // A <- A + C + CY     Z, S, P, CY, AC	
+	{ 0x8a, "ADC D", 1, execute8a }, // A <- A + D + CY     Z, S, P, CY, AC	
+	{ 0x8b, "ADC E", 1, execute8b }, // A <- A + E + CY     Z, S, P, CY, AC	
+	{ 0x8c, "ADC H", 1, execute8c }, // A <- A + H + CY     Z, S, P, CY, AC	
+	{ 0x8d, "ADC L", 1, execute8d }, // A <- A + L + CY     Z, S, P, CY, AC	
+	{ 0x8e, "ADC M", 1, execute8e }, // A <- A + (HL)+CY    Z, S, P, CY, AC	
+	{ 0x8f, "ADC A", 1, execute8f }, // A <- A + A + CY     Z, S, P, CY, AC	
 	{ 0x90, "SUB B", 1, execute90 }, // A <- A - B       Z, S, P, CY, AC	
 	{ 0x91, "SUB C", 1, execute91 }, // A <- A - C       Z, S, P, CY, AC	
 	{ 0x92, "SUB D", 1, execute92 }, // A <- A - D       Z, S, P, CY, AC	
@@ -2063,38 +2309,38 @@ static const Instruction s_instructions[] =
 	{ 0x95, "SUB L", 1, execute95 }, // A <- A - L       Z, S, P, CY, AC	
 	{ 0x96, "SUB M", 1, execute96 }, // A <- A - (HL)    Z, S, P, CY, AC	
 	{ 0x97, "SUB A", 1, execute97 }, // A <- A - A       Z, S, P, CY, AC	
-	{ 0x98, "SBB B", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - B - CY
-	{ 0x99, "SBB C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - C - CY
-	{ 0x9a, "SBB D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - D - CY
-	{ 0x9b, "SBB E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - E - CY
-	{ 0x9c, "SBB H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - H - CY
-	{ 0x9d, "SBB L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - L - CY
-	{ 0x9e, "SBB M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - (HL)-CY
-	{ 0x9f, "SBB A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A - A - CY
-	{ 0xa0, "ANA B", 1, executeA0 }, // aka AND B  A <- A&B   Z, S, P, CY, AC	
-	{ 0xa1, "ANA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & C
-	{ 0xa2, "ANA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & D
-	{ 0xa3, "ANA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & E
-	{ 0xa4, "ANA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & H
-	{ 0xa5, "ANA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A & L
-	{ 0xa6, "ANA M", 1, executeA6 }, // aka AND (HL)   A <- A&(HL)  Z, S, P, CY, AC	
-	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A    A <- A & A		Z, S, P, CY, AC	
-	{ 0xa8, "XRA B", 1, executeA8 }, // aka XOR B   A <- A^B   Z, S, P, CY, AC
-	{ 0xa9, "XRA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ C
-	{ 0xaa, "XRA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ D
-	{ 0xab, "XRA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ E
-	{ 0xac, "XRA H", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ H
-	{ 0xad, "XRA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ L
-	{ 0xae, "XRA M", 1, nullptr }, //		Z, S, P, CY, AC	A < -A ^ (HL)
-	{ 0xaf, "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A  (A <- 0)    Z, S, P, CY, AC	
-	{ 0xb0, "ORA B", 1, executeB0 }, // A <- A|B   Z, S, P, CY, AC	
-	{ 0xb1, "ORA C", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | C
-	{ 0xb2, "ORA D", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | D
-	{ 0xb3, "ORA E", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | E
-	{ 0xb4, "ORA H", 1, executeB4 }, // aka XOR H   A <- A|H   Z, S, P, CY, AC	
-	{ 0xb5, "ORA L", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | L
-	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A|(HL)   Z, S, P, CY, AC	
-	{ 0xb7, "ORA A", 1, nullptr }, //		Z, S, P, CY, AC	A < -A | A
+	{ 0x98, "SBB B", 1, nullptr }, // A <- A - B - CY		Z, S, P, CY, AC	  Not used in invaders
+	{ 0x99, "SBB C", 1, nullptr }, // A <- A - C - CY		Z, S, P, CY, AC	
+	{ 0x9a, "SBB D", 1, nullptr }, // A <- A - D - CY		Z, S, P, CY, AC	
+	{ 0x9b, "SBB E", 1, nullptr }, // A <- A - E - CY		Z, S, P, CY, AC	
+	{ 0x9c, "SBB H", 1, nullptr }, // A <- A - H - CY		Z, S, P, CY, AC	
+	{ 0x9d, "SBB L", 1, nullptr }, // A <- A - L - CY		Z, S, P, CY, AC	
+	{ 0x9e, "SBB M", 1, nullptr }, // A <- A - (HL) - CY		Z, S, P, CY, AC	
+	{ 0x9f, "SBB A", 1, nullptr }, // A <- A - A - CY		Z, S, P, CY, AC	
+	{ 0xa0, "ANA B", 1, executeA0 }, // aka AND B     A <- A&B          Z, S, P, CY, AC	
+	{ 0xa1, "ANA C", 1, executeA1 }, //	aka AND C     A <- A & C        Z, S, P, CY, AC	
+	{ 0xa2, "ANA D", 1, executeA2 }, //	aka AND D     A <- A & D        Z, S, P, CY, AC	
+	{ 0xa3, "ANA E", 1, executeA3 }, //	aka AND E     A <- A & E        Z, S, P, CY, AC	
+	{ 0xa4, "ANA H", 1, executeA4 }, //	aka AND H     A <- A & H        Z, S, P, CY, AC	
+	{ 0xa5, "ANA L", 1, executeA5 }, //	aka AND L     A <- A & L        Z, S, P, CY, AC	
+	{ 0xa6, "ANA M", 1, executeA6 }, // aka AND (HL)  A <- A & (HL)     Z, S, P, CY, AC
+	{ 0xa7, "ANA A", 1, executeA7 }, // aka AND A     A <- A & A        Z, S, P, CY, AC
+	{ 0xa8, "XRA B", 1, executeA8 }, // aka XOR B     A <- A^B          Z, S, P, CY, AC
+	{ 0xa9, "XRA C", 1, executeA9 }, //	aka XOR C     A <- A ^ C        Z, S, P, CY, AC
+	{ 0xaa, "XRA D", 1, executeAA }, //	aka XOR D     A <- A ^ D        Z, S, P, CY, AC
+	{ 0xab, "XRA E", 1, executeAB }, //	aka XOR E     A <- A ^ E        Z, S, P, CY, AC
+	{ 0xac, "XRA H", 1, executeAC }, //	aka XOR H     A <- A ^ H        Z, S, P, CY, AC
+	{ 0xad, "XRA L", 1, executeAD }, //	aka XOR L     A <- A ^ L        Z, S, P, CY, AC
+	{ 0xae, "XRA M", 1, executeAE }, //	aka XOR (HL)  A <- A ^ (HL)     Z, S, P, CY, AC
+	{ 0xaf, "XRA A", 1, executeAF }, // aka XOR A    A <- A ^ A    (A <- 0)    Z, S, P, CY, AC	
+	{ 0xb0, "ORA B", 1, executeB0 }, // aka OR B     A <- A | B     Z, S, P, CY, AC
+	{ 0xb1, "ORA C", 1, executeB1 }, //	aka OR C     A <- A | C     Z, S, P, CY, AC
+	{ 0xb2, "ORA D", 1, executeB2 }, //	aka OR D     A <- A | D     Z, S, P, CY, AC
+	{ 0xb3, "ORA E", 1, executeB3 }, //	aka OR E     A <- A | E     Z, S, P, CY, AC
+	{ 0xb4, "ORA H", 1, executeB4 }, // aka OR H     A <- A|H       Z, S, P, CY, AC
+	{ 0xb5, "ORA L", 1, executeB5 }, //	aka OR L     A < -A | L     Z, S, P, CY, AC
+	{ 0xb6, "ORA M", 1, executeB6 }, // aka OR (HL)  A <- A | (HL)  Z, S, P, CY, AC
+	{ 0xb7, "ORA A", 1, executeB7 }, // aka OR A     A < -A | A     Z, S, P, CY, AC
 	{ 0xb8, "CMP B", 1, executeB8 }, // aka CP B     A-B   Z, S, P, CY, AC
 	{ 0xb9, "CMP C", 1, executeB9 }, //	aka CP C     A-B   Z, S, P, CY, AC
 	{ 0xba, "CMP D", 1, executeBA }, //	aka CP D     A-B   Z, S, P, CY, AC
@@ -2149,7 +2395,7 @@ static const Instruction s_instructions[] =
 	{ 0xeb, "XCHG",	1, executeEB }, // H <-> D; L <-> E
 	{ 0xec, "CPE %04X", 3, executeEC }, //			if PE, CALL adr
 	{ 0xed, "-", 1, nullptr }, //	
-	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data
+	{ 0xee, "XRI %02X",	2, nullptr }, //		Z, S, P, CY, AC	A < -A ^ data  "XRI also resets the carry and auxiliary carry flags to zero" - Intel 8080/8085 Assembly Language Programming
 	{ 0xef, "RST 5",	1, nullptr }, //			CALL $28
 	{ 0xf0, "RP", 1, nullptr }, //			if P, RET
 	{ 0xf1, "POP PSW",	1, executeF1 }, // aka POP AF
@@ -2157,7 +2403,7 @@ static const Instruction s_instructions[] =
 	{ 0xf3, "DI",	1, nullptr }, //			special
 	{ 0xf4, "CP %04X",	3, executeF4 }, //			if P, PC < -adr
 	{ 0xf5, "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
-	{ 0xf6, "ORI %02X", 2, executeF6 }, // A <- A|data  Z, S, P, CY, AC	
+	{ 0xf6, "ORI %02X", 2, executeF6 }, // A <- A | data    Z, S, P, CY, AC	
 	{ 0xf7, "RST 6",	1, nullptr }, //			CALL $30
 	{ 0xf8, "RM",	1, nullptr }, //			if M, RET
 	{ 0xf9, "SPHL",	1, nullptr }, //			SP = HL

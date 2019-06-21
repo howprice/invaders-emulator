@@ -12,14 +12,19 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 - http://www.emutalk.net/threads/38177-Space-Invaders
 - https://en.wikipedia.org/wiki/Intel_8080
 - Intel 8080 Assembly Language Programming Manual a.k.a. "The Data Book"
+- [Intel 8080/8085 Assembly Language Programming](https://www.tramm.li/i8080/Intel%208080-8085%20Assembly%20Language%20Programming%201977%20Intel.pdf)
 - [Intel 8080 Microcomputer System User's Manual](http://www.nj7p.info/Manuals/PDFs/Intel/9800153B.pdf)
+- [Half-carry flag](https://en.wikipedia.org/wiki/Half-carry_flag)
+- [Computer Archeology - Space Invaders](http://computerarcheology.com/Arcade/SpaceInvaders/)
+  - [Disassembled Code as Z80 opcodes](http://computerarcheology.com/Arcade/SpaceInvaders/Code.html)
+  - [RAM Usage](http://computerarcheology.com/Arcade/SpaceInvaders/RAMUse.html)
+  - [Hardware](http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html)
 
 ## TODO
 
-- Implement DAA instruction
-  - Requires the Auxiliary Carry flag, so will need to fix up for all (or all preceding) instructions!
 - Understand decimal addition: Binary Coded Decimal, and the DAA
-  - See Programming Manual p56
+  - See the two Programming Manuals 
+- Implement DAA instruction
 
 - Map host input (SDL) to port data
 - Add timings to 8080 instructions 
