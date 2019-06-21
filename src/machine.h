@@ -21,6 +21,17 @@ struct Machine
 	bool player1ShootButton;
 	bool player1JoystickLeft;
 	bool player1JoystickRight;
+	bool player2ShootButton;
+	bool player2JoystickLeft;
+	bool player2JoystickRight;
+	bool tilt;
+
+	// bits 0 and 1  number of lives
+	// bit 2  Check RAM and sound
+	// bit 3  Bonus life at 1 : 1000, 0 : 1500
+	// bits 4,5,6  Unknown
+	// bit 7  No pricing on screen
+	uint8_t dipSwitchBits;
 };
 
 bool CreateMachine(Machine** ppMachine);

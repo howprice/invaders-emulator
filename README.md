@@ -26,11 +26,9 @@ Press 5 to insert coin
 
 ## TODO
 
-- Hook up port 2 input (for 2 player game)
-- Add timings to 8080 instructions 
-- Return instruction cycle count from instruction execution functions
+- Add timings to 8080 instructions (from Data Book)
+  - Return instruction cycle count from instruction execution functions
   - n.b. Can be different depending on what the instruction did e.g. jump or not jump
-  - Best reference for this? Data Book?
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Use point sampler in shader

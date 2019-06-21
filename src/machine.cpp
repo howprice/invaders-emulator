@@ -283,26 +283,11 @@ static uint8_t In(uint8_t port, void* userdata)
 
 	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
 
-	// Space Invaders input ports
-
-	// Read 1
-
-	//     
-	// Read 2
-	// BIT 0, 1 dipswitch number of lives(0:3, 1 : 4, 2 : 5, 3 : 6)
-	//     2    tilt 'button'
-	//     3    dipswitch bonus life at 1 : 1000, 0 : 1500
-	//     4    P2 shoot button
-	//     5    P2 joystick left
-	//     6    P2 joystick right
-	//     7    dipswitch coin info 1 : off, 0 : on
-	//     
-	// Read 3   shift register result
-
 	// Read port 1=$01 and 2=$00 will make the game run, but but only in attract mode.
 
 	if(port == 1)
 	{
+		// Read 1
 		// BIT 0    coin(0 when active)
 		// BIT 1    P2 start button
 		// BIT 2    P1 start button
@@ -321,7 +306,29 @@ static uint8_t In(uint8_t port, void* userdata)
 		return val;
 	}
 	else if(port == 2)
-		return 0;
+	{
+		uint8_t val = 0x00;
+
+		// Read 2
+		// BITS 0 and 1  dipswitch number of lives (0:3, 1 : 4, 2 : 5, 3 : 6)
+		// BIT 2         tilt 'button'
+		// BIT 3         dipswitch bonus life at 1 : 1000, 0 : 1500
+		// BIT 4         P2 shoot button
+		// BIT 5         P2 joystick left
+		// BIT 6         P2 joystick right
+		// BIT 7         dipswitch coin info 1 : off, 0 : on
+
+		// copy in the required DIP switch bits
+		uint8_t dipSwitchMask = 0b10001011; // see Machine.dipSwitchBits 
+		val = pMachine->dipSwitchBits & dipSwitchMask;
+
+		val |= pMachine->tilt ? (1<<2) : 0;
+		val |= pMachine->player2ShootButton ? (1 << 4) : 0;
+		val |= pMachine->player2JoystickLeft ? (1 << 5) : 0;
+		val |= pMachine->player2JoystickRight ? (1 << 6) : 0;
+
+		return val;
+	}
 	else if(port == 3)
 	{
 		// Reading from port 3 returns the shifted register value.
@@ -549,6 +556,10 @@ void StartFrame(Machine* pMachine)
 	pMachine->player1ShootButton = false;
 	pMachine->player1JoystickLeft = false;
 	pMachine->player1JoystickRight = false;
+	pMachine->player2ShootButton = false;
+	pMachine->player2JoystickLeft = false;
+	pMachine->player2JoystickRight = false;
+	pMachine->tilt = false;
 }
 
 // returns true if still running
