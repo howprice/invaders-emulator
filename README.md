@@ -26,7 +26,7 @@ Press 5 to insert coin
 
 ## TODO
 
-- Map host input (SDL) to port data
+- Hook up port 2 input (for 2 player game)
 - Add timings to 8080 instructions 
 - Return instruction cycle count from instruction execution functions
   - n.b. Can be different depending on what the instruction did e.g. jump or not jump

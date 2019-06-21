@@ -31,6 +31,8 @@
 static bool s_debug = false;
 static bool s_rotateDisplay = false; // the invaders machine display is rotated 90 degrees anticlockwise
 
+static bool s_keyState[SDL_NUM_SCANCODES] = {};
+
 static void printUsage()
 {
 	puts("Usage: invaders [OPTIONS]");
@@ -383,15 +385,27 @@ int main(int argc, char** argv)
 			}
 			else if(event.type == SDL_KEYDOWN)
 			{
+				if(event.key.repeat == 0)
+					s_keyState[event.key.keysym.scancode] = true;
+
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					bDone = true;
+				else if(event.key.keysym.sym == SDLK_1)
+					pMachine->player1StartButton = true;
+				else if(event.key.keysym.sym == SDLK_2)
+					pMachine->player2StartButton = true;
 				else if(event.key.keysym.sym == SDLK_5)
 					pMachine->coinInserted = true;
-				else if(event.key.keysym.sym == SDLK_SPACE)
-				{
-				}
+			}
+			else if(event.type == SDL_KEYUP)
+			{
+				s_keyState[event.key.keysym.scancode] = false;
 			}
 		}
+
+		pMachine->player1ShootButton = s_keyState[SDL_SCANCODE_SPACE];
+		pMachine->player1JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
+		pMachine->player1JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
