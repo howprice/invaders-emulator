@@ -657,10 +657,36 @@ static void execute2A(State8080& state)
 	state.H = readByteFromMemory(state, address + 1);
 }
 
+//------------------------------------------------------------------------------
+// DCX
+//
+// Decrement Register Pair
+//
+// The 16-bit number held in the specified register pair is decremented by one.
+//
+// Condition bits affected: None
+
+// 0x0B  DCX B  aka DEC BC
+// BC <- BC - 1
+static void execute0B(State8080& state)
+{
+	uint16_t BC = ((uint16_t)state.B << 8) | (state.C);
+	uint16_t result = BC - 1;
+	state.B = (uint8_t)(result >> 8);   // MSB
+	state.C = (uint8_t)(result & 0xff); // LSB
+}
+
+// 0x1B  DCX D  aka DEC DE
+// DE <- DE - 1
+static void execute1B(State8080& state)
+{
+	uint16_t DE = ((uint16_t)state.D << 8) | (state.E);
+	uint16_t result = DE - 1;
+	state.D = (uint8_t)(result >> 8);   // MSB
+	state.E = (uint8_t)(result & 0xff); // LSB
+}
+
 // 0x2B  DCX H  aka DEC HL
-// Decrement Register Pair HL
-// The 16-bit number held in the HL register pair is decremented by one.
-// Condition bits affected : None
 // HL <- HL-1
 static void execute2B(State8080& state)
 {
@@ -670,6 +696,14 @@ static void execute2B(State8080& state)
 	state.L = (uint8_t)(result & 0xff); // LSB
 }
 
+// 0x3B  DCX SP   aka DEC SP
+// SP <- SP - 1
+static void execute3B(State8080& state)
+{
+	state.SP--;
+}
+
+//------------------------------------------------------------------------------
 // 0x2E  MVI L,<d8>,
 // L <- <d8>
 static void execute2E(State8080& state)
@@ -2215,7 +2249,7 @@ static const Instruction s_instructions[] =
 	{ 0x08, "-", 1, nullptr },
 	{ 0x09, "DAD BC", 1, execute09 }, // aka ADD HL,BC   HL <- HL + BC  Sets Carry flag
 	{ 0x0a, "LDAX B", 1, execute0A}, // aka LD A,(BC)  A <- (BC)
-	{ 0x0b, "DCX B",	1, nullptr }, //			BC = BC - 1
+	{ 0x0b, "DCX B", 1, execute0B }, // aka DEC BC    BC = BC - 1
 	{ 0x0c, "INR C", 1, execute0C }, // aka INC C    C <- C + 1    Z, S, P, AC
 	{ 0x0d, "DCR C", 1, execute0D }, // aka DEC C	 C <- C - 1    Z, S, P, AC
 	{ 0x0e, "MVI C,%02X", 2, execute0E }, // C <- byte 2
@@ -2231,7 +2265,7 @@ static const Instruction s_instructions[] =
 	{ 0x18, "-", 1, nullptr }, //	
 	{ 0x19, "DAD D", 1, execute19 }, // aka ADD HL,DE   HL <- HL + DE   Sets Carry flag
 	{ 0x1a, "LDAX D", 1, execute1A }, // A <- (DE)
-	{ 0x1b, "DCX D",	1, nullptr }, //			DE = DE - 1
+	{ 0x1b, "DCX D", 1, execute1B }, // aka DEC DE   DE = DE - 1
 	{ 0x1c, "INR E", 1, execute1C }, // aka INC E    E <- E + 1    Z, S, P, AC
 	{ 0x1d, "DCR E", 1, execute1D }, // aka DEC E	 E <- E - 1    Z, S, P, AC
 	{ 0x1e, "MVI E,%02X",	2, nullptr }, //			E < -byte 2
@@ -2263,7 +2297,7 @@ static const Instruction s_instructions[] =
 	{ 0x38, "-", 1},
 	{ 0x39, "DAD SP",	1, nullptr }, //		CY	HL = HL + SP
 	{ 0x3a, "LDA %04X",	3, execute3A }, // A <- (adr)
-	{ 0x3b, "DCX SP",	1, nullptr }, //			SP = SP - 1
+	{ 0x3b, "DCX SP", 1, execute3B }, // aka DEC SP    SP = SP - 1
 	{ 0x3c, "INR A", 1, execute3C }, // aka INC A   A <- A+1   Z, S, P, AC
 	{ 0x3d, "DCR A", 1, execute3D }, // aka DEC A    A <- A-1    Z, S, P, AC	
 	{ 0x3e, "MVI A,%02X", 2, execute3E }, // A <- byte 2
