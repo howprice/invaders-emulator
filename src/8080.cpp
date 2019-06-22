@@ -100,18 +100,6 @@ static uint8_t calculateParityFlag(uint8_t val)
 	return parity;
 }
 
-// Called from the various Return instructions: RZ, RNZ etc..
-static void performReturnOperation(State8080& state)
-{
-	// return address is stored in stack memory in little-endian format
-	uint8_t lsb = readByteFromMemory(state, state.SP);
-	uint8_t msb = readByteFromMemory(state, state.SP + 1);
-	state.SP += 2;
-	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
-	HP_ASSERT(address < state.memorySizeBytes);
-	state.PC = address;
-}
-
 //-----------------------------------------------------------------------------
 
 // 0x00 NOP
@@ -239,7 +227,7 @@ static unsigned int execute3C(State8080& state)
 //
 // Condition bits affected: Zero, Sign, Parity, Auxiliary Carry
 
-static unsigned int executeDCR(State8080& state, uint8_t& val)
+static void executeDCR(State8080& state, uint8_t& val)
 {
 	uint8_t result = val - 1;
 
@@ -602,48 +590,53 @@ static unsigned int execute1A(State8080& state)
 //
 // Condition bits affected : None
 
-static unsigned int executeMVI(State8080& state, uint8_t& dst )
+static void executeMVI(State8080& state, uint8_t& dst )
 {
 	dst = getInstructionD8(state);
-	return 7;
 }
 
 // 0x06 MVI B, <d8>
 static unsigned int execute06(State8080& state)
 {
-	return executeMVI(state, state.B);
+	executeMVI(state, state.B);
+	return 7;
 }
 
 // 0x0E  MVI C,d8
 static unsigned int execute0E(State8080& state)
 {
-	return executeMVI(state, state.C);
+	executeMVI(state, state.C);
+	return 7;
 }
 
 // 0x16  MVI D,<d8>
 static unsigned int execute16(State8080& state)
 {
-	return executeMVI(state, state.D);
+	executeMVI(state, state.D);
+	return 7;
 }
 
 // 0x1E  MVI E,<d8>
 static unsigned int execute1E(State8080& state)
 {
-	return executeMVI(state, state.E);
+	executeMVI(state, state.E);
+	return 7;
 }
 
 // 0x26  MVI H,d8
 // H <- byte 2
 static unsigned int execute26(State8080& state)
 {
-	return executeMVI(state, state.H);
+	executeMVI(state, state.H);
+	return 7;
 }
 
 // 0x2E  MVI L,<d8>,
 // L <- <d8>
 static unsigned int execute2E(State8080& state)
 {
-	return executeMVI(state, state.L);
+	executeMVI(state, state.L);
+	return 7;
 }
 
 // 0x36  MVI M,d8
@@ -662,7 +655,8 @@ static unsigned int execute36(State8080& state)
 // A <- <d8>
 static unsigned int execute3E(State8080& state)
 {
-	return executeMVI(state, state.A);
+	executeMVI(state, state.A);
+	return 7;
 }
 
 //-----------------------------------------------------------------------------
@@ -679,6 +673,7 @@ static unsigned int execute0F(State8080& state)
 	state.flags.C = state.A & 1;
 	state.A = state.A >> 1;
 	state.A |= (state.flags.C << 7);
+	return 4;
 }
 
 // 0x07  RLC  aka RLCA
@@ -690,6 +685,7 @@ static unsigned int execute07(State8080& state)
 	state.flags.C = (state.A & 0x80) ? 1 : 0;
 	state.A = state.A << 1;
 	state.A |= state.flags.C;
+	return 4;
 }
 
 // 0x1F  RAR  aka RRA
@@ -705,8 +701,10 @@ static unsigned int execute1F(State8080& state)
 	state.flags.C = state.A & 1;
 	state.A = state.A >> 1;
 	state.A |= prevCarry << 7;
+	return 4;
 }
 
+//------------------------------------------------------------------------------
 // 0x22  SHLD <address>  aka LD (adr),HL
 // Store H and L Direct
 // Condition bits affected : None
@@ -716,6 +714,24 @@ static unsigned int execute22(State8080& state)
 	uint16_t address = getInstructionAddress(state);
 	writeByteToMemory(state, address, state.L); // LSB
 	writeByteToMemory(state, address + 1, state.H); // MSB
+	return 16;
+}
+
+//------------------------------------------------------------------------------
+
+// 0x2A  LHLD <address>   aka LD HL,(addr)
+// Load H and L Direct
+// The byte at the memory address replaces the contents
+// of the L register. The byte at the next higher memory
+// address replaces the contents of the H register.
+// L <- (adr)       LSB
+// H <- (adr + 1)   MSB
+static unsigned int execute2A(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	state.L = readByteFromMemory(state, address);
+	state.H = readByteFromMemory(state, address + 1);
+	return 16;
 }
 
 //------------------------------------------------------------------------------
@@ -769,22 +785,7 @@ static unsigned int execute27(State8080& state)
 	state.flags.AC = setAC ? 1 : 0;
 	state.flags.C = setC ? 1 : 0;
 	state.A = (uint8_t)result16;
-}
-
-//------------------------------------------------------------------------------
-
-// 0x2A  LHLD <address>   aka LD HL,(addr)
-// Load H and L Direct
-// The byte at the memory address replaces the contents
-// of the L register. The byte at the next higher memory
-// address replaces the contents of the H register.
-// L <- (adr)       LSB
-// H <- (adr + 1)   MSB
-static unsigned int execute2A(State8080& state)
-{
-	uint16_t address = getInstructionAddress(state);
-	state.L = readByteFromMemory(state, address);
-	state.H = readByteFromMemory(state, address + 1);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
@@ -804,6 +805,7 @@ static unsigned int execute0B(State8080& state)
 	uint16_t result = BC - 1;
 	state.B = (uint8_t)(result >> 8);   // MSB
 	state.C = (uint8_t)(result & 0xff); // LSB
+	return 5;
 }
 
 // 0x1B  DCX D  aka DEC DE
@@ -814,6 +816,7 @@ static unsigned int execute1B(State8080& state)
 	uint16_t result = DE - 1;
 	state.D = (uint8_t)(result >> 8);   // MSB
 	state.E = (uint8_t)(result & 0xff); // LSB
+	return 5;
 }
 
 // 0x2B  DCX H  aka DEC HL
@@ -824,6 +827,7 @@ static unsigned int execute2B(State8080& state)
 	uint16_t result = HL - 1;
 	state.H = (uint8_t)(result >> 8);   // MSB
 	state.L = (uint8_t)(result & 0xff); // LSB
+	return 5;
 }
 
 // 0x3B  DCX SP   aka DEC SP
@@ -831,6 +835,7 @@ static unsigned int execute2B(State8080& state)
 static unsigned int execute3B(State8080& state)
 {
 	state.SP--;
+	return 5;
 }
 
 //------------------------------------------------------------------------------
@@ -843,6 +848,7 @@ static unsigned int execute3B(State8080& state)
 static unsigned int execute2F(State8080& state)
 {
 	state.A = ~state.A;
+	return 4;
 }
 
 // 0x32  STA <address>   aka LD (adress),A
@@ -852,6 +858,7 @@ static unsigned int execute32(State8080& state)
 {
 	uint16_t address = getInstructionAddress(state);
 	writeByteToMemory(state, address, state.A);
+	return 13;
 }
 
 // 0x37  STC
@@ -860,6 +867,7 @@ static unsigned int execute32(State8080& state)
 static unsigned int execute37(State8080& state)
 {
 	state.flags.C = 1;
+	return 4;
 }
 
 // 0x3A  LDA <addr>
@@ -870,6 +878,7 @@ static unsigned int execute3A(State8080& state)
 {
 	uint16_t address = getInstructionAddress(state);
 	state.A = readByteFromMemory(state, address);
+	return 13;
 }
 
 //------------------------------------------------------------------------------
@@ -895,37 +904,43 @@ static unsigned int execute3A(State8080& state)
 // 0x40  MOV B,B
 static unsigned int execute40(State8080& /*state*/)
 {
-	//state.B = state.B;
+//	state.B = state.B;
+	return 5;
 }
 
 // 0x41  MOV B,C
 static unsigned int execute41(State8080& state)
 {
 	state.B = state.C;
+	return 5;
 }
 
 // 0x42  MOV B,D
 static unsigned int execute42(State8080& state)
 {
 	state.B = state.D;
+	return 5;
 }
 
 // 0x43  MOV B,E
 static unsigned int execute43(State8080& state)
 {
 	state.B = state.E;
+	return 5;
 }
 
 // 0x44  MOV B,H
 static unsigned int execute44(State8080& state)
 {
 	state.B = state.H;
+	return 5;
 }
 
 // 0x45  MOV B,L
 static unsigned int execute45(State8080& state)
 {
 	state.B = state.L;
+	return 5;
 }
 
 // 0x46  MOV B,M  aka MOV B,(HL)
@@ -934,6 +949,7 @@ static unsigned int execute46(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	state.B = readByteFromMemory(state, HL);
+	return 7;
 }
 
 // 0x47 MOV B,A
@@ -941,42 +957,48 @@ static unsigned int execute46(State8080& state)
 static unsigned int execute47(State8080& state)
 {
 	state.B = state.A;
+	return 5;
 }
 
 // 0x48  MOV C,B
 static unsigned int execute48(State8080& state)
 {
 	state.C = state.B;
+	return 5;
 }
 
 // 0x49  MOV C,C
 static unsigned int execute49(State8080& /*state*/)
 {
-
+	return 5;
 }
 
 // 0x4A  MOV C,D
 static unsigned int execute4A(State8080& state)
 {
 	state.C = state.D;
+	return 5;
 }
 
 // 0x4B  MOV C,E
 static unsigned int execute4B(State8080& state)
 {
 	state.C = state.E;
+	return 5;
 }
 
 // 0x4C  MOV C,H
 static unsigned int execute4C(State8080& state)
 {
 	state.C = state.H;
+	return 5;
 }
 
 // 0x4D  MOV C,L
 static unsigned int execute4D(State8080& state)
 {
 	state.C = state.L;
+	return 5;
 }
 
 // 0x4E  MOV C,M
@@ -985,6 +1007,7 @@ static unsigned int execute4E(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	state.C = readByteFromMemory(state, HL);
+	return 7;
 }
 
 // 0x4F  MOV C,A
@@ -992,42 +1015,48 @@ static unsigned int execute4E(State8080& state)
 static unsigned int execute4F(State8080& state)
 {
 	state.C = state.A;
+	return 5;
 }
 
 // 0x50  MOV D,B
 static unsigned int execute50(State8080& state)
 {
 	state.D = state.B;
+	return 5;
 }
 
 // 0x51  MOV D,C
 static unsigned int execute51(State8080& state)
 {
 	state.D = state.C;
+	return 5;
 }
 
 // 0x52  MOV D,D
 static unsigned int execute52(State8080& /*state*/)
 {
-
+	return 7;
 }
 
 // 0x53  MOV D,E
 static unsigned int execute53(State8080& state)
 {
 	state.D = state.E;
+	return 5;
 }
 
 // 0x54  MOV D,H
 static unsigned int execute54(State8080& state)
 {
 	state.D = state.H;
+	return 5;
 }
 
 // 0x55  MOV D,L
 static unsigned int execute55(State8080& state)
 {
 	state.D = state.L;
+	return 5;
 }
 
 // 0x56  MOV D,M
@@ -1037,6 +1066,7 @@ static unsigned int execute56(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	state.D = val;
+	return 7;
 }
 
 // 0x57  MOV D,A
@@ -1044,42 +1074,48 @@ static unsigned int execute56(State8080& state)
 static unsigned int execute57(State8080& state)
 {
 	state.D = state.A;
+	return 5;
 }
 
 // 0x58  MOV E,B
 static unsigned int execute58(State8080& state)
 {
 	state.E = state.B;
+	return 5;
 }
 
 // 0x59  MOV E,C
 static unsigned int execute59(State8080& state)
 {
 	state.E = state.C;
+	return 5;
 }
 
 // 0x5A  MOV E,D
 static unsigned int execute5A(State8080& state)
 {
 	state.E = state.D;
+	return 5;
 }
 
 // 0x5B  MOV E,E
 static unsigned int execute5B(State8080& /*state*/)
 {
-	
+	return 5;
 }
 
 // 0x5C  MOV E,H
 static unsigned int execute5C(State8080& state)
 {
 	state.E = state.H;
+	return 5;
 }
 
 // 0x5D  MOV E,L
 static unsigned int execute5D(State8080& state)
 {
 	state.E = state.L;
+	return 5;
 }
 
 // 0x5E  MOV E,M  aka LD E,(HL)
@@ -1089,6 +1125,7 @@ static unsigned int execute5E(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	state.E = val;
+	return 7;
 }
 
 // 0x5F  MOV E,A
@@ -1096,12 +1133,14 @@ static unsigned int execute5E(State8080& state)
 static unsigned int execute5F(State8080& state)
 {
 	state.E = state.A;
+	return 5;
 }
 
 // 0x60  MOV H,B
 static unsigned int execute60(State8080& state)
 {
 	state.H = state.B;
+	return 5;
 }
 
 // 0x61  MOV H,C
@@ -1109,30 +1148,34 @@ static unsigned int execute60(State8080& state)
 static unsigned int execute61(State8080& state)
 {
 	state.H = state.C;
+	return 5;
 }
 
 // 0x62  MOV H,D
 static unsigned int execute62(State8080& state)
 {
 	state.H = state.D;
+	return 5;
 }
 
 // 0x63  MOV H,E
 static unsigned int execute63(State8080& state)
 {
 	state.H = state.E;
+	return 5;
 }
 
 // 0x64  MOV H,H
 static unsigned int execute64(State8080& /*state*/)
 {
-
+	return 5;
 }
 
 // 0x65  MOV H,L
 static unsigned int execute65(State8080& state)
 {
 	state.H = state.L;
+	return 5;
 }
 
 // 0x66  MOV H,M
@@ -1142,6 +1185,7 @@ static unsigned int execute66(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	state.H = val;
+	return 7;
 }
 
 // 0x67  MOV H,A
@@ -1149,6 +1193,7 @@ static unsigned int execute66(State8080& state)
 static unsigned int execute67(State8080& state)
 {
 	state.H = state.A;
+	return 5;
 }
 
 // 0x68  MOV L,B
@@ -1156,6 +1201,7 @@ static unsigned int execute67(State8080& state)
 static unsigned int execute68(State8080& state)
 {
 	state.L = state.B;
+	return 5;
 }
 
 // 0x69  MOV L,C
@@ -1163,30 +1209,34 @@ static unsigned int execute68(State8080& state)
 static unsigned int execute69(State8080& state)
 {
 	state.L = state.C;
+	return 5;
 }
 
 // 0x6A  MOV L,D
 static unsigned int execute6A(State8080& state)
 {
 	state.L = state.D;
+	return 5;
 }
 
 // 0x6B  MOV L,E
 static unsigned int execute6B(State8080& state)
 {
 	state.L = state.E;
+	return 5;
 }
 
 // 0x6C  MOV L,H
 static unsigned int execute6C(State8080& state)
 {
 	state.L = state.H;
+	return 5;
 }
 
 // 0x6D  MOV L,L
 static unsigned int execute6D(State8080& /*state*/)
 {
-
+	return 5;
 }
 
 // 0x6E  MOV L,M
@@ -1195,6 +1245,7 @@ static unsigned int execute6E(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	state.L = val;
+	return 7;
 }
 
 // 0x6F  MOV L,A
@@ -1202,6 +1253,7 @@ static unsigned int execute6E(State8080& state)
 static unsigned int execute6F(State8080& state)
 {
 	state.L = state.A;
+	return 5;
 }
 
 // 0x70  MOV M,B
@@ -1210,6 +1262,7 @@ static unsigned int execute70(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.B);
+	return 7;
 }
 
 // 0x71  MOV M,C
@@ -1217,6 +1270,7 @@ static unsigned int execute71(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.C);
+	return 7;
 }
 
 // 0x72  MOV M,D
@@ -1224,6 +1278,7 @@ static unsigned int execute72(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.D);
+	return 7;
 }
 
 // 0x73  MOV M,E
@@ -1231,6 +1286,7 @@ static unsigned int execute73(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.E);
+	return 7;
 }
 
 // 0x74  MOV M,H
@@ -1238,6 +1294,7 @@ static unsigned int execute74(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.H);
+	return 7;
 }
 
 // 0x75  MOV M,L
@@ -1245,12 +1302,14 @@ static unsigned int execute75(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	writeByteToMemory(state, HL, state.L);
+	return 7;
 }
 
 // 0x76  HALT
 static unsigned int execute76(State8080& /*state*/)
 {
 	HP_FATAL_ERROR("HALT");
+	return 7;
 }
 
 // 0x77  MOV M,A
@@ -1260,6 +1319,7 @@ static unsigned int execute77(State8080& state)
 {
 	uint16_t address = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	writeByteToMemory(state, address, state.A);
+	return 7;
 }
 
 // 0x78  MOV A,B
@@ -1267,6 +1327,7 @@ static unsigned int execute77(State8080& state)
 static unsigned int execute78(State8080& state)
 {
 	state.A = state.B;
+	return 5;
 }
 
 // 0x79  MOV A,C
@@ -1274,6 +1335,7 @@ static unsigned int execute78(State8080& state)
 static unsigned int execute79(State8080& state)
 {
 	state.A = state.C;
+	return 5;
 }
 
 // 0x7A  MOV A,D
@@ -1281,6 +1343,7 @@ static unsigned int execute79(State8080& state)
 static unsigned int execute7A(State8080& state)
 {
 	state.A = state.D;
+	return 5;
 }
 
 // 0x7B  MOV A,E
@@ -1288,6 +1351,7 @@ static unsigned int execute7A(State8080& state)
 static unsigned int execute7B(State8080& state)
 {
 	state.A = state.E;
+	return 5;
 }
 
 // 0x7C  MOV A,H
@@ -1295,6 +1359,7 @@ static unsigned int execute7B(State8080& state)
 static unsigned int execute7C(State8080& state)
 {
 	state.A = state.H;
+	return 5;
 }
 
 // 0x7D  MOV A,L
@@ -1302,6 +1367,7 @@ static unsigned int execute7C(State8080& state)
 static unsigned int execute7D(State8080& state)
 {
 	state.A = state.L;
+	return 5;
 }
 
 // 0x7E  MOV A,M
@@ -1310,12 +1376,13 @@ static unsigned int execute7E(State8080& state)
 {
 	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	state.A = readByteFromMemory(state, HL);
+	return 7;
 }
 
 // 0x7F  MOV A,A
 static unsigned int execute7F(State8080& /*state*/)
 {
-	
+	return 5;
 }
 
 //------------------------------------------------------------------------------
@@ -1340,48 +1407,49 @@ static unsigned int executeADD(State8080& state, uint8_t val)
 	state.flags.AC = ((state.A & 0xf) + (val & 0xf)) > 0xf ? 1 : 0;
 
 	state.A = result8;
+	return 4;
 }
 
 // 0x80  ADD B  aka ADD A,B
 // A <- A + B
 static unsigned int execute80(State8080& state)
 {
-	executeADD(state, state.B);
+	return executeADD(state, state.B);
 }
 
 // 0x81  ADD C  aka ADD A,C
 // A <- A + C
 static unsigned int execute81(State8080& state)
 {
-	executeADD(state, state.C);
+	return executeADD(state, state.C);
 }
 
 // 0x82  ADD D  aka ADD A,D
 // A <- A + D
 static unsigned int execute82(State8080& state)
 {
-	executeADD(state, state.D);
+	return executeADD(state, state.D);
 }
 
 // 0x83  ADD E  aka ADD A,E
 // A <- A + E
 static unsigned int execute83(State8080& state)
 {
-	executeADD(state, state.E);
+	return executeADD(state, state.E);
 }
 
 // 0x84  ADD H  aka ADD A,H
 // A <- A + H
 static unsigned int execute84(State8080& state)
 {
-	executeADD(state, state.H);
+	return executeADD(state, state.H);
 }
 
 // 0x85  ADD L  aka ADD A,L
 // A <- A + L
 static unsigned int execute85(State8080& state)
 {
-	executeADD(state, state.L);
+	return executeADD(state, state.L);
 }
 
 // 0x86  ADD M  aka ADD A,(HL)
@@ -1391,13 +1459,14 @@ static unsigned int execute86(State8080& state)
 	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	executeADD(state, val);
+	return 7;
 }
 
 // 0x87  ADD A  aka ADD A,A
 // A <- A + A
 static unsigned int execute87(State8080& state)
 {
-	executeADD(state, state.A);
+	return executeADD(state, state.A);
 }
 
 //------------------------------------------------------------------------------
@@ -1410,7 +1479,7 @@ static unsigned int execute87(State8080& state)
 // 
 // Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
 
-static unsigned int executeADC(State8080& state, uint8_t val)
+static void executeADC(State8080& state, uint8_t val)
 {
 	uint16_t result16 = (uint16_t)state.A + (uint16_t)val + (uint16_t)state.flags.C; // 16 bit arithmetic so can test for carry
 	uint8_t result8 = (uint8_t)result16;
@@ -1429,6 +1498,7 @@ static unsigned int executeADC(State8080& state, uint8_t val)
 static unsigned int execute88(State8080& state)
 {
 	executeADC(state, state.B);
+	return 4;
 }
 
 // 0x89  ADC C
@@ -1436,13 +1506,15 @@ static unsigned int execute88(State8080& state)
 static unsigned int execute89(State8080& state)
 {
 	executeADC(state, state.C);
-} 
+	return 4;
+}
 
 // 0x8a  ADC D
 // A <- A + D + CY
 static unsigned int execute8a(State8080& state)
 {
 	executeADC(state, state.D);
+	return 4;
 }
 
 // 0x8b  ADC E
@@ -1450,21 +1522,24 @@ static unsigned int execute8a(State8080& state)
 static unsigned int execute8b(State8080& state)
 {
 	executeADC(state, state.E);
-} 
+	return 4;
+}
 
 // 0x8c  ADC H
 // A <- A + H + CY
 static unsigned int execute8c(State8080& state)
 {
 	executeADC(state, state.H);
-} 
+	return 4;
+}
 
 // 0x8d  ADC L
 // A <- A + L + CY
 static unsigned int execute8d(State8080& state)
 {
 	executeADC(state, state.L);
-} 
+	return 4;
+}
 
 // 0x8e  ADC M
 // A <- A + (HL) + CY
@@ -1473,6 +1548,7 @@ static unsigned int execute8e(State8080& state)
 	uint16_t HL = (uint16_t)(state.H << 8) | (uint16_t)state.L;
 	uint8_t val = readByteFromMemory(state, HL);
 	executeADC(state, val);
+	return 7;
 } 
 
 // 0x8f  ADC A
@@ -1480,7 +1556,8 @@ static unsigned int execute8e(State8080& state)
 static unsigned int execute8f(State8080& state)
 {
 	executeADC(state, state.A);
-} 
+	return 4;
+}
 
 //------------------------------------------------------------------------------
 // SUB
@@ -1492,7 +1569,7 @@ static unsigned int execute8f(State8080& state)
 //
 // Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
 
-static unsigned int executeSUB(State8080& state, uint8_t val)
+static void executeSUB(State8080& state, uint8_t val)
 {
 	uint8_t result = state.A - val;
 
@@ -1509,43 +1586,56 @@ static unsigned int executeSUB(State8080& state, uint8_t val)
 	state.A = result;
 }
 
-// 0x90  SUB B   A <- A - B
+// 0x90  SUB B   
+// A <- A - B
 static unsigned int execute90(State8080& state)
 {
 	executeSUB(state, state.B);
+	return 4;
 }
 
-// 0x91  SUB C   A <- A - C
+// 0x91  SUB C   
+// A <- A - C
 static unsigned int execute91(State8080& state)
 {
 	executeSUB(state, state.C);
+	return 4;
 }
 
-// 0x92  SUB D   A <- A - D
+// 0x92  SUB D   
+// A <- A - D
 static unsigned int execute92(State8080& state)
 {
 	executeSUB(state, state.D);
+	return 4;
 }
 
-// 0x93  SUB E   A <- A - E
+// 0x93  SUB E   
+// A <- A - E
 static unsigned int execute93(State8080& state)
 {
 	executeSUB(state, state.E);
+	return 4;
 }
 
-// 0x94  SUB H   A <- A - H 
+// 0x94  SUB H   
+// A <- A - H 
 static unsigned int execute94(State8080& state)
 {
 	executeSUB(state, state.H);
+	return 4;
 }
 
-// 0x95  SUB L   A <- A - L
+// 0x95  SUB L   
+// A <- A - L
 static unsigned int execute95(State8080& state)
 {
 	executeSUB(state, state.L);
+	return 4;
 }
 
-// 0x96  SUB M   A <- A - (HL)	
+// 0x96  SUB M   
+// A <- A - (HL)	
 static unsigned int execute96(State8080& state)
 {
 	uint16_t address = ((uint16_t)state.H << 8) | (state.L);
@@ -1553,12 +1643,15 @@ static unsigned int execute96(State8080& state)
 	uint8_t val = readByteFromMemory(state, address);
 	executeSUB(state, val);
 	writeByteToMemory(state, address, val);
+	return 7;
 }
 
-// 0x97  SUB A   A <- A - A
+// 0x97  SUB A   
+// A <- A - A
 static unsigned int execute97(State8080& state)
 {
 	executeSUB(state, state.A);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
@@ -1581,7 +1674,7 @@ static unsigned int execute97(State8080& state)
 // logical AND instructions sets the flag to reflect the logical OR of bit 3 
 // of the values involved in the AND operation.
 
-static unsigned int executeANA(State8080& state, uint8_t val)
+static void executeANA(State8080& state, uint8_t val)
 {
 	uint8_t result = state.A & val;
 	
@@ -1601,6 +1694,7 @@ static unsigned int executeANA(State8080& state, uint8_t val)
 static unsigned int executeA0(State8080& state)
 {
 	executeANA(state, state.B);
+	return 4;
 }
 
 // 0xA1  ANA C  aka AND C
@@ -1608,27 +1702,31 @@ static unsigned int executeA0(State8080& state)
 static unsigned int executeA1(State8080& state)
 {
 	executeANA(state, state.C);
-} 
+	return 4;
+}
 
 // 0xA2  ANA D  aka AND D
 // A <- A & D	
 static unsigned int executeA2(State8080& state)
 {
 	executeANA(state, state.D);
-} 
+	return 4;
+}
 
 // 0xA3  ANA E  aka AND E
 // A <- A & E	
 static unsigned int executeA3(State8080& state)
 {
 	executeANA(state, state.D);
-} 
+	return 4;
+}
 
 // 0xA4  ANA H  aka AND H
 // A <- A & H
 static unsigned int executeA4(State8080& state)
 {
 	executeANA(state, state.H);
+	return 4;
 }
 
 // 0xA5  ANA L  aka AND L
@@ -1636,7 +1734,8 @@ static unsigned int executeA4(State8080& state)
 static unsigned int executeA5(State8080& state)
 {
 	executeANA(state, state.L);
-} 
+	return 4;
+}
 
 // 0xA6  ANA M  aka AND (HL)
 // A <- A & (HL)
@@ -1645,6 +1744,7 @@ static unsigned int executeA6(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
 	executeANA(state, val);
+	return 7;
 }
 
 // 0xA7  ANA A  aka AND A
@@ -1653,6 +1753,7 @@ static unsigned int executeA6(State8080& state)
 static unsigned int executeA7(State8080& state)
 {
 	executeANA(state, state.A);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
@@ -1666,7 +1767,7 @@ static unsigned int executeA7(State8080& state)
 // Condition bits affected: Carry, Zero, Sign, Parity[, Auxiliary Carry (see below)]
 //
 
-static unsigned int executeXOR(State8080& state, uint8_t val)
+static void executeXOR(State8080& state, uint8_t val)
 {
 	state.A = state.A ^ val;
 	state.flags.C = 0;
@@ -1681,6 +1782,7 @@ static unsigned int executeXOR(State8080& state, uint8_t val)
 static unsigned int executeA8(State8080& state)
 {
 	executeXOR(state, state.B);
+	return 4;
 }
 
 // 0xA9  XRA C  aka XOR C
@@ -1688,6 +1790,7 @@ static unsigned int executeA8(State8080& state)
 static unsigned int executeA9(State8080& state)
 {
 	executeXOR(state, state.C);
+	return 4;
 }
 
 // 0xAA  XRA D  aka XOR D
@@ -1695,6 +1798,7 @@ static unsigned int executeA9(State8080& state)
 static unsigned int executeAA(State8080& state)
 {
 	executeXOR(state, state.D);
+	return 4;
 }
 
 // 0xAB  XRA E  aka XOR E
@@ -1702,6 +1806,7 @@ static unsigned int executeAA(State8080& state)
 static unsigned int executeAB(State8080& state)
 {
 	executeXOR(state, state.E);
+	return 4;
 }
 
 // 0xAC  XRA H  aka XOR H
@@ -1709,6 +1814,7 @@ static unsigned int executeAB(State8080& state)
 static unsigned int executeAC(State8080& state)
 {
 	executeXOR(state, state.H);
+	return 4;
 }
 
 // 0xAD  XRA L  aka XOR L
@@ -1716,6 +1822,7 @@ static unsigned int executeAC(State8080& state)
 static unsigned int executeAD(State8080& state)
 {
 	executeXOR(state, state.L);
+	return 4;
 }
 
 // 0xAE  XRA M  aka XOR (HL)
@@ -1725,6 +1832,7 @@ static unsigned int executeAE(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
 	executeXOR(state, val);
+	return 7;
 }
 
 // 0xAF  XRA A  aka XOR A
@@ -1735,6 +1843,7 @@ static unsigned int executeAE(State8080& state)
 static unsigned int executeAF(State8080& state)
 {
 	executeXOR(state, state.A);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
@@ -1752,7 +1861,7 @@ static unsigned int executeAF(State8080& state)
 // Language Programming 1977 Intel" states "The carry and auxiliary carry
 // flags are reset to zero"
 
-static unsigned int executeORA(State8080& state, uint8_t data)
+static void executeORA(State8080& state, uint8_t data)
 {
 	state.A |= data;
 	state.flags.Z = calculateZeroFlag(state.A);
@@ -1767,6 +1876,7 @@ static unsigned int executeORA(State8080& state, uint8_t data)
 static unsigned int executeB0(State8080& state)
 {
 	executeORA(state, state.B);
+	return 4;
 }
 
 // 0xB1  ORA C  aka OR C
@@ -1774,6 +1884,7 @@ static unsigned int executeB0(State8080& state)
 static unsigned int executeB1(State8080& state)
 {
 	executeORA(state, state.C);
+	return 4;
 }
 
 // 0xB2  ORA D  aka OR D
@@ -1781,6 +1892,7 @@ static unsigned int executeB1(State8080& state)
 static unsigned int executeB2(State8080& state)
 {
 	executeORA(state, state.D);
+	return 4;
 }
 
 // 0xB3  ORA E  aka OR E
@@ -1788,6 +1900,7 @@ static unsigned int executeB2(State8080& state)
 static unsigned int executeB3(State8080& state)
 {
 	executeORA(state, state.E);
+	return 4;
 }
 
 // 0xB4  ORA H  aka OR H
@@ -1795,6 +1908,7 @@ static unsigned int executeB3(State8080& state)
 static unsigned int executeB4(State8080& state)
 {
 	executeORA(state, state.H);
+	return 4;
 }
 
 // 0xB5  ORA L  aka OR L 
@@ -1802,6 +1916,7 @@ static unsigned int executeB4(State8080& state)
 static unsigned int executeB5(State8080& state)
 {
 	executeORA(state, state.L);
+	return 4;
 }
 
 // 0xB6  ORA M  aka OR (HL)
@@ -1811,6 +1926,7 @@ static unsigned int executeB6(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
 	executeORA(state, val);
+	return 7;
 }
 
 // 0xB7  ORA A  aka OR A 
@@ -1818,6 +1934,7 @@ static unsigned int executeB6(State8080& state)
 static unsigned int executeB7(State8080& state)
 {
 	executeORA(state, state.A);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
@@ -1838,7 +1955,7 @@ static unsigned int executeB7(State8080& state)
 //
 // Condition bits affected : Carry, Zero, Sign, Parity, Auxiliary Carry
 
-static unsigned int executeCMP(State8080& state, uint8_t val)
+static void executeCMP(State8080& state, uint8_t val)
 {
 	uint8_t diff = state.A - val;
 
@@ -1857,36 +1974,42 @@ static unsigned int executeCMP(State8080& state, uint8_t val)
 static unsigned int executeB8(State8080& state)
 {
 	executeCMP(state, state.B);
+	return 4;
 }
 
 // 0xB9  CMP C  aka CP C
 static unsigned int executeB9(State8080& state)
 {
 	executeCMP(state, state.C);
+	return 4;
 }
 
 // 0xBA  CMP D  aka CP D
 static unsigned int executeBA(State8080& state)
 {
 	executeCMP(state, state.D);
+	return 4;
 }
 
 // 0xBB  CMP E  aka CP E
 static unsigned int executeBB(State8080& state)
 {
 	executeCMP(state, state.E);
+	return 4;
 }
 
 // 0xBC  CMP H  aka CP H
 static unsigned int executeBC(State8080& state)
 {
 	executeCMP(state, state.H);
+	return 4;
 }
 
 // 0xBD  CMP L  aka CP L
 static unsigned int executeBD(State8080& state)
 {
 	executeCMP(state, state.L);
+	return 4;
 }
 
 // 0xBE  CMP M  aka CP (HL)
@@ -1895,15 +2018,30 @@ static unsigned int executeBE(State8080& state)
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
 	uint8_t val = readByteFromMemory(state, HL);
 	executeCMP(state, val);
+	return 7;
 }
 
 // 0xBF  CMP A  aka CP A
 static unsigned int executeBF(State8080& state)
 {
 	executeCMP(state, state.A);
+	return 4;
 }
 
 //------------------------------------------------------------------------------
+// Return
+
+// Called from the various Return instructions: RZ, RNZ etc..
+static void performReturnOperation(State8080& state)
+{
+	// return address is stored in stack memory in little-endian format
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
+	state.SP += 2;
+	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
+	HP_ASSERT(address < state.memorySizeBytes);
+	state.PC = address;
+}
 
 // 0xC0  RNZ
 // Return If Not Zero
@@ -1911,8 +2049,120 @@ static unsigned int executeBF(State8080& state)
 static unsigned int executeC0(State8080& state)
 {
 	if(state.flags.Z == 0)
+	{
 		performReturnOperation(state);
+		return 11;
+	}
+	return 5;
 }
+
+// 0xC8  RZ	
+// Return If Zero
+// If the Zero bit is 1, a return operation is performed.
+static unsigned int executeC8(State8080& state)
+{
+	if(state.flags.Z == 1)
+	{
+		performReturnOperation(state);
+		return 11;
+	}
+	return 5;
+}
+
+// 0xC9 RET
+static unsigned int executeC9(State8080& state)
+{
+	performReturnOperation(state);
+	return 10;
+}
+
+// 0xd0 RNC
+// Return If No Carry
+// If the Carry bit is zero, a return operation is performed
+static unsigned int executeD0(State8080& state)
+{
+	if(state.flags.C == 0)
+	{
+		performReturnOperation(state);
+		return 11;
+	}
+	return 5;
+}
+
+// 0xd8  RC
+// Return If Carry
+// If the Carry bit is 1, a return operation is performed
+static unsigned int executeD8(State8080& state)
+{
+	if(state.flags.C == 1)
+	{
+		performReturnOperation(state);
+		return 11;
+	}
+	return 5;
+}
+
+//------------------------------------------------------------------------------
+// PUSH
+
+// 0xC5  PUSH BC
+static unsigned int executeC5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.B;
+	uint8_t lsb = state.C;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+	return 11;
+}
+
+// 0xD5  PUSH DE
+static unsigned int executeD5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.D;
+	uint8_t lsb = state.E;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+	return 11;
+}
+
+// 0xE5  PUSH HL
+static unsigned int executeE5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.H;
+	uint8_t lsb = state.L;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+	return 11;
+}
+
+// 0xF5  PUSH PSW  aka PUSH AF
+static unsigned int executeF5(State8080& state)
+{
+	// First register of register pair always contains the MSB
+	// Store in memory in little-endian format.
+	uint8_t msb = state.A;
+	uint8_t lsb = *(uint8_t*)& state.flags;
+	HP_ASSERT(state.SP >= 2);
+	writeByteToMemory(state, state.SP - 2, lsb);
+	writeByteToMemory(state, state.SP - 1, msb);
+	state.SP -= 2;
+	return 11;
+}
+
+//------------------------------------------------------------------------------
+// POP
 
 // 0xC1  POP BC
 static unsigned int executeC1(State8080& state)
@@ -1926,87 +2176,8 @@ static unsigned int executeC1(State8080& state)
 	state.B = msb;
 	state.C = lsb;
 	state.SP += 2;
-}
 
-// 0xC2 JNZ <address>
-// if NZ, PC <- adr
-static unsigned int executeC2(State8080& state)
-{
-	if(state.flags.Z == 0)
-		state.PC = getInstructionAddress(state);
-}
-
-// 0xC3 JMP <address>
-// PC <- adr
-static unsigned int executeC3(State8080& state)
-{
-	state.PC = getInstructionAddress(state);
-}
-
-// 0xC5  PUSH BC
-static unsigned int executeC5(State8080& state)
-{
-	// First register of register pair always contains the MSB
-	// Store in memory in little-endian format.
-	uint8_t msb = state.B;
-	uint8_t lsb = state.C;
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
-}
-
-// 0xC6  ADI <d8>  aka ADD A,<d8>
-// Add Immediate To Accumulator
-// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
-static unsigned int executeC6(State8080& state)
-{
-	uint8_t d8 = getInstructionD8(state);
-	
-	// perform 16 bit addition so can easily get carry bit
-	uint16_t result = (uint16_t)state.A + (uint16_t)d8;
-	state.A = (uint8_t)result;
-	state.flags.C = (result & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: Calculate Auxiliary Carry
-}
-
-// 0xC8  RZ	
-// Return If Zero
-// If the Zero bit is 1, a return operation is performed.
-static unsigned int executeC8(State8080& state)
-{
-	if(state.flags.Z == 1)
-		performReturnOperation(state);
-}
-
-// 0xC9 RET
-static unsigned int executeC9(State8080& state)
-{
-	performReturnOperation(state);
-}
-
-// 0xCA  JZ <address>
-// Jump If Zero
-// If the Zero bit is one, program execution continues at the memory address
-// if Z, PC <- adr
-static unsigned int executeCA(State8080& state)
-{
-	uint16_t address = getInstructionAddress(state);
-	HP_ASSERT(address < state.memorySizeBytes); // #TODO: Should really assert that is in ROM, or maybe ROM or RAM via callback to machine
-	if(state.flags.Z)
-		state.PC = address;
-}
-
-// 0xd0 RNC
-// Return If No Carry
-// If the Carry bit is zero, a return operation is performed
-static unsigned int executeD0(State8080& state)
-{
-	if(state.flags.C == 0)
-		performReturnOperation(state);
+	return 10;
 }
 
 // 0xD1  POP DE
@@ -2021,126 +2192,8 @@ static unsigned int executeD1(State8080& state)
 	state.D = msb;
 	state.E = lsb;
 	state.SP += 2;
-}
 
-// 0xD2  JNC <address>
-// Jump If No Carry
-// If the Carry bit is zero, program execution continues at the specified memory address
-// if NCY, PC <- adr
-static unsigned int executeD2(State8080& state)
-{
-	if(state.flags.C == 0)
-	{
-		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
-		state.PC = address;
-	}
-}
-
-// 0xD3  OUT d8  aka OUT d8,A
-// The contents of A are sent to output device number <d8> 
-static unsigned int executeD3(State8080& state)
-{
-	uint8_t port = getInstructionD8(state);
-	if(state.out != nullptr)
-		state.out(port, state.A, state.userdata);
-}
-
-// 0xD5  PUSH DE
-static unsigned int executeD5(State8080& state)
-{
-	// First register of register pair always contains the MSB
-	// Store in memory in little-endian format.
-	uint8_t msb = state.D;
-	uint8_t lsb = state.E;
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
-}
-
-// 0xD6  SUI d8  aka SUB
-// Subtract Immediate From Accumulator
-// A <- A - d8
-// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
-static unsigned int executeD6(State8080& state)
-{
-	uint8_t val = getInstructionD8(state);
-	uint8_t result = state.A - val;
-
-	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
-	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
-	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
-	state.flags.C = (val > state.A) ? 1 : 0;
-
-	state.flags.AC = (val & 0xf) > (state.A & 0xf) ? 1 : 0;
-
-	state.flags.S = calculateSignFlag(result);
-	state.flags.Z = calculateZeroFlag(result);
-	state.flags.P = calculateParityFlag(result);
-
-	state.A = result;
-}
-
-// 0xd8  RC
-// Return If Carry
-// If the Carry bit is 1, a return operation is performed
-static unsigned int executeD8(State8080& state)
-{
-	if(state.flags.C == 1)
-		performReturnOperation(state);
-}
-
-// 0xDA  JC <address>
-// Jump If Carry
-// If the Carry bit is 1, PC <- adr
-static unsigned int executeDA(State8080& state)
-{
-	if(state.flags.C == 1)
-	{
-		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
-		state.PC = address;
-	}
-}
-
-// 0xDB  IN <d8>  aka IN A,<d8>
-// An 8-bit data byte is read from the numberd input device into the accumulator.
-static unsigned int executeDB(State8080& state)
-{
-	uint8_t port = getInstructionD8(state);
-
-	if(state.in)
-		state.A = state.in(port, state.userdata);
-	else
-		state.A = 0;
-}
-
-// 0xDE  SBI d8  aka SBC A,d8
-// Subtract Immediate from Accumulator With Borrow
-// The Carry bit is internally added to the byte of immediate data.
-// This value is then subtracted from the accumulator using two's complement arithmetic.
-// Since this is a subtraction operation, the carry bit is
-// set if there is no carry out of the high - order position, and
-// reset if there is a carry out.
-// Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
-// A <- A-d8-CY
-static unsigned int executeDE(State8080& state)
-{
-	uint8_t d8 = getInstructionD8(state);
-	d8 += state.flags.C;
-
-	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
-	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
-	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
-	state.flags.C = (d8 > state.A) ? 1 : 0;
-
-	state.A -= d8;
-
-	state.flags.S = calculateSignFlag(state.A);
-	state.flags.Z = calculateZeroFlag(state.A);
-	state.flags.P = calculateParityFlag(state.A);
-	// #TODO: state.flags.A
+	return 10;
 }
 
 // 0xE1  POP HL
@@ -2155,43 +2208,125 @@ static unsigned int executeE1(State8080& state)
 	state.H = msb;
 	state.L = lsb;
 	state.SP += 2;
+
+	return 10;
 }
 
-// 0xE3  XTHL  aka EX (SP),HL
-// Exchange Stack
-// The contents of the L register are exchanged
-// with the contents of the memory byte whose address
-// is held in the stack pointer SP.The contents of the H
-// register are exchanged with the contents of the memory
-// byte whose address is one greater than that held in the stack
-// pointer.
-// 
-// L <-> (SP)       swap LSB
-// H <-> (SP + 1)   swap MSB
-static unsigned int executeE3(State8080& state)
+// 0xF1  POP PSW  aka POP AF
+static unsigned int executeF1(State8080& state)
 {
-	// LSB
-	uint8_t temp = state.L;
-	state.L = readByteFromMemory(state, state.SP);
-	writeByteToMemory(state, state.SP, temp);
+	// stored in memory in little endian format
+	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
+	uint8_t lsb = readByteFromMemory(state, state.SP);
+	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 
-	// MSB
-	temp = state.H;
-	state.H = readByteFromMemory(state, state.SP + 1);
-	writeByteToMemory(state, state.SP + 1, temp);
-}
-
-// 0xE5  PUSH HL
-static unsigned int executeE5(State8080& state)
-{
 	// First register of register pair always contains the MSB
-	// Store in memory in little-endian format.
-	uint8_t msb = state.H;
-	uint8_t lsb = state.L;
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
+	state.A = msb;
+	state.flags = *(Flags8080*)& lsb;
+	state.SP += 2;
+
+	return 10;
+}
+
+//------------------------------------------------------------------------------
+// Jump
+
+// 0xC3 JMP <address>
+// PC <- adr
+static unsigned int executeC3(State8080& state)
+{
+	state.PC = getInstructionAddress(state);
+	return 10;
+}
+
+// 0xDA  JC <address>
+// Jump If Carry
+// If the Carry bit is 1, PC <- adr
+static unsigned int executeDA(State8080& state)
+{
+	if(state.flags.C == 1)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
+		state.PC = address;
+	}
+	return 10;
+}
+
+// 0xD2  JNC <address>
+// Jump If No Carry
+// If the Carry bit is zero, program execution continues at the specified memory address
+// if NCY, PC <- adr
+static unsigned int executeD2(State8080& state)
+{
+	if(state.flags.C == 0)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
+		state.PC = address;
+	}
+	return 10;
+}
+
+// 0xCA  JZ <address>
+// Jump If Zero
+// If the Zero bit is one, program execution continues at the memory address
+// if Z, PC <- adr
+static unsigned int executeCA(State8080& state)
+{
+	uint16_t address = getInstructionAddress(state);
+	HP_ASSERT(address < state.memorySizeBytes); // #TODO: Should really assert that is in ROM, or maybe ROM or RAM via callback to machine
+	if(state.flags.Z)
+		state.PC = address;
+	return 10;
+}
+
+// 0xC2 JNZ <address>
+// if NZ, PC <- adr
+static unsigned int executeC2(State8080& state)
+{
+	if(state.flags.Z == 0)
+		state.PC = getInstructionAddress(state);
+	return 10;
+}
+
+// 0xFA  JM <address>   aka JP M,<adr>
+// Jump If Minus
+// If the Sign bit is one (indicating a negative
+// result), program execution continues at the memory
+// address adr.
+// Condition bits affected : None
+static unsigned int executeFA(State8080& state)
+{
+	if(state.flags.S == 1)
+	{
+		uint16_t address = getInstructionAddress(state);
+		HP_ASSERT(address < state.memorySizeBytes);
+		state.PC = address;
+	}
+	return 10;
+}
+
+//------------------------------------------------------------------------------
+// 0xC6  ADI <d8>  aka ADD A,<d8>
+// Add Immediate To Accumulator
+// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
+static unsigned int executeC6(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	
+	// perform 16 bit addition so can easily get carry bit
+	uint16_t result16 = (uint16_t)state.A + (uint16_t)d8;
+	uint8_t result8 = (uint8_t)result16;
+	state.flags.C = (result16 & 0xffff0000) == 0 ? 0 : 1; // #TODO: Just test bit 16?
+	state.flags.S = calculateSignFlag(result8);
+	state.flags.Z = calculateZeroFlag(result8);
+	state.flags.P = calculateParityFlag(result8);
+	state.flags.AC = ((state.A & 0xf) + (d8 & 0xf)) > 0xf ? 1 : 0;
+
+	state.A = result8;
+
+	return 7;
 }
 
 // 0xE6  ANI <d8>  aka AND <d8>
@@ -2207,65 +2342,9 @@ static unsigned int executeE6(State8080& state)
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
+	return 7;
 }
 
-// 0xE9  PCHL  aka JP (HL)
-// The contents of the H register replace the
-// most significant 8 bits of the program counter, and the contents
-// of the L register replace the least significant 8 bits of
-// the program counter.This causes program execution to continue
-// at the address contained in the Hand L registers.
-// PC.hi <- H; PC.lo <- L
-static unsigned int executeE9(State8080& state)
-{
-	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
-	HP_ASSERT(HL < state.memorySizeBytes); // #TODO: Should really test vs memory map to ensure jump is into ROM
-	state.PC = HL;
-}
-
-// 0xEB  XCHG  aka EX DE,HL
-// The 16 bits of data held in the H and L registers are exchanged
-// with the 16 bits of data held in the D and E registers.
-// Condition bits affected: none
-static unsigned int executeEB(State8080& state)
-{
-	uint8_t temp = state.H;
-	state.H = state.D;
-	state.D = temp;
-
-	temp = state.L;
-	state.L = state.E;
-	state.E = temp;
-}
-
-// 0xF1  POP PSW  aka POP AF
-static unsigned int executeF1(State8080& state)
-{
-	// stored in memory in little endian format
-	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
-	uint8_t lsb = readByteFromMemory(state, state.SP);
-	uint8_t msb = readByteFromMemory(state, state.SP + 1);
-
-	// First register of register pair always contains the MSB
-	state.A = msb;
-	state.flags = *(Flags8080*)&lsb;
-	state.SP += 2;
-}
-
-// 0xF5  PUSH PSW  aka PUSH AF
-static unsigned int executeF5(State8080& state)
-{
-	// First register of register pair always contains the MSB
-	// Store in memory in little-endian format.
-	uint8_t msb = state.A;
-	uint8_t lsb = *(uint8_t*)&state.flags;
-	HP_ASSERT(state.SP >= 2);
-	writeByteToMemory(state, state.SP - 2, lsb);
-	writeByteToMemory(state, state.SP - 1, msb);
-	state.SP -= 2;
-}
-
-//------------------------------------------------------------------------------
 // 0xF6  ORI d8
 //
 // Or Immediate With Accumulator
@@ -2288,31 +2367,7 @@ static unsigned int executeF6(State8080& state)
 	state.flags.Z = calculateZeroFlag(state.A);
 	state.flags.S = calculateSignFlag(state.A);
 	state.flags.P = calculateParityFlag(state.A);
-}
-
-//------------------------------------------------------------------------------
-
-// 0xFA  JM <address>   aka JP M,<adr>
-// Jump If Minus
-// If the Sign bit is one (indicating a negative
-// result), program execution continues at the memory
-// address adr.
-// Condition bits affected : None
-static unsigned int executeFA(State8080& state)
-{
-	if(state.flags.S == 1)
-	{
-		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes);
-		state.PC = address;
-	}
-}
-
-// 0xFB  EI
-// enable interrupts
-static unsigned int executeFB(State8080& state)
-{
-	state.INTE = 1;
+	return 7;
 }
 
 // 0xFE  CPI d8
@@ -2331,7 +2386,168 @@ static unsigned int executeFE(State8080& state)
 	state.flags.Z = calculateZeroFlag(res);
 	state.flags.S = calculateSignFlag(res);
 	state.flags.P = calculateParityFlag(res);
+	return 7;
 }
+
+//------------------------------------------------------------------------------
+// 0xD3  OUT d8  aka OUT d8,A
+// The contents of A are sent to output device number <d8> 
+static unsigned int executeD3(State8080& state)
+{
+	uint8_t port = getInstructionD8(state);
+	if(state.out != nullptr)
+		state.out(port, state.A, state.userdata);
+	return 10;
+}
+
+// 0xDB  IN <d8>  aka IN A,<d8>
+// An 8-bit data byte is read from the numberd input device into the accumulator.
+static unsigned int executeDB(State8080& state)
+{
+	uint8_t port = getInstructionD8(state);
+
+	if(state.in)
+		state.A = state.in(port, state.userdata);
+	else
+		state.A = 0;
+
+	return 10;
+}
+
+//------------------------------------------------------------------------------
+// 0xD6  SUI d8  aka SUB
+// Subtract Immediate From Accumulator
+// A <- A - d8
+// Condition bits affected: Carry, Sign, Zero, Parity, Auxiliary Carry
+static unsigned int executeD6(State8080& state)
+{
+	uint8_t val = getInstructionD8(state);
+	uint8_t result = state.A - val;
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = (val > state.A) ? 1 : 0;
+
+	state.flags.AC = (val & 0xf) > (state.A & 0xf) ? 1 : 0;
+
+	state.flags.S = calculateSignFlag(result);
+	state.flags.Z = calculateZeroFlag(result);
+	state.flags.P = calculateParityFlag(result);
+
+	state.A = result;
+
+	return 7;
+}
+
+//------------------------------------------------------------------------------
+// 0xDE  SBI d8  aka SBC A,d8
+// Subtract Immediate from Accumulator With Borrow
+// The Carry bit is internally added to the byte of immediate data.
+// This value is then subtracted from the accumulator using two's complement arithmetic.
+// Since this is a subtraction operation, the carry bit is
+// set if there is no carry out of the high - order position, and
+// reset if there is a carry out.
+// Condition bits affected : Carry, Sign, Zero, Parity, Auxiliary Carry
+// A <- A-d8-CY
+static unsigned int executeDE(State8080& state)
+{
+	uint8_t d8 = getInstructionD8(state);
+	d8 += state.flags.C;
+
+	// The Data Book description of how this instruction affects the Carry flag is a little convoluted,
+	// this is better: https://retrocomputing.stackexchange.com/questions/5953/carry-flag-in-8080-8085-subtraction
+	// "The 8080 sets the carry flag when the unsigned value subtracted is greater than the unsigned value it is subtracted from."
+	state.flags.C = (d8 > state.A) ? 1 : 0;
+
+	state.flags.AC = (d8 & 0xf) > (state.A & 0xf) ? 1 : 0;
+
+	state.A -= d8;
+
+	state.flags.S = calculateSignFlag(state.A);
+	state.flags.Z = calculateZeroFlag(state.A);
+	state.flags.P = calculateParityFlag(state.A);
+	
+	return 7;
+}
+
+//------------------------------------------------------------------------------
+// 0xE3  XTHL  aka EX (SP),HL
+// Exchange Stack
+// The contents of the L register are exchanged
+// with the contents of the memory byte whose address
+// is held in the stack pointer SP.The contents of the H
+// register are exchanged with the contents of the memory
+// byte whose address is one greater than that held in the stack
+// pointer.
+// 
+// L <-> (SP)       swap LSB
+// H <-> (SP + 1)   swap MSB
+static unsigned int executeE3(State8080& state)
+{
+	// LSB
+	uint8_t temp = state.L;
+	state.L = readByteFromMemory(state, state.SP);
+	writeByteToMemory(state, state.SP, temp);
+
+	// MSB
+	temp = state.H;
+	state.H = readByteFromMemory(state, state.SP + 1);
+	writeByteToMemory(state, state.SP + 1, temp);
+
+	return 18;
+}
+
+// 0xE9  PCHL  aka JP (HL)
+// The contents of the H register replace the
+// most significant 8 bits of the program counter, and the contents
+// of the L register replace the least significant 8 bits of
+// the program counter.This causes program execution to continue
+// at the address contained in the Hand L registers.
+// PC.hi <- H; PC.lo <- L
+static unsigned int executeE9(State8080& state)
+{
+	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
+	HP_ASSERT(HL < state.memorySizeBytes); // #TODO: Should really test vs memory map to ensure jump is into ROM
+	state.PC = HL;
+	return 5;
+}
+
+// 0xEB  XCHG  aka EX DE,HL
+// The 16 bits of data held in the H and L registers are exchanged
+// with the 16 bits of data held in the D and E registers.
+// Condition bits affected: none
+static unsigned int executeEB(State8080& state)
+{
+	uint8_t temp = state.H;
+	state.H = state.D;
+	state.D = temp;
+
+	temp = state.L;
+	state.L = state.E;
+	state.E = temp;
+	return 4;
+}
+
+//------------------------------------------------------------------------------
+
+// 0xFB  EI
+// enable interrupts
+static unsigned int executeFB(State8080& state)
+{
+	state.INTE = 1;
+	return 4;
+}
+
+// 0xF3  EI
+// disable interrupts
+static unsigned int executeF3(State8080& state)
+{
+	state.INTE = 0;
+	return 4;
+}
+
+//------------------------------------------------------------------------------
 
 static const Instruction s_instructions[] =
 {
@@ -2578,7 +2794,7 @@ static const Instruction s_instructions[] =
 	/* 0xf0 */ { "RP", 1, nullptr }, //			if P, RET
 	/* 0xf1 */ { "POP PSW",	1, executeF1 }, // aka POP AF
 	/* 0xf2 */ { "JP %04X", 3, nullptr }, //			if P = 1 PC < -adr
-	/* 0xf3 */ { "DI",	1, nullptr }, //			special
+	/* 0xf3 */ { "DI",	1, executeF3 },
 	/* 0xf4 */ { "CP %04X",	3, executeF4 }, //			if P, PC < -adr
 	/* 0xf5 */ { "PUSH PSW",	1, executeF5 }, // aka PUSH AF  (sp - 2) < -flags; (sp - 1) < -A; sp < -sp - 2
 	/* 0xf6 */ { "ORI %02X", 2, executeF6 }, // A <- A | data    Z, S, P, CY, AC	
