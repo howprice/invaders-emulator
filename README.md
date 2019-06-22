@@ -26,17 +26,20 @@ Press 5 to insert coin
 
 ## TODO
 
+- Debugger
+  - Step Into (F11)
+  - Step Over (F10)
+  - Set breakpoint
+  - ImGui and/or command line
+  - Show stack
+  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
+  - Trap?
+
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Use point sampler in shader
 - Headless mode (command line arg)
 - Remove pMemory from State8080; it belongs in the Machine
-- Debugger
-  - Show disassembly around current PC
-  - ImGui and/or command line
-  - Show stack
-  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
-  - Trap?
 
 Support reset. i.e. Set PC to 0
 - Sounds

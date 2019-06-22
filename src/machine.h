@@ -41,4 +41,4 @@ void ResetMachine(Machine* pMachine);
 void StartFrame(Machine* pMachine);
 
 // returns true if still running
-bool StepFrame(Machine* pMachine, bool debug);
+bool StepFrame(Machine* pMachine, bool verbose);
