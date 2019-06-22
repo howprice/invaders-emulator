@@ -32,8 +32,13 @@ Press 5 to insert coin
 - Headless mode (command line arg)
 - Remove pMemory from State8080; it belongs in the Machine
 - Debugger
+  - Show disassembly around current PC
   - ImGui and/or command line
   - Show stack
+  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
+  - Trap?
+
+Support reset. i.e. Set PC to 0
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
 - Test on Linux/Mac

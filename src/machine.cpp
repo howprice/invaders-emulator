@@ -546,6 +546,13 @@ void DestroyMachine(Machine* pMachine)
 	delete pMachine;
 }
 
+void ResetMachine(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	pMachine->cpu.PC = 0; // Is that it?!?
+}
+
 void StartFrame(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
