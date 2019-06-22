@@ -37,6 +37,7 @@ struct Machine
 bool CreateMachine(Machine** ppMachine);
 void DestroyMachine(Machine* pMachine);
 
+void ResetMachine(Machine* pMachine);
 void StartFrame(Machine* pMachine);
 
 // returns true if still running

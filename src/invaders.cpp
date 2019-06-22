@@ -38,6 +38,10 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
+static bool s_showMenuBar = true;
+static bool s_showCpuWindow = false;
+static bool s_showControlsWindow = false;
+
 static void printUsage()
 {
 	puts("Usage: invaders [OPTIONS]");
@@ -218,34 +222,82 @@ static void deleteOpenGLObjects()
 	s_texture = 0;
 }
 
+static void doMenuBar(Machine* /*pMachine*/)
+{
+	if(!s_showMenuBar)
+		return;
+
+	if(ImGui::BeginMainMenuBar() == false)
+		return;
+	 
+	if(ImGui::BeginMenu("Windows"))
+	{
+		ImGui::MenuItem("CPU", nullptr, &s_showCpuWindow);
+		ImGui::MenuItem("Controls", nullptr, &s_showControlsWindow);
+
+		ImGui::EndMenu();
+	}
+
+	ImGui::EndMainMenuBar();
+}
+
 static void doCpuWindow(const State8080& state)
 {
-	ImGui::Begin("CPU");
+	if(!s_showCpuWindow)
+		return;
 
-	ImGui::Text("A: %02X  Flags: %02X\n", state.A, state.flags);
-	ImGui::Text("B: %02X  C: %02X\n", state.B, state.C);
-	ImGui::Text("D: %02X  E: %02X\n", state.D, state.E);
-	ImGui::Text("H: %02X  L: %02X\n", state.H, state.L);
-	ImGui::Text("SP: %04X\n", state.SP);
-	ImGui::Text("PC: %04X\n", state.PC);
+	if(ImGui::Begin("CPU", &s_showCpuWindow))
+	{
+		ImGui::Text("A: %02X  Flags: %02X\n", state.A, state.flags);
+		ImGui::Text("B: %02X  C: %02X\n", state.B, state.C);
+		ImGui::Text("D: %02X  E: %02X\n", state.D, state.E);
+		ImGui::Text("H: %02X  L: %02X\n", state.H, state.L);
+		ImGui::Text("SP: %04X\n", state.SP);
+		ImGui::Text("PC: %04X\n", state.PC);
+
+	}
 
 	ImGui::End();
 }
 
-static void doDipSwitchesWindow(uint8_t& dipSwitchBits)
+static void doControlsWindow(Machine* pMachine)
 {
-	ImGui::Begin("DIP Switches");
+	if(!s_showControlsWindow)
+		return;
 
-	for(unsigned int i = 0; i < 8; i++)
+	if(ImGui::Begin("Controls", &s_showControlsWindow))
 	{
-		bool val = ((dipSwitchBits >> i) & 1) == 1 ? true : false;
-		char label[16];
-		SDL_snprintf(label, sizeof(label), "%u", i + 1); // they seem to be numbered 1..8 by convention
-		if(ImGui::Checkbox(label, &val))
+		if(ImGui::Button("Reset"))
+			ResetMachine(pMachine);
+
+		ImGui::Spacing();
+		ImGui::Text("DIP switches:");
+		// DIP Switches
+		static const char* dipSwitchNames[] =
 		{
-			dipSwitchBits &= ~(1 << i); // clear bit
-			if(val)
-				dipSwitchBits |= (1 << i); // set bit
+			"Lives bit 0",
+			"Lives bit 1",
+			"RAM/sound check",
+			"Bonus life score",
+			"?",
+			"?",
+			"?",
+			"Coin display"
+		};
+		static_assert(COUNTOF_ARRAY(dipSwitchNames) == 8, "Array size incorrect");
+
+		uint8_t& dipSwitchBits = pMachine->dipSwitchBits;
+		for(unsigned int i = 0; i < 8; i++)
+		{
+			bool val = ((dipSwitchBits >> i) & 1) == 1 ? true : false;
+			char label[32];
+			SDL_snprintf(label, sizeof(label), "%u %s", i + 1, dipSwitchNames[i]); // they seem to be numbered 1..8 by convention
+			if(ImGui::Checkbox(label, &val))
+			{
+				dipSwitchBits &= ~(1 << i); // clear bit
+				if(val)
+					dipSwitchBits |= (1 << i); // set bit
+			}
 		}
 	}
 
@@ -417,6 +469,8 @@ int main(int argc, char** argv)
 					pMachine->coinInserted = true;
 				else if(event.key.keysym.sym == SDLK_t)
 					pMachine->tilt = true;
+				else if(event.key.keysym.sym == SDLK_TAB)
+					s_showMenuBar = !s_showMenuBar;
 			}
 			else if(event.type == SDL_KEYUP)
 			{
@@ -445,8 +499,10 @@ int main(int argc, char** argv)
 		ImGui::NewFrame();
 
 		StepFrame(pMachine, s_debug);
+
+		doMenuBar(pMachine);
 		doCpuWindow(pMachine->cpu);
-		doDipSwitchesWindow(pMachine->dipSwitchBits);
+		doControlsWindow(pMachine);
 
 		// Rendering
 		ImGui::Render();
