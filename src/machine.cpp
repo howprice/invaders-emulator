@@ -570,7 +570,7 @@ void StartFrame(Machine* pMachine)
 }
 
 // returns true if still running
-bool StepFrame(Machine* pMachine, bool debug)
+bool StepFrame(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 
@@ -596,7 +596,7 @@ bool StepFrame(Machine* pMachine, bool debug)
 			Generate8080Interrupt(pMachine->cpu, 1);
 		}
 
-		if(debug)
+		if(verbose)
 		{
 			Disassemble8080(pMachine->cpu.pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
 			printf("    ");

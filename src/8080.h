@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+static const unsigned int kMinInstructionSizeBytes = 1;
+static const unsigned int kMaxInstructionSizeBytes = 3;
+
 // https://en.wikipedia.org/wiki/Intel_8080#Registers
 
 // #TODO: What is the correct initial value of registers? Zero or garbage?
@@ -59,6 +62,9 @@ struct State8080
 
 // returns instruction size in bytes
 unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, unsigned int pc);
+
+const char* GetInstructionMnemonic(uint8_t opcode);
+unsigned int GetInstructionSizeBytes(uint8_t opcode);
 
 // returns the number of cycles that the instruction took to execute
 unsigned int Emulate8080Instruction(State8080& state);

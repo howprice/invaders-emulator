@@ -1,8 +1,5 @@
 #include "8080.h"
 
-static const unsigned int kMinInstructionSizeBytes = 1;
-static const unsigned int kMaxInstructionSizeBytes = 3;
-
 #include "Helpers.h"
 #include "Assert.h"
 
@@ -2816,8 +2813,8 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 	HP_ASSERT(buffer);
 	HP_ASSERT(pc < bufferSize);
 
-	const uint8_t* pPC = &buffer[pc];
-	const uint8_t opcode = *pPC;
+	const uint8_t* pInstruction = &buffer[pc];
+	const uint8_t opcode = *pInstruction;
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.sizeBytes > 0 && instruction.sizeBytes <= kMaxInstructionSizeBytes);
 
@@ -2826,7 +2823,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 
 	// hex
 	for(unsigned int byteIndex = 0; byteIndex < instruction.sizeBytes; byteIndex++)
-		printf("%02X ", *(pPC + byteIndex));
+		printf("%02X ", *(pInstruction + byteIndex));
 	for(unsigned int byteIndex = instruction.sizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
 		printf("   ");
 
@@ -2836,19 +2833,29 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 		sprintf(text, "%s", instruction.mnemonic);
 	else if(instruction.sizeBytes == 2)
 	{
-		uint8_t d8 = *(pPC + 1);
+		uint8_t d8 = *(pInstruction + 1);
 		sprintf(text, instruction.mnemonic, d8);
 	}
 	else if(instruction.sizeBytes == 3)
 	{
-		uint8_t lsb = *(pPC + 1);
-		uint8_t msb = *(pPC + 2);
+		uint8_t lsb = *(pInstruction + 1);
+		uint8_t msb = *(pInstruction + 2);
 		uint16_t val = (msb << 8) | lsb;
 		sprintf(text, instruction.mnemonic, val);
 	}
 
 	printf(" %-14s", text);
 	return instruction.sizeBytes;
+}
+
+const char* GetInstructionMnemonic(uint8_t opcode)
+{
+	return s_instructions[opcode].mnemonic;
+}
+
+unsigned int GetInstructionSizeBytes(uint8_t opcode)
+{
+	return s_instructions[opcode].sizeBytes;
 }
 
 // returns the number of cycles that the instruction took to execute

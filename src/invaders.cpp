@@ -6,6 +6,7 @@
 #include "8080.h"
 
 #include "imgui/imgui.h"
+#include "imgui_internal.h"
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/imgui_impl_opengl3.h"
 
@@ -28,7 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool s_debug = false;
+static bool s_running = true;
+static bool s_verbose = false;
 static bool s_rotateDisplay = false; // the invaders machine display is rotated 90 degrees anticlockwise
 static bool s_keyState[SDL_NUM_SCANCODES] = {};
 
@@ -41,13 +43,15 @@ static GLuint s_vao = 0;
 static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
+static bool s_showDebugWindow = true;
+static bool s_showDisassemblyWindow = true;
 
 static void printUsage()
 {
 	puts("Usage: invaders [OPTIONS]");
 	puts("Options:\n\n"
 		"  --help                       Shows this message\n"
-		"  -d <filename>                Use debugger\n"
+		"  --verbose                    \n"
 		"  -r                           Rotate display 90 degrees anticlockwise\n"
 	);
 }
@@ -63,9 +67,9 @@ static void parseCommandLine(int argc, char** argv)
 			printUsage();
 			exit(EXIT_SUCCESS);
 		}
-		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
+		else if(strcmp(arg, "--verbose") == 0)
 		{
-			s_debug = true;
+			s_verbose = true;
 		}
 		else if(strcmp(arg, "-r") == 0 )
 		{
@@ -230,10 +234,23 @@ static void doMenuBar(Machine* /*pMachine*/)
 	if(ImGui::BeginMainMenuBar() == false)
 		return;
 	 
+	if(ImGui::BeginMenu("Debug"))
+	{
+		bool notRunning = !s_running;
+		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/notRunning))
+			s_running = true;
+
+		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/s_running))
+			s_running = false;
+
+		ImGui::EndMenu();
+	}
 	if(ImGui::BeginMenu("Windows"))
 	{
 		ImGui::MenuItem("CPU", nullptr, &s_showCpuWindow);
 		ImGui::MenuItem("Controls", nullptr, &s_showControlsWindow);
+		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
+		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
 
 		ImGui::EndMenu();
 	}
@@ -303,6 +320,110 @@ static void doControlsWindow(Machine* pMachine)
 
 	ImGui::End();
 }
+
+static void doDebugWindow(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	if(!s_showDebugWindow)
+		return;
+
+	if(ImGui::Begin("Debug", &s_showDebugWindow))
+	{
+		bool continueButtonEnabled = !s_running;
+		if(!continueButtonEnabled)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+		if(ImGui::SmallButton("Continue") && !s_running)
+			s_running = true;
+		if(!continueButtonEnabled)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+
+		ImGui::SameLine();
+		bool breakButtonEnabled = s_running;
+		if(!breakButtonEnabled)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+		if(ImGui::SmallButton("Break") && s_running)
+			s_running = false;
+		if(!breakButtonEnabled)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+	}
+
+	ImGui::End();
+}
+
+static void doDisassemblyWindow(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	if(!s_showDisassemblyWindow || s_running) // don't show when running
+		return;
+
+	if(ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
+	{
+		// #TODO: Print list of instructions around current PC
+		// #TODO: Allow scrolling
+
+		const State8080& state8080 = pMachine->cpu;
+		const uint8_t* pMemory = state8080.pMemory;
+		HP_ASSERT(pMemory);
+		uint16_t address = state8080.PC;
+		HP_ASSERT(address < state8080.memorySizeBytes);
+		const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
+		const uint8_t opcode = *pInstruction;
+		const char* mnemonic = GetInstructionMnemonic(opcode);
+		const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
+
+		// address
+		ImGui::Text("0x%04X  ", address);
+
+		// hex
+		for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
+		{
+			ImGui::SameLine();
+			ImGui::Text("%02X ", *(pInstruction + byteIndex));
+		}
+		for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
+		{
+			ImGui::SameLine();
+			ImGui::Text("   ");
+		}
+
+		// mnemonic
+		ImGui::SameLine();
+		char text[64];
+		if(instructionSizeBytes == 1)
+			sprintf(text, "%s", mnemonic);
+		else if(instructionSizeBytes == 2)
+		{
+			uint8_t d8 = *(pInstruction + 1);
+			sprintf(text, mnemonic, d8);
+		}
+		else if(instructionSizeBytes == 3)
+		{
+			uint8_t lsb = *(pInstruction + 1);
+			uint8_t msb = *(pInstruction + 2);
+			uint16_t val = (msb << 8) | lsb;
+			sprintf(text, mnemonic, val);
+		}
+
+		ImGui::Text(" %-14s", text);
+	}
+
+	ImGui::End();
+}
+
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
 {
@@ -498,11 +619,18 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pWindow);
 		ImGui::NewFrame();
 
-		StepFrame(pMachine, s_debug);
+		if(s_running)
+			StepFrame(pMachine, s_verbose);
+		else
+		{
+			// debugging
+		}
 
 		doMenuBar(pMachine);
 		doCpuWindow(pMachine->cpu);
 		doControlsWindow(pMachine);
+		doDebugWindow(pMachine);
+		doDisassemblyWindow(pMachine);
 
 		// Rendering
 		ImGui::Render();
