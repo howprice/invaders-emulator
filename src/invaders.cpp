@@ -419,6 +419,56 @@ static void doDebugWindow(Machine* pMachine)
 	ImGui::End();
 }
 
+static void showDisassemblyLine(const State8080& state8080, const uint16_t address)
+{
+	const uint8_t* pMemory = state8080.pMemory;
+	HP_ASSERT(pMemory);
+	HP_ASSERT(address < state8080.memorySizeBytes);
+	const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
+	const uint8_t opcode = *pInstruction;
+	const char* mnemonic = GetInstructionMnemonic(opcode);
+	const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
+
+	// PC?
+	ImGui::Text("%s", address == state8080.PC ? "> " : "  ");
+
+	// address
+	ImGui::SameLine();
+	ImGui::Text("0x%04X  ", address);
+
+	// hex
+	for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
+	{
+		ImGui::SameLine();
+		ImGui::Text("%02X ", *(pInstruction + byteIndex));
+	}
+	for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
+	{
+		ImGui::SameLine();
+		ImGui::Text("   ");
+	}
+
+	// mnemonic
+	ImGui::SameLine();
+	char text[64];
+	if(instructionSizeBytes == 1)
+		sprintf(text, "%s", mnemonic);
+	else if(instructionSizeBytes == 2)
+	{
+		uint8_t d8 = *(pInstruction + 1);
+		sprintf(text, mnemonic, d8);
+	}
+	else if(instructionSizeBytes == 3)
+	{
+		uint8_t lsb = *(pInstruction + 1);
+		uint8_t msb = *(pInstruction + 2);
+		uint16_t val = (msb << 8) | lsb;
+		sprintf(text, mnemonic, val);
+	}
+
+	ImGui::Text(" %-14s", text);
+}
+
 static void doDisassemblyWindow(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
@@ -426,55 +476,30 @@ static void doDisassemblyWindow(Machine* pMachine)
 	if(!s_showDisassemblyWindow || s_running) // don't show when running
 		return;
 
-	if(ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
+	if(!ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
 	{
-		// #TODO: Print list of instructions around current PC
-		// #TODO: Allow scrolling
+		ImGui::End();
+		return;
+	}
 
-		const State8080& state8080 = pMachine->cpu;
+	// #TODO: Allow scrolling
+
+	// #TODO: Show instructions preceding PC
+
+	const State8080& state8080 = pMachine->cpu;
+	uint16_t address = state8080.PC;
+	showDisassemblyLine(state8080, address);
+
+	static unsigned int followingLineCount = 3;
+	for(unsigned int i = 0; i < followingLineCount; i++)
+	{
 		const uint8_t* pMemory = state8080.pMemory;
 		HP_ASSERT(pMemory);
-		uint16_t address = state8080.PC;
 		HP_ASSERT(address < state8080.memorySizeBytes);
 		const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
 		const uint8_t opcode = *pInstruction;
-		const char* mnemonic = GetInstructionMnemonic(opcode);
-		const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
-
-		// address
-		ImGui::Text("0x%04X  ", address);
-
-		// hex
-		for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
-		{
-			ImGui::SameLine();
-			ImGui::Text("%02X ", *(pInstruction + byteIndex));
-		}
-		for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
-		{
-			ImGui::SameLine();
-			ImGui::Text("   ");
-		}
-
-		// mnemonic
-		ImGui::SameLine();
-		char text[64];
-		if(instructionSizeBytes == 1)
-			sprintf(text, "%s", mnemonic);
-		else if(instructionSizeBytes == 2)
-		{
-			uint8_t d8 = *(pInstruction + 1);
-			sprintf(text, mnemonic, d8);
-		}
-		else if(instructionSizeBytes == 3)
-		{
-			uint8_t lsb = *(pInstruction + 1);
-			uint8_t msb = *(pInstruction + 2);
-			uint16_t val = (msb << 8) | lsb;
-			sprintf(text, mnemonic, val);
-		}
-
-		ImGui::Text(" %-14s", text);
+		address += (uint16_t)GetInstructionSizeBytes(opcode);
+		showDisassemblyLine(state8080, address);
 	}
 
 	ImGui::End();
