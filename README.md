@@ -45,13 +45,13 @@ Cycle-exact emulation is not required.
     - Allow browsing of entire disassembly
     - "Show Next Instruction" context menu option
 	- See imgui_memory_editor for implementation inspiration
+	- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
   - "Backtrace"? (Previously executed line(s))
   - PC breakpoint
   - Step Over (F10)
     - Store temporary "step over" breakpoint on next instruction before stepping
-  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Trap?
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
@@ -64,7 +64,6 @@ Cycle-exact emulation is not required.
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Use point sampler in shader
 - Headless mode (command line arg)
-- Remove pMemory from State8080; it belongs in the Machine
 - Test on Linux/Mac
 - What is the purpose of the RAM mirror? (It *is* used)
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
