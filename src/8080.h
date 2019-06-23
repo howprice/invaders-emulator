@@ -10,8 +10,8 @@ static const unsigned int kMaxInstructionSizeBytes = 3;
 
 // #TODO: What is the correct initial value of registers? Zero or garbage?
 
-typedef uint8_t(*ReadByteFromMemoryFuncPtr)(uint8_t* pMemory, size_t address, bool fatalOnFail);
-typedef bool(*WriteByteToMemoryFuncPtr)(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail);
+typedef uint8_t(*ReadByteFromMemoryFuncPtr)(void* userdata, uint16_t address, bool fatalOnFail);
+typedef bool(*WriteByteToMemoryFuncPtr)(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail);
 typedef uint8_t(*InFuncPtr)(uint8_t port, void* userdata);
 typedef void(*OutFuncPtr)(uint8_t port, uint8_t val, void* userdata);
 
@@ -46,10 +46,6 @@ struct State8080
 
 	uint16_t SP;
 	uint16_t PC;
-
-	// #TODO: Try to get rid of these - memory should be handled by the machine via callbacks
-	uint8_t* pMemory;
-	uint32_t memorySizeBytes;
 
 	uint8_t INTE; // "INTE", the 8080 interrupt enable flip-flop [Data Book]
 

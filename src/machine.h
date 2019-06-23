@@ -11,6 +11,10 @@ struct Machine
 	static const unsigned int kDisplayHeight = 224;
 
 	State8080 cpu;
+
+	uint8_t* pMemory;
+	uint32_t memorySizeBytes;
+
 	unsigned int frameCycleCount;
 	unsigned int scanLine;
 
@@ -43,6 +47,9 @@ void DestroyMachine(Machine* pMachine);
 
 void ResetMachine(Machine* pMachine);
 void StartFrame(Machine* pMachine);
+
+bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail = false);
+uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail = false);
 
 void StepFrame(Machine* pMachine, bool verbose);
 void StepInstruction(Machine* pMachine, bool verbose);

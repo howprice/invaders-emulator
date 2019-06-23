@@ -176,8 +176,11 @@ static const size_t kRomPhysicalSizeBytes = 0x2000;
 static const size_t kRamPhysicalSizeBytes = 0x2000;
 static const size_t kPhysicalMemorySizeBytes = kRomPhysicalSizeBytes + kRamPhysicalSizeBytes;
 
-static bool WriteByteToMemory(uint8_t* pMemory, size_t address, uint8_t val, bool fatalOnFail = false)
+bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail /*= false*/)
 {
+	HP_ASSERT(userdata);
+	Machine* pMachine = (Machine*)userdata;
+	uint8_t* pMemory = pMachine->pMemory;
 	HP_ASSERT(pMemory);
 
 //	HP_ASSERT(address < 0x4000, "Looks like the RAM mirror *is* used. What is its purpose?");
@@ -207,8 +210,11 @@ static bool WriteByteToMemory(uint8_t* pMemory, size_t address, uint8_t val, boo
 	return false;
 }
 
-static uint8_t ReadByteFromMemory(uint8_t* pMemory, size_t address, bool fatalOnFail = false)
+uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail /*= false*/)
 {
+	HP_ASSERT(userdata);
+	Machine* pMachine = (Machine*)userdata;
+	uint8_t* pMemory = pMachine->pMemory;
 	HP_ASSERT(pMemory);
 
 //	HP_ASSERT(address < 0x4000, "Looks like the RAM mirror *is* used. What is its purpose?");
@@ -240,13 +246,13 @@ static void TestMemory(uint8_t* pMemory)
 	HP_ASSERT(pMemory);
 
 	// ROM 0 - $1fff
-	for(size_t address = 0; address < 0x2000; address++)
+	for(uint16_t address = 0; address < 0x2000; address++)
 	{
 		HP_ASSERT(WriteByteToMemory(pMemory, address, 0xcc) == false);
 	}
 
 	// RAM $2000 - $3fff
-	for(size_t address = 0x2000; address < 0x4000; address++)
+	for(uint16_t address = 0x2000; address < 0x4000; address++)
 	{
 		uint8_t val = (uint8_t)address;
 		HP_ASSERT(WriteByteToMemory(pMemory, address, val) == true);
@@ -254,7 +260,7 @@ static void TestMemory(uint8_t* pMemory)
 	}
 
 	// RAM mirror $4000 - $5fff
-	for(size_t address = 0x4000; address < 0x6000; address++)
+	for(uint16_t address = 0x4000; address < 0x6000; address++)
 	{
 		uint8_t val = (uint8_t)address + 1;
 		HP_ASSERT(WriteByteToMemory(pMemory, address, val) == true);
@@ -476,11 +482,11 @@ static void copyVideoMemoryToDisplayBuffer(Machine& machine)
 	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
 	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
 	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
-	for(unsigned int i = 0; i < displaySizeBytes; i++)
+	for(uint16_t i = 0; i < displaySizeBytes; i++)
 	{
-		const unsigned int kVideoAddress = 0x2400;
-		unsigned int address = kVideoAddress + i;
-		uint8_t val = ReadByteFromMemory(machine.cpu.pMemory, address, /*fatalOnFail*/true);
+		const uint16_t kVideoAddress = 0x2400;
+		uint16_t address = kVideoAddress + i;
+		uint8_t val = ReadByteFromMemory(&machine, address, /*fatalOnFail*/true);
 		machine.pDisplayBuffer[i] = val;
 	}
 }
@@ -496,14 +502,14 @@ bool CreateMachine(Machine** ppMachine)
 	// Init memory
 	// #TODO: Should really assert that address space regions don't overlap, or if they do that
 	//        they are of the same type? 
-	pMachine->cpu.pMemory = new uint8_t[kPhysicalMemorySizeBytes];
-	pMachine->cpu.memorySizeBytes = kPhysicalMemorySizeBytes;
+	pMachine->pMemory = new uint8_t[kPhysicalMemorySizeBytes];
+	pMachine->memorySizeBytes = kPhysicalMemorySizeBytes;
 	pMachine->cpu.readByteFromMemory = ReadByteFromMemory;
 	pMachine->cpu.writeByteToMemory = WriteByteToMemory;
 
 	//	TestMemory(state.pMemory);
 
-	if(!loadRoms(pMachine->cpu.pMemory, pMachine->cpu.memorySizeBytes))
+	if(!loadRoms(pMachine->pMemory, pMachine->memorySizeBytes))
 	{
 		fprintf(stderr, "Failed to load ROMs\n");
 		DestroyMachine(pMachine);
@@ -515,7 +521,7 @@ bool CreateMachine(Machine** ppMachine)
 	// #TODO: Is this expected or required? Maybe just helpful for debugging. Write 0xCC maybe? 
 	for(size_t address = kRomPhysicalSizeBytes; address < kPhysicalMemorySizeBytes; address++)
 	{
-		pMachine->cpu.pMemory[address] = 0x00;
+		pMachine->pMemory[address] = 0x00;
 	}
 #endif
 
@@ -537,8 +543,8 @@ void DestroyMachine(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 
-	delete[] pMachine->cpu.pMemory;
-	pMachine->cpu.pMemory = nullptr;
+	delete[] pMachine->pMemory;
+	pMachine->pMemory = nullptr;
 
 	delete[] pMachine->pDisplayBuffer;
 	pMachine->pDisplayBuffer = nullptr;
@@ -596,7 +602,7 @@ void StepInstruction(Machine* pMachine, bool verbose)
 
 	if(verbose)
 	{
-		Disassemble8080(pMachine->cpu.pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
+		Disassemble8080(pMachine->pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
 		printf("    ");
 		Print8080State(pMachine->cpu);
 
