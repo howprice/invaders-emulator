@@ -44,9 +44,10 @@ Cycle-exact emulation is not required.
   - Improve Disassembly Window
     - Allow browsing of entire disassembly
     - "Show Next Instruction" context menu option
+	- See imgui_memory_editor for implementation inspiration
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
-  - "Backtrace"? (Previously exectued line(s))
+  - "Backtrace"? (Previously executed line(s))
   - PC breakpoint
   - Step Over (F10)
     - Store temporary "step over" breakpoint on next instruction before stepping
