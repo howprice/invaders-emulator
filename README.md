@@ -41,11 +41,16 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Debugger
-  - Show more lines of disassembly in Disassembly Window
   - Memory window
+  - Improve Disassembly Window
+    - Allow browsing of entire disassembly
+    - "Show Next Instruction" context menu option
   - Stack Window
-  - Step Over (F10)
+    - Store "stack base" when SP set with LXI SP,<address> instruction
+  - "Backtrace"? (Previously exectued line(s))
   - PC breakpoint
+  - Step Over (F10)
+    - Store temporary "step over" breakpoint on next instruction before stepping
   - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Trap?
 - Sounds
