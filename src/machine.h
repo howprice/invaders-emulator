@@ -11,8 +11,12 @@ struct Machine
 	static const unsigned int kDisplayHeight = 224;
 
 	State8080 cpu;
+	unsigned int frameCycleCount;
+	unsigned int scanLine;
+
 	uint16_t shiftRegisterValue;
 	uint8_t shiftRegisterOffset;        // [0,7]
+
 	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
 
 	bool coinInserted;
@@ -40,5 +44,5 @@ void DestroyMachine(Machine* pMachine);
 void ResetMachine(Machine* pMachine);
 void StartFrame(Machine* pMachine);
 
-// returns true if still running
-bool StepFrame(Machine* pMachine, bool verbose);
+void StepFrame(Machine* pMachine, bool verbose);
+void StepInstruction(Machine* pMachine, bool verbose);
