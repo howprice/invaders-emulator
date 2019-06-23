@@ -51,8 +51,9 @@ static void printUsage()
 	puts("Usage: invaders [OPTIONS]");
 	puts("Options:\n\n"
 		"  --help                       Shows this message\n"
+		"  -d or --debug                Start in debugger\n"
 		"  --verbose                    \n"
-		"  -r                           Rotate display 90 degrees anticlockwise\n"
+		"  -r or --rotate-display       Rotate display 90 degrees anticlockwise\n"
 	);
 }
 
@@ -67,11 +68,15 @@ static void parseCommandLine(int argc, char** argv)
 			printUsage();
 			exit(EXIT_SUCCESS);
 		}
+		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
+		{
+			s_running = false;
+		}
 		else if(strcmp(arg, "--verbose") == 0)
 		{
 			s_verbose = true;
 		}
-		else if(strcmp(arg, "-r") == 0 )
+		else if(strcmp(arg, "-r") == 0 || strcmp(arg, "--rotate-display") == 0)
 		{
 			s_rotateDisplay = true;
 		}
@@ -226,7 +231,14 @@ static void deleteOpenGLObjects()
 	s_texture = 0;
 }
 
-static void doMenuBar(Machine* /*pMachine*/)
+static void stepInto(Machine* pMachine)
+{
+	HP_ASSERT(!s_running);
+
+	StepInstruction(pMachine, s_verbose);
+}
+
+static void doMenuBar(Machine* pMachine)
 {
 	if(!s_showMenuBar)
 		return;
@@ -236,12 +248,18 @@ static void doMenuBar(Machine* /*pMachine*/)
 	 
 	if(ImGui::BeginMenu("Debug"))
 	{
-		bool notRunning = !s_running;
-		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/notRunning))
+		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!s_running))
 			s_running = true;
 
 		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/s_running))
 			s_running = false;
+
+		ImGui::Separator();
+		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!s_running))
+			StepFrame(pMachine, s_verbose);
+
+		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!s_running))
+			stepInto(pMachine);
 
 		ImGui::EndMenu();
 	}
@@ -330,13 +348,14 @@ static void doDebugWindow(Machine* pMachine)
 
 	if(ImGui::Begin("Debug", &s_showDebugWindow))
 	{
+		// Continue (F5)
 		bool continueButtonEnabled = !s_running;
 		if(!continueButtonEnabled)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
-		if(ImGui::SmallButton("Continue") && !s_running)
+		if(ImGui::SmallButton("Continue") && continueButtonEnabled)
 			s_running = true;
 		if(!continueButtonEnabled)
 		{
@@ -344,6 +363,7 @@ static void doDebugWindow(Machine* pMachine)
 			ImGui::PopStyleVar();
 		}
 
+		// Break (F5)
 		ImGui::SameLine();
 		bool breakButtonEnabled = s_running;
 		if(!breakButtonEnabled)
@@ -351,9 +371,45 @@ static void doDebugWindow(Machine* pMachine)
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
-		if(ImGui::SmallButton("Break") && s_running)
+		if(ImGui::SmallButton("Break") && breakButtonEnabled)
 			s_running = false;
 		if(!breakButtonEnabled)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+
+		// Step Into (F11)
+		ImGui::SameLine();
+		bool stepIntoButtonEnabled = !s_running;
+		if(!stepIntoButtonEnabled)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+		if(ImGui::SmallButton("Step Into") && stepIntoButtonEnabled)
+		{
+			stepInto(pMachine);
+		}
+		if(!stepIntoButtonEnabled)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+
+		// Step Frame (F8)
+		ImGui::SameLine();
+		bool stepFrameButtonEnabled = !s_running;
+		if(!stepFrameButtonEnabled)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+		if(ImGui::SmallButton("Step Frame") && stepFrameButtonEnabled)
+		{
+			StepFrame(pMachine, s_verbose);
+		}
+		if(!stepFrameButtonEnabled)
 		{
 			ImGui::PopItemFlag();
 			ImGui::PopStyleVar();
@@ -568,6 +624,8 @@ int main(int argc, char** argv)
 	{
 		StartFrame(pMachine);
 		
+		bool stepFrame = false;
+
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
 		{
@@ -592,6 +650,15 @@ int main(int argc, char** argv)
 					pMachine->tilt = true;
 				else if(event.key.keysym.sym == SDLK_TAB)
 					s_showMenuBar = !s_showMenuBar;
+				else if(event.key.keysym.sym == SDLK_F5)
+					s_running = !s_running;
+				else if(event.key.keysym.sym == SDLK_F8)
+					stepFrame = true;
+				else if(event.key.keysym.sym == SDLK_F11)
+				{
+					if(!s_running)
+						stepInto(pMachine);
+				}
 			}
 			else if(event.type == SDL_KEYUP)
 			{
@@ -619,7 +686,7 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pWindow);
 		ImGui::NewFrame();
 
-		if(s_running)
+		if(s_running || stepFrame)
 			StepFrame(pMachine, s_verbose);
 		else
 		{

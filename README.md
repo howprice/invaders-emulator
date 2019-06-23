@@ -8,7 +8,21 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## Controls
 
+Press Esc to quit
 Press 5 to insert coin
+Press 1 to start one player game
+Press 2 to start two player game
+Player 1 controls: cursors left/right and space
+Player 2 controls: O/P to move left and right and Q to fire
+
+Press Tab to show/hide dev menu.
+F5 - Break / resume execution
+F8 - Step Frame
+F11 - Step Into ()
+
+## Notes
+
+Cycle-exact emulation is not required.
 
 ## Links
 
@@ -27,25 +41,25 @@ Press 5 to insert coin
 ## TODO
 
 - Debugger
-  - Step Into (F11)
+  - Show more lines of disassembly in Disassembly Window
+  - Memory window
+  - Stack Window
   - Step Over (F10)
-  - Set breakpoint
-  - ImGui and/or command line
-  - Show stack
+  - PC breakpoint
   - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Trap?
-
+- Sounds
+  - http://www.brentradio.com/SpaceInvaders.htm
+- Save/restore state
+- Load different ROMs
+  - List in mame\src\mame\drivers\mw8080bw.cpp
+- Cheats
+  - How does MAME handle cheats?
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Use point sampler in shader
 - Headless mode (command line arg)
 - Remove pMemory from State8080; it belongs in the Machine
-
-Support reset. i.e. Set PC to 0
-- Sounds
-  - http://www.brentradio.com/SpaceInvaders.htm
 - Test on Linux/Mac
-- Test with other 8080bw compatible ROMs See list in C:\GitHub\mamedev\mame\src\mame\drivers\mw8080bw.cpp
-  - May need to implement more instructions and Auxiliary Carry Flag
 - What is the purpose of the RAM mirror? (It *is* used)
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)

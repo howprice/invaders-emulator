@@ -569,8 +569,18 @@ void StartFrame(Machine* pMachine)
 	pMachine->tilt = false;
 }
 
-// returns true if still running
-bool StepFrame(Machine* pMachine, bool verbose)
+void StepFrame(Machine* pMachine, bool verbose)
+{
+	HP_ASSERT(pMachine);
+//	HP_ASSERT(pMachine->frameCycleCount == 0); // Assert not valid - it is perfectly valid to step to end of frame from part way through
+	
+	do 
+	{
+		StepInstruction(pMachine, verbose);
+	} while (pMachine->frameCycleCount != 0);
+}
+
+void StepInstruction(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 
@@ -579,51 +589,48 @@ bool StepFrame(Machine* pMachine, bool verbose)
 	const double cyclesPerFrame = cyclesPerSecond * secondsPerFrame;
 	const double cyclesPerScanLine = cyclesPerFrame / Machine::kDisplayHeight; // #TODO: Account for VBLANK time
 
-	unsigned int cycleCount = 0;
-	unsigned int prevScanLine = 0;
-	while(cycleCount < cyclesPerFrame)
+	const unsigned int prevScanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
+	unsigned int instructionCycleCount = Emulate8080Instruction(pMachine->cpu);
+	pMachine->frameCycleCount += instructionCycleCount;
+	pMachine->scanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
+
+	if(verbose)
 	{
-		unsigned int scanLine = (unsigned int)((double)cycleCount / cyclesPerScanLine);
+		Disassemble8080(pMachine->cpu.pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
+		printf("    ");
+		Print8080State(pMachine->cpu);
 
-		// #TODO: Interrupt $cf (RST 1) at the start of vblank http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
-		//        OR..
-		//        ScanLine96:
-		//            Interrupt brings us here when the beam is* near* the middle of the screen. The real middle
-		//            would be 224 / 2 = 112. The code pretends this interrupt happens at line 128.
-		//        http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
-		if(scanLine == 96 && prevScanLine < scanLine)
-		{
-			Generate8080Interrupt(pMachine->cpu, 1);
-		}
-
-		if(verbose)
-		{
-			Disassemble8080(pMachine->cpu.pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
-			printf("    ");
-			Print8080State(pMachine->cpu);
-
-			// #TODO: Print scanline number
-		}
-
-		unsigned int instructionCycleCount = Emulate8080Instruction(pMachine->cpu);
-		cycleCount += instructionCycleCount;
-
-		prevScanLine = scanLine;
+		// #TODO: Print scanline number
 	}
 
-	// #TODO: Interrupts $d7 (RST 2) at the end of vblank. http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
-	//        OR..
-	//        ScanLine224:
-	//            Interrupt brings us here when the beam is at the end of the screen(line 224) when 
-	//            the VBLANK begins.
-	//        http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
-	unsigned int scanLine = (unsigned int)((double)cycleCount / cyclesPerScanLine);
-	HP_ASSERT(scanLine == 224);
-	Generate8080Interrupt(pMachine->cpu, 2);
+	// Generate interrupt RST 1 at ScanLine96
+	// Interrupt brings us here when the beam is* near* the middle of the screen. 
+	// http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
+	// #TODO: Should this be at the start of vblank? http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+	if(pMachine->scanLine == 96 && prevScanLine < pMachine->scanLine)
+	{
+		if(verbose)
+			printf("Generating Interrupt RST 1 at scanline 96\n");
 
-	// Approximate display buffer by copying instantaneously from RAM at and of frame.
-	// #TODO: Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
-	copyVideoMemoryToDisplayBuffer(*pMachine);
+		Generate8080Interrupt(pMachine->cpu, 1);
+	}
 
-	return true;
+	// Generate interrupt RST 3 at ScanLine 224 (end of screen / start of vblank)
+	// http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
+	// #TODO: Should this be at the end of the VBLANK? http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
+	if(pMachine->scanLine == 224 && prevScanLine < pMachine->scanLine)
+	{
+		if(verbose)
+			printf("Generating Interrupt RST 2 at scanline 224\n");
+
+		Generate8080Interrupt(pMachine->cpu, 2);
+
+		// Approximate display buffer by copying instantaneously from RAM at and of frame.
+		// #TODO: Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
+		copyVideoMemoryToDisplayBuffer(*pMachine);
+
+		// #TODO: Should there be a VBLANK delay here?
+		pMachine->frameCycleCount = 0;
+		pMachine->scanLine = 0;
+	}
 }
