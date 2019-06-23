@@ -1,4 +1,5 @@
 
+#include "imgui_memory_editor.h"
 #include "Assert.h"
 #include "Helpers.h"
 #include "debugger.h"
@@ -45,6 +46,10 @@ static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
 static bool s_showDebugWindow = true;
 static bool s_showDisassemblyWindow = true;
+
+static bool s_showMemoryEditor = true;
+static uint16_t s_memoryWindowAddress = 0x0000;
+static MemoryEditor s_memoryEditor;                                            // store your state somewhere
 
 static void printUsage()
 {
@@ -269,6 +274,7 @@ static void doMenuBar(Machine* pMachine)
 		ImGui::MenuItem("Controls", nullptr, &s_showControlsWindow);
 		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
 		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
+		ImGui::MenuItem("Memory", nullptr, &s_showMemoryEditor);
 
 		ImGui::EndMenu();
 	}
@@ -419,18 +425,18 @@ static void doDebugWindow(Machine* pMachine)
 	ImGui::End();
 }
 
-static void showDisassemblyLine(const State8080& state8080, const uint16_t address)
+static void showDisassemblyLine(const Machine& machine, const uint16_t address)
 {
-	const uint8_t* pMemory = state8080.pMemory;
+	const uint8_t* pMemory = machine.pMemory;
 	HP_ASSERT(pMemory);
-	HP_ASSERT(address < state8080.memorySizeBytes);
+	HP_ASSERT(address < machine.memorySizeBytes);
 	const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
 	const uint8_t opcode = *pInstruction;
 	const char* mnemonic = GetInstructionMnemonic(opcode);
 	const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
 
 	// PC?
-	ImGui::Text("%s", address == state8080.PC ? "> " : "  ");
+	ImGui::Text("%s", address == machine.cpu.PC ? "> " : "  ");
 
 	// address
 	ImGui::SameLine();
@@ -488,23 +494,34 @@ static void doDisassemblyWindow(Machine* pMachine)
 
 	const State8080& state8080 = pMachine->cpu;
 	uint16_t address = state8080.PC;
-	showDisassemblyLine(state8080, address);
+	showDisassemblyLine(*pMachine, address);
 
 	static unsigned int followingLineCount = 3;
 	for(unsigned int i = 0; i < followingLineCount; i++)
 	{
-		const uint8_t* pMemory = state8080.pMemory;
+		const uint8_t* pMemory = pMachine->pMemory;
 		HP_ASSERT(pMemory);
-		HP_ASSERT(address < state8080.memorySizeBytes);
+		HP_ASSERT(address < pMachine->memorySizeBytes);
 		const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
 		const uint8_t opcode = *pInstruction;
 		address += (uint16_t)GetInstructionSizeBytes(opcode);
-		showDisassemblyLine(state8080, address);
+		showDisassemblyLine(*pMachine, address);
 	}
 
 	ImGui::End();
 }
 
+static void doMemoryWindow(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	if(!s_showMemoryEditor)
+		return;
+
+	ImGui::Begin("Memory Editor", &s_showMemoryEditor);
+	s_memoryEditor.DrawContents(pMachine->pMemory, pMachine->memorySizeBytes, s_memoryWindowAddress); // create a window and draw memory editor (if you already have a window, use DrawContents())
+	ImGui::End();
+}
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
 {
@@ -654,6 +671,8 @@ int main(int argc, char** argv)
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
 		{
+			ImGui_ImplSDL2_ProcessEvent(&event);
+
 			if(event.type == SDL_QUIT)
 			{
 				bDone = true;
@@ -723,6 +742,7 @@ int main(int argc, char** argv)
 		doControlsWindow(pMachine);
 		doDebugWindow(pMachine);
 		doDisassemblyWindow(pMachine);
+		doMemoryWindow(pMachine);
 
 		// Rendering
 		ImGui::Render();

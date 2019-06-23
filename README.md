@@ -41,7 +41,6 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Debugger
-  - Memory window
   - Improve Disassembly Window
     - Allow browsing of entire disassembly
     - "Show Next Instruction" context menu option

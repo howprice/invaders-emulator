@@ -15,31 +15,15 @@ struct Instruction
 
 static uint8_t readByteFromMemory(const State8080& state, uint16_t address)
 {
-	if(state.readByteFromMemory != nullptr)
-	{
-		uint8_t d8 = state.readByteFromMemory(state.pMemory, address, /*fatalOnFail*/true);
-		return d8;
-	}
-	else
-	{
-		HP_ASSERT(address < state.memorySizeBytes);
-		uint8_t d8 = state.pMemory[address];
-		return d8;
-	}
+	HP_ASSERT(state.readByteFromMemory != nullptr);
+	uint8_t d8 = state.readByteFromMemory(state.userdata, address, /*fatalOnFail*/true);
+	return d8;
 }
 
 static void writeByteToMemory(const State8080& state, uint16_t address, uint8_t val)
 {
-	if(state.writeByteToMemory != nullptr)
-	{
-		state.writeByteToMemory(state.pMemory, address, val, /*fatalOnFail*/true);
-	}
-	else
-	{
-		HP_ASSERT(state.pMemory);
-		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
-		state.pMemory[address] = val;
-	}
+	HP_ASSERT(state.writeByteToMemory != nullptr);
+	state.writeByteToMemory(state.userdata, address, val, /*fatalOnFail*/true);
 }
 
 static uint8_t getInstructionD8(const State8080& state)
@@ -68,7 +52,6 @@ static uint16_t getInstructionD16(const State8080& state)
 static uint16_t getInstructionAddress(const State8080& state)
 {
 	uint16_t address = getInstructionD16(state);
-	HP_ASSERT(address < state.memorySizeBytes);
 	return address;
 }
 
@@ -1636,7 +1619,6 @@ static unsigned int execute95(State8080& state)
 static unsigned int execute96(State8080& state)
 {
 	uint16_t address = ((uint16_t)state.H << 8) | (state.L);
-	HP_ASSERT(address < state.memorySizeBytes);
 	uint8_t val = readByteFromMemory(state, address);
 	executeSUB(state, val);
 	writeByteToMemory(state, address, val);
@@ -2036,7 +2018,6 @@ static void performReturnOperation(State8080& state)
 	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 	state.SP += 2;
 	uint16_t address = ((uint8_t)msb << 8) | (uint8_t)lsb;
-	HP_ASSERT(address < state.memorySizeBytes);
 	state.PC = address;
 }
 
@@ -2165,7 +2146,6 @@ static unsigned int executeF5(State8080& state)
 static unsigned int executeC1(State8080& state)
 {
 	// stored in memory in little endian format
-	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
 	uint8_t lsb = readByteFromMemory(state, state.SP);
 	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 
@@ -2181,7 +2161,6 @@ static unsigned int executeC1(State8080& state)
 static unsigned int executeD1(State8080& state)
 {
 	// stored in memory in little endian format
-	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
 	uint8_t lsb = readByteFromMemory(state, state.SP);
 	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 
@@ -2197,7 +2176,6 @@ static unsigned int executeD1(State8080& state)
 static unsigned int executeE1(State8080& state)
 {
 	// stored in memory in little endian format
-	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
 	uint8_t lsb = readByteFromMemory(state, state.SP);
 	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 
@@ -2213,7 +2191,6 @@ static unsigned int executeE1(State8080& state)
 static unsigned int executeF1(State8080& state)
 {
 	// stored in memory in little endian format
-	HP_ASSERT(state.SP < state.memorySizeBytes - 2);
 	uint8_t lsb = readByteFromMemory(state, state.SP);
 	uint8_t msb = readByteFromMemory(state, state.SP + 1);
 
@@ -2244,7 +2221,6 @@ static unsigned int executeDA(State8080& state)
 	if(state.flags.C == 1)
 	{
 		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
 		state.PC = address;
 	}
 	return 10;
@@ -2259,7 +2235,6 @@ static unsigned int executeD2(State8080& state)
 	if(state.flags.C == 0)
 	{
 		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes); // this is the best we can do with no access to memory map
 		state.PC = address;
 	}
 	return 10;
@@ -2272,7 +2247,6 @@ static unsigned int executeD2(State8080& state)
 static unsigned int executeCA(State8080& state)
 {
 	uint16_t address = getInstructionAddress(state);
-	HP_ASSERT(address < state.memorySizeBytes); // #TODO: Should really assert that is in ROM, or maybe ROM or RAM via callback to machine
 	if(state.flags.Z)
 		state.PC = address;
 	return 10;
@@ -2298,7 +2272,6 @@ static unsigned int executeFA(State8080& state)
 	if(state.flags.S == 1)
 	{
 		uint16_t address = getInstructionAddress(state);
-		HP_ASSERT(address < state.memorySizeBytes);
 		state.PC = address;
 	}
 	return 10;
@@ -2505,7 +2478,6 @@ static unsigned int executeE3(State8080& state)
 static unsigned int executeE9(State8080& state)
 {
 	uint16_t HL = ((uint16_t)state.H << 8) | (state.L);
-	HP_ASSERT(HL < state.memorySizeBytes); // #TODO: Should really test vs memory map to ensure jump is into ROM
 	state.PC = HL;
 	return 5;
 }
