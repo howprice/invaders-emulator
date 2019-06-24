@@ -456,7 +456,7 @@ static bool loadRoms(uint8_t* pMemory, size_t memorySizeBytes)
 
 		if(fileSizeBytes != rom.fileSizeBytes)
 		{
-			fprintf(stderr, "ROM file \"%s\" is incorrect size. Expected %u, got %u\n", fileName, rom.fileSizeBytes, fileSizeBytes);
+			fprintf(stderr, "ROM file \"%s\" is incorrect size. Expected %u, got %u\n", fileName, (unsigned int)rom.fileSizeBytes, (unsigned int)fileSizeBytes);
 			return false;
 		}
 		fseek(pFile, 0, SEEK_SET);
