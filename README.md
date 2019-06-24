@@ -38,6 +38,8 @@ Not yet tested. May require minor fix-up.
 - F8 - Step Frame
 - F11 - Step Into
 
+- Right click on Disassembly Window for context menu
+
 ## Notes
 
 Cycle-exact emulation is not required.
@@ -59,8 +61,9 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Debugger
+  - Show flags in CPU Window
   - Improve Disassembly Window
-    - Allow browsing of entire disassembly
+    - Use ImGui clipper for efficiency (see imgui_disassembly_window comments)
     - "Show Next Instruction" context menu option
 	- See imgui_memory_editor and ImGui demo window for implementation inspiration
 	- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 

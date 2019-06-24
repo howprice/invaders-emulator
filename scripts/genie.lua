@@ -62,6 +62,7 @@ solution "invaders-emulator"
 			"../src/Assert.*",
 			"../src/Helpers.*",
 			"../src/imgui_memory_editor.h",
+			"../src/imgui_disassembly_window.*",
 			"../src/imgui/**",
 			"../3rdParty/gl3w/GL/**"
 		}
