@@ -2843,10 +2843,7 @@ unsigned int Emulate8080Instruction(State8080& state)
 	// #TODO: May want to store PC of currently executing instruction for error reporting e.g. invalid memory access
 	state.PC += instruction.sizeBytes;
 
-	instruction.execute(state);
-
-	// #TODO: Add timings to all instructions
-	unsigned int instructionCycleCount = 4; // TEMP placeholder!!
+	unsigned int instructionCycleCount = instruction.execute(state);
 	return instructionCycleCount;
 }
 
