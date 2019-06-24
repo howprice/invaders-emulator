@@ -18,7 +18,7 @@ This project uses [GENie](https://github.com/bkaradzic/genie) to generate the bu
 
 ### Windows
 
-Run genie_vs2017.bat or genei_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
+Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
 
 ### Other Platforms
 
