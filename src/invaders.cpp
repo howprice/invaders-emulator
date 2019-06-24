@@ -41,7 +41,8 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
-static bool s_showMenuBar = false;
+static bool s_showDevUI = false;
+static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
 static bool s_showDebugWindow = false;
@@ -58,7 +59,7 @@ static void printUsage()
 		"  --help                       Shows this message\n"
 		"  -d or --debug                Start in debugger\n"
 		"  --verbose                    \n"
-		"  -r or --rotate-display       Rotate display 90 degrees anticlockwise\n"
+//		"  -r or --rotate-display       Rotate display 90 degrees anticlockwise\n"
 	);
 }
 
@@ -479,7 +480,7 @@ static void doDisassemblyWindow(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 
-	if(!s_showDisassemblyWindow || s_running) // don't show when running
+	if(!s_showDisassemblyWindow) // don't show when running
 		return;
 
 	if(!ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
@@ -521,6 +522,20 @@ static void doMemoryWindow(Machine* pMachine)
 	ImGui::Begin("Memory Editor", &s_showMemoryEditor);
 	s_memoryEditor.DrawContents(pMachine->pMemory, pMachine->memorySizeBytes, s_memoryWindowAddress); // create a window and draw memory editor (if you already have a window, use DrawContents())
 	ImGui::End();
+}
+
+static void doDevUI(Machine* pMachine)
+{
+	if(!s_showDevUI)
+		return;
+
+	doMenuBar(pMachine);
+	doCpuWindow(pMachine->cpu);
+	doControlsWindow(pMachine);
+	doDebugWindow(pMachine);
+	doDisassemblyWindow(pMachine);
+	doMemoryWindow(pMachine);
+
 }
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
@@ -693,7 +708,7 @@ int main(int argc, char** argv)
 				else if(event.key.keysym.sym == SDLK_t)
 					pMachine->tilt = true;
 				else if(event.key.keysym.sym == SDLK_TAB)
-					s_showMenuBar = !s_showMenuBar;
+					s_showDevUI = !s_showDevUI;
 				else if(event.key.keysym.sym == SDLK_F5)
 					s_running = !s_running;
 				else if(event.key.keysym.sym == SDLK_F8)
@@ -737,12 +752,7 @@ int main(int argc, char** argv)
 			// debugging
 		}
 
-		doMenuBar(pMachine);
-		doCpuWindow(pMachine->cpu);
-		doControlsWindow(pMachine);
-		doDebugWindow(pMachine);
-		doDisassemblyWindow(pMachine);
-		doMemoryWindow(pMachine);
+		doDevUI(pMachine);
 
 		// Rendering
 		ImGui::Render();
