@@ -6,6 +6,24 @@
 
 Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com)
 
+## Dependencies
+
+This project depends on [SDL2](https://www.libsdl.org). The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+
+Unzipped invaders ROMs should be placed the 'data' folder.
+
+## Building
+
+This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform.
+
+### Windows
+
+Run genie_vs2017.bat or genei_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
+
+### Other Platforms
+
+Not yet tested. May require minor fix-up.
+
 ## Controls
 
 Press Esc to quit
