@@ -33,7 +33,7 @@ Not yet tested. May require minor fix-up.
 - Player 1 controls: cursors left/right and space
 - Player 2 controls: O/P to move left and right and Q to fire
 
-- Press Tab to show/hide dev menu.
+- Press Tab to show/hide dev UI.
 - F5 - Break / resume execution
 - F8 - Step Frame
 - F11 - Step Into
@@ -62,13 +62,15 @@ Cycle-exact emulation is not required.
   - Improve Disassembly Window
     - Allow browsing of entire disassembly
     - "Show Next Instruction" context menu option
-	- See imgui_memory_editor for implementation inspiration
+	- See imgui_memory_editor and ImGui demo window for implementation inspiration
 	- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
   - "Backtrace"? (Previously executed line(s))
   - PC breakpoint
   - Step Over (F10)
+  - Step Out (Shift+F11)
+
     - Store temporary "step over" breakpoint on next instruction before stepping
   - Trap?
 - Sounds
