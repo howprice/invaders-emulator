@@ -32,7 +32,7 @@
 
 static bool s_running = true;
 static bool s_verbose = false;
-static bool s_rotateDisplay = false; // the invaders machine display is rotated 90 degrees anticlockwise
+static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
 static bool s_keyState[SDL_NUM_SCANCODES] = {};
 
 static GLuint s_vertexShader = 0;
@@ -41,13 +41,13 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
-static bool s_showMenuBar = true;
+static bool s_showMenuBar = false;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
-static bool s_showDebugWindow = true;
-static bool s_showDisassemblyWindow = true;
+static bool s_showDebugWindow = false;
+static bool s_showDisassemblyWindow = false;
 
-static bool s_showMemoryEditor = true;
+static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;                                            // store your state somewhere
 
