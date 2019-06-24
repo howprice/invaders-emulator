@@ -1,4 +1,5 @@
 
+#include "imgui_disassembly_window.h"
 #include "imgui_memory_editor.h"
 #include "Assert.h"
 #include "Helpers.h"
@@ -41,16 +42,18 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
-static bool s_showDevUI = false;
+static bool s_showDevUI = true;
 static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
 static bool s_showDebugWindow = false;
-static bool s_showDisassemblyWindow = false;
+static bool s_showDisassemblyWindow = true;
 
 static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;                                            // store your state somewhere
+
+static DisassemblyWindow s_disassemblyWindow;
 
 static void printUsage()
 {
@@ -242,6 +245,7 @@ static void stepInto(Machine* pMachine)
 	HP_ASSERT(!s_running);
 
 	StepInstruction(pMachine, s_verbose);
+	s_disassemblyWindow.Refresh(*pMachine);
 }
 
 static void doMenuBar(Machine* pMachine)
@@ -426,56 +430,6 @@ static void doDebugWindow(Machine* pMachine)
 	ImGui::End();
 }
 
-static void showDisassemblyLine(const Machine& machine, const uint16_t address)
-{
-	const uint8_t* pMemory = machine.pMemory;
-	HP_ASSERT(pMemory);
-	HP_ASSERT(address < machine.memorySizeBytes);
-	const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
-	const uint8_t opcode = *pInstruction;
-	const char* mnemonic = GetInstructionMnemonic(opcode);
-	const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
-
-	// PC?
-	ImGui::Text("%s", address == machine.cpu.PC ? "> " : "  ");
-
-	// address
-	ImGui::SameLine();
-	ImGui::Text("0x%04X  ", address);
-
-	// hex
-	for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
-	{
-		ImGui::SameLine();
-		ImGui::Text("%02X ", *(pInstruction + byteIndex));
-	}
-	for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
-	{
-		ImGui::SameLine();
-		ImGui::Text("   ");
-	}
-
-	// mnemonic
-	ImGui::SameLine();
-	char text[64];
-	if(instructionSizeBytes == 1)
-		sprintf(text, "%s", mnemonic);
-	else if(instructionSizeBytes == 2)
-	{
-		uint8_t d8 = *(pInstruction + 1);
-		sprintf(text, mnemonic, d8);
-	}
-	else if(instructionSizeBytes == 3)
-	{
-		uint8_t lsb = *(pInstruction + 1);
-		uint8_t msb = *(pInstruction + 2);
-		uint16_t val = (msb << 8) | lsb;
-		sprintf(text, mnemonic, val);
-	}
-
-	ImGui::Text(" %-14s", text);
-}
-
 static void doDisassemblyWindow(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
@@ -483,31 +437,8 @@ static void doDisassemblyWindow(Machine* pMachine)
 	if(!s_showDisassemblyWindow) // don't show when running
 		return;
 
-	if(!ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
-	{
-		ImGui::End();
-		return;
-	}
-
-	// #TODO: Allow scrolling
-
-	// #TODO: Show instructions preceding PC
-
-	const State8080& state8080 = pMachine->cpu;
-	uint16_t address = state8080.PC;
-	showDisassemblyLine(*pMachine, address);
-
-	static unsigned int followingLineCount = 3;
-	for(unsigned int i = 0; i < followingLineCount; i++)
-	{
-		const uint8_t* pMemory = pMachine->pMemory;
-		HP_ASSERT(pMemory);
-		HP_ASSERT(address < pMachine->memorySizeBytes);
-		const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
-		const uint8_t opcode = *pInstruction;
-		address += (uint16_t)GetInstructionSizeBytes(opcode);
-		showDisassemblyLine(*pMachine, address);
-	}
+	if(ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
+		s_disassemblyWindow.Draw("Disassembly", &s_showDisassemblyWindow);
 
 	ImGui::End();
 }
@@ -675,6 +606,8 @@ int main(int argc, char** argv)
 
 	createOpenGLObjects(displayWidth, displayHeight);
 
+	s_disassemblyWindow.Refresh(*pMachine);
+
 	bool bDone = false;
 	uint64_t frameIndex = 0;
 	while(!bDone)
@@ -752,6 +685,7 @@ int main(int argc, char** argv)
 			// debugging
 		}
 
+//		ImGui::ShowDemoWindow();
 		doDevUI(pMachine);
 
 		// Rendering
