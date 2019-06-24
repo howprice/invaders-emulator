@@ -36,14 +36,15 @@ Not yet tested. May require minor fix-up.
 - Press Tab to show/hide dev menu.
 - F5 - Break / resume execution
 - F8 - Step Frame
-- F11 - Step Into ()
+- F11 - Step Into
 
 ## Notes
 
 Cycle-exact emulation is not required.
 
-## Links
+## Links and thanks
 
+- The excellent [ImGui](https://github.com/ocornut/imgui)
 - [Emulator 101](http://emulator101.com)
 - http://www.emutalk.net/threads/38177-Space-Invaders
 - https://en.wikipedia.org/wiki/Intel_8080
