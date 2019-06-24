@@ -61,8 +61,7 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Debugger
-  - Show flags in CPU Window
-  - Improve Disassembly Window
+    - Improve Disassembly Window
     - Use ImGui clipper for efficiency (see imgui_disassembly_window comments)
     - "Show Next Instruction" context menu option
 	- See imgui_memory_editor and ImGui demo window for implementation inspiration
@@ -73,8 +72,8 @@ Cycle-exact emulation is not required.
   - PC breakpoint
   - Step Over (F10)
   - Step Out (Shift+F11)
-
     - Store temporary "step over" breakpoint on next instruction before stepping
+  - Editable registers in CPU Window
   - Trap?
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
