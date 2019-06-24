@@ -61,18 +61,14 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Debugger
-    - Improve Disassembly Window
-    - Use ImGui clipper for efficiency (see imgui_disassembly_window comments)
-    - "Show Next Instruction" context menu option
-	- See imgui_memory_editor and ImGui demo window for implementation inspiration
-	- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
+  - PC breakpoint
+  - Step Over (F10)
+    - Store temporary "step over" breakpoint on next instruction before stepping
+  - Step Out (Shift+F11)
+  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
   - "Backtrace"? (Previously executed line(s))
-  - PC breakpoint
-  - Step Over (F10)
-  - Step Out (Shift+F11)
-    - Store temporary "step over" breakpoint on next instruction before stepping
   - Editable registers in CPU Window
   - Trap?
 - Sounds
