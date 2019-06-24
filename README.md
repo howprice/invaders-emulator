@@ -26,17 +26,17 @@ Not yet tested. May require minor fix-up.
 
 ## Controls
 
-Press Esc to quit
-Press 5 to insert coin
-Press 1 to start one player game
-Press 2 to start two player game
-Player 1 controls: cursors left/right and space
-Player 2 controls: O/P to move left and right and Q to fire
+- Press Esc to quit
+- Press 5 to insert coin
+- Press 1 to start one player game
+- Press 2 to start two player game
+- Player 1 controls: cursors left/right and space
+- Player 2 controls: O/P to move left and right and Q to fire
 
-Press Tab to show/hide dev menu.
-F5 - Break / resume execution
-F8 - Step Frame
-F11 - Step Into ()
+- Press Tab to show/hide dev menu.
+- F5 - Break / resume execution
+- F8 - Step Frame
+- F11 - Step Into ()
 
 ## Notes
 
