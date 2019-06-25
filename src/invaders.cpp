@@ -43,7 +43,7 @@ static GLuint s_program = 0;
 static GLuint s_texture = 0;
 static GLuint s_vao = 0;
 
-static bool s_showDevUI = true;
+static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
@@ -57,7 +57,7 @@ static bool s_showDisassemblyWindow = false;
 static DisassemblyWindow s_disassemblyWindow;
 
 static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
-static bool s_showBreakpointsWindow = true;
+static bool s_showBreakpointsWindow = false;
 static BreakpointsWindow s_breakpointsWindow;
 
 static void printUsage()
