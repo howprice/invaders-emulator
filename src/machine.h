@@ -5,6 +5,10 @@
 
 #include "8080.h"
 
+struct Machine;
+
+typedef bool (*MachineStepCallbackFuncPtr)(Machine* pMachine);
+
 struct Machine
 {
 	static const unsigned int kDisplayWidth = 256;
@@ -40,6 +44,9 @@ struct Machine
 	// bits 4,5,6  Unknown
 	// bit 7  No pricing on screen
 	uint8_t dipSwitchBits;
+
+	MachineStepCallbackFuncPtr preExecuteCallback;
+	MachineStepCallbackFuncPtr postExecuteCallback;
 };
 
 bool CreateMachine(Machine** ppMachine);
@@ -51,5 +58,7 @@ void StartFrame(Machine* pMachine);
 bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail = false);
 uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail = false);
 
+// returns true if the machine is still running
 void StepFrame(Machine* pMachine, bool verbose);
-void StepInstruction(Machine* pMachine, bool verbose);
+
+bool StepInstruction(Machine* pMachine, bool verbose);

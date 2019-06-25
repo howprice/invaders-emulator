@@ -1,5 +1,6 @@
 
 #include "imgui_disassembly_window.h"
+#include "imgui_breakpoints_window.h"
 #include "imgui_memory_editor.h"
 #include "Assert.h"
 #include "Helpers.h"
@@ -47,13 +48,17 @@ static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
 static bool s_showControlsWindow = false;
 static bool s_showDebugWindow = false;
-static bool s_showDisassemblyWindow = true;
 
 static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
-static MemoryEditor s_memoryEditor;                                            // store your state somewhere
+static MemoryEditor s_memoryEditor;
 
+static bool s_showDisassemblyWindow = false;
 static DisassemblyWindow s_disassemblyWindow;
+
+static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
+static bool s_showBreakpointsWindow = true;
+static BreakpointsWindow s_breakpointsWindow;
 
 static void printUsage()
 {
@@ -245,7 +250,7 @@ static void stepInto(Machine* pMachine)
 	HP_ASSERT(!s_running);
 
 	StepInstruction(pMachine, s_verbose);
-	s_disassemblyWindow.Refresh(*pMachine);
+	s_disassemblyWindow.ScrollToPC();
 }
 
 static void doMenuBar(Machine* pMachine)
@@ -279,6 +284,7 @@ static void doMenuBar(Machine* pMachine)
 		ImGui::MenuItem("Controls", nullptr, &s_showControlsWindow);
 		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
 		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
+		ImGui::MenuItem("Breakpoints", nullptr, &s_showBreakpointsWindow);
 		ImGui::MenuItem("Memory", nullptr, &s_showMemoryEditor);
 
 		ImGui::EndMenu();
@@ -439,11 +445,24 @@ static void doDisassemblyWindow(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 
-	if(!s_showDisassemblyWindow) // don't show when running
+	if(!s_showDisassemblyWindow)
 		return;
 
 	if(ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
-		s_disassemblyWindow.Draw("Disassembly", &s_showDisassemblyWindow);
+		s_disassemblyWindow.Draw("Disassembly", &s_showDisassemblyWindow, pMachine->cpu, s_breakpoints);
+
+	ImGui::End();
+}
+
+static void doBreakpointsWindow(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	if(!s_showBreakpointsWindow)
+		return;
+
+	if(ImGui::Begin("Breakpoints", &s_showBreakpointsWindow))
+		s_breakpointsWindow.Draw(s_breakpoints, &s_showBreakpointsWindow, pMachine->cpu);
 
 	ImGui::End();
 }
@@ -470,8 +489,39 @@ static void doDevUI(Machine* pMachine)
 	doControlsWindow(pMachine);
 	doDebugWindow(pMachine);
 	doDisassemblyWindow(pMachine);
+	doBreakpointsWindow(pMachine);
 	doMemoryWindow(pMachine);
+}
 
+static bool machinePreExecuteCallback(Machine* pMachine)
+{
+	HP_ASSERT(pMachine);
+
+	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
+	{
+		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
+		if(breakpoint.address == pMachine->cpu.PC && breakpoint.active)
+		{
+			s_running = false;
+			return false; // stop execution
+		}
+	}
+
+	return true;
+}
+
+static bool machinePostExecuteCallback(Machine* pMachine)
+{
+	if(s_verbose)
+	{
+		Disassemble8080(pMachine->pMemory, pMachine->memorySizeBytes, pMachine->cpu.PC);
+		printf("    ");
+		Print8080State(pMachine->cpu);
+
+		// #TODO: Print scanline number
+	}
+
+	return true;
 }
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
@@ -609,6 +659,9 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	pMachine->preExecuteCallback = machinePreExecuteCallback;
+	pMachine->postExecuteCallback = machinePostExecuteCallback;
+
 	createOpenGLObjects(displayWidth, displayHeight);
 
 	s_disassemblyWindow.Refresh(*pMachine);
@@ -685,10 +738,6 @@ int main(int argc, char** argv)
 
 		if(s_running || stepFrame)
 			StepFrame(pMachine, s_verbose);
-		else
-		{
-			// debugging
-		}
 
 //		ImGui::ShowDemoWindow();
 		doDevUI(pMachine);

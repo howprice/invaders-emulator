@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 struct Machine;
+struct State8080;
+struct Breakpoints;
 
 class DisassemblyWindow
 {
@@ -15,15 +17,21 @@ public:
 	~DisassemblyWindow();
 
 	void Refresh(const Machine& machine);
-	void Draw(const char* title, bool* p_open);
+	void Draw(const char* title, bool* p_open, const State8080& state8080, const Breakpoints& breakpoints);
+
+	void ScrollToPC() { m_scrollToPC = true; }
 
 private:
 
-	void addLine(const char* fmt, ...) IM_FMTARGS(2);
+	struct Line
+	{
+		uint16_t address;
+		char* text;
+	};
+
 	void addLine(const Machine& machine, const uint16_t address);
 	void clearLines();
 
-	ImVector<char*> m_lines;
-	unsigned int m_pcLineNumber = 0;
+	ImVector<Line> m_lines;
 	bool  m_scrollToPC;
 };
