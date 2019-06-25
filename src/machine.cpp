@@ -582,11 +582,12 @@ void StepFrame(Machine* pMachine, bool verbose)
 	
 	do 
 	{
-		StepInstruction(pMachine, verbose);
+		if(StepInstruction(pMachine, verbose) == false)
+			break;
 	} while (pMachine->frameCycleCount != 0);
 }
 
-void StepInstruction(Machine* pMachine, bool verbose)
+bool StepInstruction(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 
@@ -595,19 +596,19 @@ void StepInstruction(Machine* pMachine, bool verbose)
 	const double cyclesPerFrame = cyclesPerSecond * secondsPerFrame;
 	const double cyclesPerScanLine = cyclesPerFrame / Machine::kDisplayHeight; // #TODO: Account for VBLANK time
 
+	if(pMachine->preExecuteCallback)
+	{
+		if(pMachine->preExecuteCallback(pMachine) == false)
+			return false;
+	}
+
 	const unsigned int prevScanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
 	unsigned int instructionCycleCount = Emulate8080Instruction(pMachine->cpu);
 	pMachine->frameCycleCount += instructionCycleCount;
 	pMachine->scanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
 
-	if(verbose)
-	{
-		Disassemble8080(pMachine->pMemory, kPhysicalMemorySizeBytes, pMachine->cpu.PC);
-		printf("    ");
-		Print8080State(pMachine->cpu);
-
-		// #TODO: Print scanline number
-	}
+	if(pMachine->postExecuteCallback)
+		pMachine->postExecuteCallback(pMachine);
 
 	// Generate interrupt RST 1 at ScanLine96
 	// Interrupt brings us here when the beam is* near* the middle of the screen. 
@@ -618,6 +619,7 @@ void StepInstruction(Machine* pMachine, bool verbose)
 		if(verbose)
 			printf("Generating Interrupt RST 1 at scanline 96\n");
 
+		// #TODO: Interrupt callback
 		Generate8080Interrupt(pMachine->cpu, 1);
 	}
 
@@ -639,4 +641,6 @@ void StepInstruction(Machine* pMachine, bool verbose)
 		pMachine->frameCycleCount = 0;
 		pMachine->scanLine = 0;
 	}
+
+	return true;
 }

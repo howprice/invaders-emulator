@@ -60,8 +60,11 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- BUG: Why does pressing F12 crash the application
+- BUG: Can't single step if breakpoint on current line
+
 - Debugger
-  - PC breakpoint
+  - Add Autoscroll option to Disassembly Window
   - Step Over (F10)
     - Store temporary "step over" breakpoint on next instruction before stepping
   - Step Out (Shift+F11)

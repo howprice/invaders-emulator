@@ -1,6 +1,7 @@
 
 #include "imgui_disassembly_window.h"
 
+#include "debugger.h"
 #include "machine.h"
 #include "Assert.h"
 #include "Helpers.h"
@@ -31,26 +32,15 @@ void DisassemblyWindow::clearLines()
 {
 	for(int i = 0; i < m_lines.Size; i++)
 	{
-		free(m_lines[i]);
+		free(m_lines[i].text);
 	}
 	m_lines.clear();
 }
 
-void DisassemblyWindow::addLine(const char* fmt, ...) IM_FMTARGS(2)
-{
-	// FIXME-OPT
-	char buf[1024];
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(buf, IM_ARRAYSIZE(buf), fmt, args);
-	buf[IM_ARRAYSIZE(buf) - 1] = 0;
-	va_end(args);
-	m_lines.push_back(Strdup(buf));
-}
 
 void DisassemblyWindow::addLine(const Machine& machine, const uint16_t address)
 {
-	char line[64] = {};
+	char text[64] = {};
 	char temp[64] = {};
 
 	const uint8_t* pMemory = machine.pMemory;
@@ -62,25 +52,20 @@ void DisassemblyWindow::addLine(const Machine& machine, const uint16_t address)
 	const char* mnemonic = GetInstructionMnemonic(opcode);
 	const unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
 
-
-	// PC?
-	SDL_snprintf(temp, sizeof(temp), "%s", address == machine.cpu.PC ? "> " : "  ");
-	SDL_strlcat(line, temp, sizeof(line));
-
 	// address
 	SDL_snprintf(temp, sizeof(temp), "0x%04X  ", address);
-	SDL_strlcat(line, temp, sizeof(line));
+	SDL_strlcat(text, temp, sizeof(text));
 
 	// hex
 	for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
 	{
 		SDL_snprintf(temp, sizeof(temp), "%02X ", *(pInstruction + byteIndex));
-		SDL_strlcat(line, temp, sizeof(line));
+		SDL_strlcat(text, temp, sizeof(text));
 	}
 	for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
 	{
 		SDL_snprintf(temp, sizeof(temp), "   ");
-		SDL_strlcat(line, temp, sizeof(line));
+		SDL_strlcat(text, temp, sizeof(text));
 	}
 
 	// mnemonic
@@ -101,9 +86,12 @@ void DisassemblyWindow::addLine(const Machine& machine, const uint16_t address)
 
 //	ImGui::Text(" %-14s", temp); TODO: What is the -14 for again?
 
-	SDL_strlcat(line, temp, sizeof(line));
+	SDL_strlcat(text, temp, sizeof(text));
 
-	addLine(line);
+	Line line;
+	line.address = address;
+	line.text = Strdup(text);
+	m_lines.push_back(line);
 }
 
 void DisassemblyWindow::Refresh(const Machine& machine)
@@ -115,21 +103,17 @@ void DisassemblyWindow::Refresh(const Machine& machine)
 	uint16_t address = 0;
 	while(address < 0x2000)
 	{
-		if(address == machine.cpu.PC)
-			m_pcLineNumber = (unsigned int)m_lines.size();
-
 		HP_ASSERT(address < machine.memorySizeBytes);
 		const uint8_t* pInstruction = pMemory + address; // #TODO: Use accessor for safety
 		const uint8_t opcode = *pInstruction;
 		addLine(machine, address);
-
 		address += (uint16_t)GetInstructionSizeBytes(opcode);
 	}
 
 	m_scrollToPC = true;
 }
 
-void DisassemblyWindow::Draw(const char* title, bool* p_open)
+void DisassemblyWindow::Draw(const char* title, bool* p_open, const State8080& state8080, const Breakpoints& breakpoints)
 {
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
 	if(!ImGui::Begin(title, p_open))
@@ -159,8 +143,29 @@ void DisassemblyWindow::Draw(const char* title, bool* p_open)
 
 	for(int i = 0; i < m_lines.Size; i++)
 	{
-		const char* item = m_lines[i];
-		ImGui::TextUnformatted(item);
+		const Line& line = m_lines[i];
+
+		bool pcAtLine = line.address == state8080.PC;
+		bool breakpointAtLine = false;
+		bool breakpointActive = false;
+		for(unsigned int breakpointIndex = 0; breakpointIndex < breakpoints.breakpointCount; breakpointIndex++)
+		{
+			const Breakpoint& breakpoint = breakpoints.breakpoints[breakpointIndex];
+			if(breakpoint.address == line.address)
+			{
+				breakpointAtLine = true;
+				breakpointActive = breakpoint.active;
+				break;
+			}
+		}
+
+		if(pcAtLine || breakpointAtLine)
+			ImGui::Text("%c%c", pcAtLine ? '>' : '  ', breakpointAtLine ? (breakpointActive ? '*' : 'o') : ' ');
+		else
+			ImGui::TextUnformatted("  ");
+
+		ImGui::SameLine();
+		ImGui::TextUnformatted(line.text);
 	}
 
 	if(m_scrollToPC)
@@ -168,8 +173,18 @@ void DisassemblyWindow::Draw(const char* title, bool* p_open)
 		const unsigned int lineCount = (unsigned int)m_lines.size();
 		if(lineCount > 0)
 		{
+			unsigned int pcLineNumber = 0;
+			for(unsigned int lineIndex = 0; lineIndex < lineCount; lineIndex++)
+			{
+				if(m_lines[lineIndex].address == state8080.PC)
+				{
+					pcLineNumber = lineIndex;
+					break;
+				}
+			}
+
 			// #TODO: Center on PC properly
-			float scrollY = (float)m_pcLineNumber/ (float)lineCount;
+			float scrollY = (float)pcLineNumber/ (float)lineCount;
 			scrollY *= ImGui::GetScrollMaxY();
 			ImGui::SetScrollY(scrollY);
 		}
