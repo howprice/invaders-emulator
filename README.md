@@ -64,7 +64,10 @@ Cycle-exact emulation is not required.
 - BUG: Can't single step if breakpoint on current line
 
 - Debugger
-  - Add Autoscroll option to Disassembly Window
+  - Disassembly Window:
+    - Fix up scolling (see ImGui hex editor code)
+    - Use ImGuiListClipper (see ImGui hex editor code)
+    - Add Autoscroll option
   - Step Over (F10)
     - Store temporary "step over" breakpoint on next instruction before stepping
   - Step Out (Shift+F11)
