@@ -61,7 +61,6 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - BUG: Why does pressing F12 crash the application
-- BUG: Can't single step if breakpoint on current line
 
 - Debugger
   - Disassembly Window:

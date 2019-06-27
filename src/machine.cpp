@@ -132,7 +132,6 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 #include "Assert.h"
 #include "Helpers.h"
 
-static const unsigned int kClockSpeed = 2000000; // 2MHz
 static const unsigned int kRefreshRate = 60; // Hz
 
 enum class MemoryType
@@ -555,8 +554,10 @@ void DestroyMachine(Machine* pMachine)
 void ResetMachine(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
-
-	pMachine->cpu.PC = 0; // Is that it?!?
+	Reset(pMachine->cpu);
+	pMachine->frameCount = 0;
+	pMachine->frameCycleCount = 0;
+	pMachine->scanLine = 0;
 }
 
 void StartFrame(Machine* pMachine)
@@ -582,33 +583,25 @@ void StepFrame(Machine* pMachine, bool verbose)
 	
 	do 
 	{
-		if(StepInstruction(pMachine, verbose) == false)
-			break;
-	} while (pMachine->frameCycleCount != 0);
+		if(pMachine->running)
+			StepInstruction(pMachine, verbose);
+
+	} while (pMachine->frameCycleCount != 0 && pMachine->running);
 }
 
-bool StepInstruction(Machine* pMachine, bool verbose)
+void StepInstruction(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 
-	const double cyclesPerSecond = kClockSpeed;
+	const double cyclesPerSecond = State8080::kClockRate;
 	const double secondsPerFrame = 1.0 / kRefreshRate;
 	const double cyclesPerFrame = cyclesPerSecond * secondsPerFrame;
 	const double cyclesPerScanLine = cyclesPerFrame / Machine::kDisplayHeight; // #TODO: Account for VBLANK time
-
-	if(pMachine->preExecuteCallback)
-	{
-		if(pMachine->preExecuteCallback(pMachine) == false)
-			return false;
-	}
 
 	const unsigned int prevScanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
 	unsigned int instructionCycleCount = Emulate8080Instruction(pMachine->cpu);
 	pMachine->frameCycleCount += instructionCycleCount;
 	pMachine->scanLine = (unsigned int)((double)pMachine->frameCycleCount / cyclesPerScanLine);
-
-	if(pMachine->postExecuteCallback)
-		pMachine->postExecuteCallback(pMachine);
 
 	// Generate interrupt RST 1 at ScanLine96
 	// Interrupt brings us here when the beam is* near* the middle of the screen. 
@@ -638,9 +631,11 @@ bool StepInstruction(Machine* pMachine, bool verbose)
 		copyVideoMemoryToDisplayBuffer(*pMachine);
 
 		// #TODO: Should there be a VBLANK delay here?
+		pMachine->frameCount++;
 		pMachine->frameCycleCount = 0;
 		pMachine->scanLine = 0;
 	}
 
-	return true;
+	if(pMachine->debugHook)
+		pMachine->debugHook(pMachine);
 }

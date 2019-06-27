@@ -7,18 +7,20 @@
 
 struct Machine;
 
-typedef bool (*MachineStepCallbackFuncPtr)(Machine* pMachine);
+typedef void (*DebugHookFuncPtr)(Machine* pMachine);
 
 struct Machine
 {
 	static const unsigned int kDisplayWidth = 256;
 	static const unsigned int kDisplayHeight = 224;
 
+	bool running = true;
 	State8080 cpu;
 
 	uint8_t* pMemory;
-	uint32_t memorySizeBytes;
+	uint32_t memorySizeBytes; // #TODO: Get rid of this. The memory map should allow gaps, so memory should be accessed in chunks
 
+	unsigned int frameCount;
 	unsigned int frameCycleCount;
 	unsigned int scanLine;
 
@@ -27,6 +29,8 @@ struct Machine
 
 	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
 
+	// Input
+	// #TODO: Factor these out of this struct
 	bool coinInserted;
 	bool player2StartButton;
 	bool player1StartButton;
@@ -45,8 +49,7 @@ struct Machine
 	// bit 7  No pricing on screen
 	uint8_t dipSwitchBits;
 
-	MachineStepCallbackFuncPtr preExecuteCallback;
-	MachineStepCallbackFuncPtr postExecuteCallback;
+	DebugHookFuncPtr debugHook;
 };
 
 bool CreateMachine(Machine** ppMachine);
@@ -58,7 +61,5 @@ void StartFrame(Machine* pMachine);
 bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail = false);
 uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail = false);
 
-// returns true if the machine is still running
 void StepFrame(Machine* pMachine, bool verbose);
-
-bool StepInstruction(Machine* pMachine, bool verbose);
+void StepInstruction(Machine* pMachine, bool verbose);

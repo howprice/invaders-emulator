@@ -32,7 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool s_running = true;
+static bool s_startDebugging = false;
+static bool s_stepFrame = false;
 static bool s_verbose = false;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
 static bool s_keyState[SDL_NUM_SCANCODES] = {};
@@ -46,7 +47,7 @@ static GLuint s_vao = 0;
 static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
 static bool s_showCpuWindow = false;
-static bool s_showControlsWindow = false;
+static bool s_showMachineWindow = false;
 static bool s_showDebugWindow = false;
 
 static bool s_showMemoryEditor = false;
@@ -84,7 +85,7 @@ static void parseCommandLine(int argc, char** argv)
 		}
 		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
 		{
-			s_running = false;
+			s_startDebugging = true;
 		}
 		else if(strcmp(arg, "--verbose") == 0)
 		{
@@ -247,8 +248,6 @@ static void deleteOpenGLObjects()
 
 static void stepInto(Machine* pMachine)
 {
-	HP_ASSERT(!s_running);
-
 	StepInstruction(pMachine, s_verbose);
 	s_disassemblyWindow.ScrollToPC();
 }
@@ -263,25 +262,25 @@ static void doMenuBar(Machine* pMachine)
 	 
 	if(ImGui::BeginMenu("Debug"))
 	{
-		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!s_running))
-			s_running = true;
+		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!pMachine->running))
+			pMachine->running = true;
 
-		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/s_running))
-			s_running = false;
+		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/pMachine->running))
+			pMachine->running = false;
 
 		ImGui::Separator();
-		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!s_running))
-			StepFrame(pMachine, s_verbose);
+		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
+			s_stepFrame = true;
 
-		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!s_running))
+		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
 			stepInto(pMachine);
 
 		ImGui::EndMenu();
 	}
 	if(ImGui::BeginMenu("Windows"))
 	{
+		ImGui::MenuItem("Machine", nullptr, &s_showMachineWindow);
 		ImGui::MenuItem("CPU", nullptr, &s_showCpuWindow);
-		ImGui::MenuItem("Controls", nullptr, &s_showControlsWindow);
 		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
 		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
 		ImGui::MenuItem("Breakpoints", nullptr, &s_showBreakpointsWindow);
@@ -300,6 +299,7 @@ static void doCpuWindow(const State8080& state)
 
 	if(ImGui::Begin("CPU", &s_showCpuWindow))
 	{
+		ImGui::Text("Clock rate: %u", State8080::kClockRate);
 		ImGui::Text("A: %02X  Flags: %02X %c%c%c%c%c\n", 
 			state.A, state.flags,
 			state.flags.S ? 'S' : '-',
@@ -312,20 +312,30 @@ static void doCpuWindow(const State8080& state)
 		ImGui::Text("H: %02X  L: %02X\n", state.H, state.L);
 		ImGui::Text("SP: %04X\n", state.SP);
 		ImGui::Text("PC: %04X\n", state.PC);
+		ImGui::Text("INTE: %u  HALT: %u\n", state.INTE, state.halt);
 	}
 
 	ImGui::End();
 }
 
-static void doControlsWindow(Machine* pMachine)
+static void doMachineWindow(Machine* pMachine)
 {
-	if(!s_showControlsWindow)
+	if(!s_showMachineWindow)
 		return;
 
-	if(ImGui::Begin("Controls", &s_showControlsWindow))
+	if(ImGui::Begin("Machine", &s_showMachineWindow))
 	{
+		ImGui::Checkbox("Running", &pMachine->running);
+
 		if(ImGui::Button("Reset"))
 			ResetMachine(pMachine);
+
+		ImGui::Text("Frame: %u", pMachine->frameCount);
+		ImGui::Text("Frame cycle count: %u", pMachine->frameCycleCount);
+		ImGui::Text("Scan line: %u", pMachine->scanLine);
+
+		ImGui::Text("Shift register value:  %04X", pMachine->shiftRegisterValue);
+		ImGui::Text("Shift register offset: ", pMachine->shiftRegisterOffset);
 
 		ImGui::Spacing();
 		ImGui::Text("DIP switches:");
@@ -371,14 +381,14 @@ static void doDebugWindow(Machine* pMachine)
 	if(ImGui::Begin("Debug", &s_showDebugWindow))
 	{
 		// Continue (F5)
-		bool continueButtonEnabled = !s_running;
+		bool continueButtonEnabled = !pMachine->running;
 		if(!continueButtonEnabled)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
 		if(ImGui::SmallButton("Continue") && continueButtonEnabled)
-			s_running = true;
+			pMachine->running = true;
 		if(!continueButtonEnabled)
 		{
 			ImGui::PopItemFlag();
@@ -387,14 +397,14 @@ static void doDebugWindow(Machine* pMachine)
 
 		// Break (F5)
 		ImGui::SameLine();
-		bool breakButtonEnabled = s_running;
+		bool breakButtonEnabled = pMachine->running;
 		if(!breakButtonEnabled)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
 		if(ImGui::SmallButton("Break") && breakButtonEnabled)
-			s_running = false;
+			pMachine->running = false;
 		if(!breakButtonEnabled)
 		{
 			ImGui::PopItemFlag();
@@ -403,7 +413,7 @@ static void doDebugWindow(Machine* pMachine)
 
 		// Step Into (F11)
 		ImGui::SameLine();
-		bool stepIntoButtonEnabled = !s_running;
+		bool stepIntoButtonEnabled = !pMachine->running;
 		if(!stepIntoButtonEnabled)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -421,7 +431,7 @@ static void doDebugWindow(Machine* pMachine)
 
 		// Step Frame (F8)
 		ImGui::SameLine();
-		bool stepFrameButtonEnabled = !s_running;
+		bool stepFrameButtonEnabled = !pMachine->running;
 		if(!stepFrameButtonEnabled)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -429,7 +439,7 @@ static void doDebugWindow(Machine* pMachine)
 		}
 		if(ImGui::SmallButton("Step Frame") && stepFrameButtonEnabled)
 		{
-			StepFrame(pMachine, s_verbose);
+			s_stepFrame = true;
 		}
 		if(!stepFrameButtonEnabled)
 		{
@@ -486,32 +496,17 @@ static void doDevUI(Machine* pMachine)
 
 	doMenuBar(pMachine);
 	doCpuWindow(pMachine->cpu);
-	doControlsWindow(pMachine);
+	doMachineWindow(pMachine);
 	doDebugWindow(pMachine);
 	doDisassemblyWindow(pMachine);
 	doBreakpointsWindow(pMachine);
 	doMemoryWindow(pMachine);
 }
 
-static bool machinePreExecuteCallback(Machine* pMachine)
+static void debugHook(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
-
-	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
-	{
-		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
-		if(breakpoint.address == pMachine->cpu.PC && breakpoint.active)
-		{
-			s_running = false;
-			return false; // stop execution
-		}
-	}
-
-	return true;
-}
-
-static bool machinePostExecuteCallback(Machine* pMachine)
-{
+	
 	if(s_verbose)
 	{
 		Disassemble8080(pMachine->pMemory, pMachine->memorySizeBytes, pMachine->cpu.PC);
@@ -521,7 +516,15 @@ static bool machinePostExecuteCallback(Machine* pMachine)
 		// #TODO: Print scanline number
 	}
 
-	return true;
+	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
+	{
+		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
+		if(breakpoint.address == pMachine->cpu.PC && breakpoint.active)
+		{
+			pMachine->running = false;
+			break;
+		}
+	}
 }
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
@@ -659,8 +662,8 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	pMachine->preExecuteCallback = machinePreExecuteCallback;
-	pMachine->postExecuteCallback = machinePostExecuteCallback;
+
+	pMachine->debugHook = debugHook;
 
 	createOpenGLObjects(displayWidth, displayHeight);
 
@@ -672,8 +675,6 @@ int main(int argc, char** argv)
 	{
 		StartFrame(pMachine);
 		
-		bool stepFrame = false;
-
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
 		{
@@ -701,12 +702,12 @@ int main(int argc, char** argv)
 				else if(event.key.keysym.sym == SDLK_TAB)
 					s_showDevUI = !s_showDevUI;
 				else if(event.key.keysym.sym == SDLK_F5)
-					s_running = !s_running;
+					pMachine->running = !pMachine->running;
 				else if(event.key.keysym.sym == SDLK_F8)
-					stepFrame = true;
+					s_stepFrame = true;
 				else if(event.key.keysym.sym == SDLK_F11)
 				{
-					if(!s_running)
+					if(!pMachine->running)
 						stepInto(pMachine);
 				}
 			}
@@ -736,8 +737,16 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pWindow);
 		ImGui::NewFrame();
 
-		if(s_running || stepFrame)
-			StepFrame(pMachine, s_verbose);
+		if(s_stepFrame)
+			pMachine->running = true;
+
+		StepFrame(pMachine, s_verbose);
+
+		if(s_stepFrame)
+		{
+			pMachine->running = false;
+			s_stepFrame = false;
+		}
 
 //		ImGui::ShowDemoWindow();
 		doDevUI(pMachine);
