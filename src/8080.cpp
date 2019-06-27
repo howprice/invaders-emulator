@@ -1286,9 +1286,9 @@ static unsigned int execute75(State8080& state)
 }
 
 // 0x76  HALT
-static unsigned int execute76(State8080& /*state*/)
+static unsigned int execute76(State8080& state)
 {
-	HP_FATAL_ERROR("HALT");
+	state.halt = 1;
 	return 7;
 }
 
@@ -2638,7 +2638,7 @@ static const Instruction s_instructions[] =
 	/* 0x73 */ { "MOV M,E", 1, execute73 }, // (HL) <- E
 	/* 0x74 */ { "MOV M,H", 1, execute74 }, // (HL) <- H
 	/* 0x75 */ { "MOV M,L", 1, execute75 }, // (HL) <- L
-	/* 0x76 */ { "HLT",	1, nullptr }, //			special
+	/* 0x76 */ { "HLT",	1, execute76 },
 	/* 0x77 */ { "MOV M,A", 1, execute77 }, // (HL) <- A
 	/* 0x78 */ { "MOV A,B", 1, execute78 }, // A <- B
 	/* 0x79 */ { "MOV A,C", 1, execute79 }, // A <- C
@@ -2833,6 +2833,9 @@ unsigned int GetInstructionSizeBytes(uint8_t opcode)
 // returns the number of cycles that the instruction took to execute
 unsigned int Emulate8080Instruction(State8080& state)
 {
+	if(state.halt == 1)
+		return 0;
+
 	const uint8_t opcode = readByteFromMemory(state, state.PC);
 	const Instruction& instruction = s_instructions[opcode];
 	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
@@ -2850,6 +2853,9 @@ unsigned int Emulate8080Instruction(State8080& state)
 void Generate8080Interrupt(State8080& state, unsigned int interruptNumber)
 {
 	HP_ASSERT(interruptNumber < 8, "There are eight Restart instructions, RST 0 - RST 7");
+
+	// Interrupts restart CPU
+	state.halt = 0;
 
 	// Whenever INTE is equal to 0, the entire interrupt handling system is disabled,
 	// and not interrupts will be accepted
@@ -2875,4 +2881,10 @@ void Generate8080Interrupt(State8080& state, unsigned int interruptNumber)
 	state.SP -= 2;
 
 	state.PC = (uint16_t)interruptNumber * 8;
+}
+
+void Reset(State8080& state)
+{
+	state.PC = 0;
+	state.halt = 0;
 }

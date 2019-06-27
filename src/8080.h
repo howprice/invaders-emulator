@@ -32,6 +32,8 @@ static_assert(sizeof(Flags8080) == 1, "Flags should be 1 byte in size");
 
 struct State8080
 {
+	static const unsigned int kClockRate = 2000000; // 2MHz
+
 	uint8_t A;         // A and Flags togther make up the Program Status Word (PSW)
 	Flags8080 flags;
 
@@ -48,6 +50,8 @@ struct State8080
 	uint16_t PC;
 
 	uint8_t INTE; // "INTE", the 8080 interrupt enable flip-flop [Data Book]
+
+	uint8_t halt; // true if the HLT instruction has been called
 
 	ReadByteFromMemoryFuncPtr readByteFromMemory;
 	WriteByteToMemoryFuncPtr writeByteToMemory;
@@ -66,5 +70,9 @@ unsigned int GetInstructionSizeBytes(uint8_t opcode);
 unsigned int Emulate8080Instruction(State8080& state);
 
 void Generate8080Interrupt(State8080& state, unsigned int interruptNumber);
+
+// Forces execution of commands located at address 0000. The content of other processor registers is not modified.
+// https://en.wikipedia.org/wiki/Intel_8080#Pin_use
+void Reset(State8080& state);
 
 #endif
