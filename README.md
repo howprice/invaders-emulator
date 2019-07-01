@@ -62,14 +62,17 @@ Cycle-exact emulation is not required.
 
 - BUG: Why does pressing F12 crash the application
 
+- Get rid of Machine.memorySizeBytes
+- Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block
 - Debugger
+  - Step Over (F10)
+    - Store temporary "step over" breakpoint on next instruction before stepping
+  - Step Out (Shift+F11)
+    - Step to next Return instruction?
   - Disassembly Window:
     - Fix up scolling (see ImGui hex editor code)
     - Use ImGuiListClipper (see ImGui hex editor code)
     - Add Autoscroll option
-  - Step Over (F10)
-    - Store temporary "step over" breakpoint on next instruction before stepping
-  - Step Out (Shift+F11)
   - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
