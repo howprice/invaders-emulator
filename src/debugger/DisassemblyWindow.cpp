@@ -144,9 +144,9 @@ void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& br
 	//         for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
-	for(int i = 0; i < m_lines.Size; i++)
+	for(int lineIndex = 0; lineIndex < m_lines.Size; lineIndex++)
 	{
-		const Line& line = m_lines[i];
+		const Line& line = m_lines[lineIndex];
 
 		bool pcAtLine = line.address == state8080.PC;
 		bool breakpointAtLine = false;
@@ -169,29 +169,12 @@ void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& br
 
 		ImGui::SameLine();
 		ImGui::TextUnformatted(line.text);
-	}
 
-	if(m_scrollToPC)
-	{
-		const unsigned int lineCount = (unsigned int)m_lines.size();
-		if(lineCount > 0)
+		if(pcAtLine && m_scrollToPC)
 		{
-			unsigned int pcLineNumber = 0;
-			for(unsigned int lineIndex = 0; lineIndex < lineCount; lineIndex++)
-			{
-				if(m_lines[lineIndex].address == state8080.PC)
-				{
-					pcLineNumber = lineIndex;
-					break;
-				}
-			}
-
-			// #TODO: Center on PC properly
-			float scrollY = (float)pcLineNumber/ (float)lineCount;
-			scrollY *= ImGui::GetScrollMaxY();
-			ImGui::SetScrollY(scrollY);
+			ImGui::SetScrollHereY();
+			m_scrollToPC = false;
 		}
-		m_scrollToPC = false;
 	}
 
 	ImGui::PopStyleVar();

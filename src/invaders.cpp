@@ -49,15 +49,14 @@ static GLuint s_vao = 0;
 
 static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
-CpuWindow s_cpuWindow;
-MachineWindow s_machineWindow;
-DebugWindow s_debugWindow;
+static CpuWindow s_cpuWindow;
+static MachineWindow s_machineWindow;
+static DebugWindow s_debugWindow;
+static DisassemblyWindow s_disassemblyWindow;
 
 static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;
-
-static DisassemblyWindow s_disassemblyWindow;
 
 static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
 static BreakpointsWindow s_breakpointsWindow;
@@ -569,7 +568,7 @@ int main(int argc, char** argv)
 
 		StepFrame(pMachine, s_verbose);
 
-//		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 		doDevUI(pMachine);
 
 		// Rendering
