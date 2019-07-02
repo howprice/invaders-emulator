@@ -1,15 +1,18 @@
 
-#include "imgui_disassembly_window.h"
-#include "imgui_breakpoints_window.h"
-#include "imgui_memory_editor.h"
-#include "Assert.h"
-#include "Helpers.h"
-#include "debugger.h"
+#include "debugger/MachineWindow.h"
+#include "debugger/CpuWindow.h"
+#include "debugger/DisassemblyWindow.h"
+#include "debugger/BreakpointsWindow.h"
+#include "debugger/imgui_memory_editor.h"
+#include "debugger/debugger.h"
+
 #include "machine.h"
 #include "8080.h"
+#include "Helpers.h"
+#include "Assert.h"
 
 #include "imgui/imgui.h"
-#include "imgui_internal.h"
+#include "imgui/imgui_internal.h"
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/imgui_impl_opengl3.h"
 
@@ -46,8 +49,8 @@ static GLuint s_vao = 0;
 
 static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
-static bool s_showCpuWindow = false;
-static bool s_showMachineWindow = false;
+CpuWindow s_cpuWindow;
+MachineWindow s_machineWindow;
 static bool s_showDebugWindow = false;
 
 static bool s_showMemoryEditor = false;
@@ -279,8 +282,16 @@ static void doMenuBar(Machine* pMachine)
 	}
 	if(ImGui::BeginMenu("Windows"))
 	{
-		ImGui::MenuItem("Machine", nullptr, &s_showMachineWindow);
-		ImGui::MenuItem("CPU", nullptr, &s_showCpuWindow);
+		bool visible;
+
+		visible = s_machineWindow.IsVisible();
+		if(ImGui::MenuItem("Machine", nullptr, &visible))
+			s_machineWindow.SetVisible(visible);
+
+		visible = s_cpuWindow.IsVisible();
+		if(ImGui::MenuItem("CPU", nullptr, &visible))
+			s_cpuWindow.SetVisible(visible);
+
 		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
 		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
 		ImGui::MenuItem("Breakpoints", nullptr, &s_showBreakpointsWindow);
@@ -290,85 +301,6 @@ static void doMenuBar(Machine* pMachine)
 	}
 
 	ImGui::EndMainMenuBar();
-}
-
-static void doCpuWindow(const State8080& state)
-{
-	if(!s_showCpuWindow)
-		return;
-
-	if(ImGui::Begin("CPU", &s_showCpuWindow))
-	{
-		ImGui::Text("Clock rate: %u", State8080::kClockRate);
-		ImGui::Text("A: %02X  Flags: %02X %c%c%c%c%c\n", 
-			state.A, state.flags,
-			state.flags.S ? 'S' : '-',
-			state.flags.Z ? 'Z' : '-',
-			state.flags.AC ? 'A' : '-',
-			state.flags.P ? 'P' : '-',
-			state.flags.C ? 'C' : '-');
-		ImGui::Text("B: %02X  C: %02X\n", state.B, state.C);
-		ImGui::Text("D: %02X  E: %02X\n", state.D, state.E);
-		ImGui::Text("H: %02X  L: %02X\n", state.H, state.L);
-		ImGui::Text("SP: %04X\n", state.SP);
-		ImGui::Text("PC: %04X\n", state.PC);
-		ImGui::Text("INTE: %u  HALT: %u\n", state.INTE, state.halt);
-	}
-
-	ImGui::End();
-}
-
-static void doMachineWindow(Machine* pMachine)
-{
-	if(!s_showMachineWindow)
-		return;
-
-	if(ImGui::Begin("Machine", &s_showMachineWindow))
-	{
-		ImGui::Checkbox("Running", &pMachine->running);
-
-		if(ImGui::Button("Reset"))
-			ResetMachine(pMachine);
-
-		ImGui::Text("Frame: %u", pMachine->frameCount);
-		ImGui::Text("Frame cycle count: %u", pMachine->frameCycleCount);
-		ImGui::Text("Scan line: %u", pMachine->scanLine);
-
-		ImGui::Text("Shift register value:  %04X", pMachine->shiftRegisterValue);
-		ImGui::Text("Shift register offset: ", pMachine->shiftRegisterOffset);
-
-		ImGui::Spacing();
-		ImGui::Text("DIP switches:");
-		// DIP Switches
-		static const char* dipSwitchNames[] =
-		{
-			"Lives bit 0",
-			"Lives bit 1",
-			"RAM/sound check",
-			"Bonus life score",
-			"?",
-			"?",
-			"?",
-			"Coin display"
-		};
-		static_assert(COUNTOF_ARRAY(dipSwitchNames) == 8, "Array size incorrect");
-
-		uint8_t& dipSwitchBits = pMachine->dipSwitchBits;
-		for(unsigned int i = 0; i < 8; i++)
-		{
-			bool val = ((dipSwitchBits >> i) & 1) == 1 ? true : false;
-			char label[32];
-			SDL_snprintf(label, sizeof(label), "%u %s", i + 1, dipSwitchNames[i]); // they seem to be numbered 1..8 by convention
-			if(ImGui::Checkbox(label, &val))
-			{
-				dipSwitchBits &= ~(1 << i); // clear bit
-				if(val)
-					dipSwitchBits |= (1 << i); // set bit
-			}
-		}
-	}
-
-	ImGui::End();
 }
 
 static void doDebugWindow(Machine* pMachine)
@@ -495,8 +427,8 @@ static void doDevUI(Machine* pMachine)
 		return;
 
 	doMenuBar(pMachine);
-	doCpuWindow(pMachine->cpu);
-	doMachineWindow(pMachine);
+	s_cpuWindow.Update(pMachine->cpu);
+	s_machineWindow.Update(*pMachine);
 	doDebugWindow(pMachine);
 	doDisassemblyWindow(pMachine);
 	doBreakpointsWindow(pMachine);

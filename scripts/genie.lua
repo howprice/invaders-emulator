@@ -14,7 +14,7 @@ solution "invaders-emulator"
 			"../src/Helpers.*"
 		}
 		includedirs {
-			"../src/**"
+			"../src"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
 		debugdir "../data"		-- debugger working directory
@@ -58,17 +58,14 @@ solution "invaders-emulator"
 			"../src/invaders.cpp",
 			"../src/8080.*",
 			"../src/machine.*",
-			"../src/debugger.*",
 			"../src/Assert.*",
 			"../src/Helpers.*",
-			"../src/imgui_memory_editor.h",
-			"../src/imgui_disassembly_window.*",
-			"../src/imgui_breakpoints_window.*",
 			"../src/imgui/**",
+			"../src/debugger/*",
 			"../3rdParty/gl3w/GL/**"
 		}
 		includedirs {
-			"../src/**",
+			"../src",
 			"../3rdparty/SDL2-2.0.9/include",
 			"../3rdparty/gl3w"
 		}
