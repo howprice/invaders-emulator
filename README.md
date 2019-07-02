@@ -79,6 +79,7 @@ Cycle-exact emulation is not required.
   - "Backtrace"? (Previously executed line(s))
   - Editable registers in CPU Window
   - Trap?
+- Allow registers to be modified in CPU Window
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
 - Save/restore state

@@ -128,7 +128,7 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 
 #include "machine.h"
 
-#include "debugger.h"
+//#include "debugger/debugger.h"
 #include "Assert.h"
 #include "Helpers.h"
 

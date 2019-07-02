@@ -17,6 +17,11 @@ struct Breakpoints
 	unsigned int breakpointCount = 0;
 };
 
+struct Debugger
+{
+
+};
+
 void Print8080State(const State8080& state);
 
 bool AddBreakpoint(Breakpoints& breakpoints, uint16_t address);

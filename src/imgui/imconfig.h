@@ -13,8 +13,10 @@
 
 #pragma once
 
+#include "Assert.h"
+
 //---- Define assertion handler. Defaults to calling assert().
-//#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
+#define IM_ASSERT(_EXPR)  HP_ASSERT(_EXPR)
 //#define IM_ASSERT(_EXPR)  ((void)(_EXPR))     // Disable asserts
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows 

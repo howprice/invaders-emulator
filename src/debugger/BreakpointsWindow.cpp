@@ -1,13 +1,13 @@
 
-#include "imgui_breakpoints_window.h"
+#include "BreakpointsWindow.h"
 
 #include "debugger.h"
 #include "machine.h"
 #include "Assert.h"
 #include "Helpers.h"
 
-#include "imgui.h"
-#include "imgui_internal.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 #include <stdlib.h>
 
