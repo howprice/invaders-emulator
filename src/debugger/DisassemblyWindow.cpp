@@ -115,6 +115,9 @@ void DisassemblyWindow::Refresh(const Machine& machine)
 
 void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& breakpoints)
 {
+	if(!m_visible)
+		return;
+
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
 	if(!ImGui::Begin("Disassembly", &m_visible))
 	{
