@@ -19,11 +19,13 @@
 #define ImSnprintf  snprintf
 #endif
 
-// returns true if breakpoint state changed
-void BreakpointsWindow::Draw(Breakpoints& breakpoints, bool* pOpen, const State8080& state8080)
+void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8080)
 {
+	if(!m_visible)
+		return;
+
 	ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin("Breakpoints", pOpen))
+	if(!ImGui::Begin("Breakpoints", &m_visible))
 	{
 		ImGui::End();
 		return;

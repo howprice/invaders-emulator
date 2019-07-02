@@ -60,7 +60,6 @@ static MemoryEditor s_memoryEditor;
 static DisassemblyWindow s_disassemblyWindow;
 
 static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
-static bool s_showBreakpointsWindow = false;
 static BreakpointsWindow s_breakpointsWindow;
 
 static void printUsage()
@@ -293,26 +292,16 @@ static void doMenuBar(Machine* pMachine)
 		if(ImGui::MenuItem("Disassembly", nullptr, &visible))
 			s_disassemblyWindow.SetVisible(visible);
 
-		ImGui::MenuItem("Breakpoints", nullptr, &s_showBreakpointsWindow);
+		visible = s_breakpointsWindow.IsVisible();
+		if(ImGui::MenuItem("Breakpoints", nullptr, &visible))
+			s_breakpointsWindow.SetVisible(visible);
+
 		ImGui::MenuItem("Memory", nullptr, &s_showMemoryEditor);
 
 		ImGui::EndMenu();
 	}
 
 	ImGui::EndMainMenuBar();
-}
-
-static void doBreakpointsWindow(Machine* pMachine)
-{
-	HP_ASSERT(pMachine);
-
-	if(!s_showBreakpointsWindow)
-		return;
-
-	if(ImGui::Begin("Breakpoints", &s_showBreakpointsWindow))
-		s_breakpointsWindow.Draw(s_breakpoints, &s_showBreakpointsWindow, pMachine->cpu);
-
-	ImGui::End();
 }
 
 static void doMemoryWindow(Machine* pMachine)
@@ -337,7 +326,7 @@ static void doDevUI(Machine* pMachine)
 	s_machineWindow.Update(*pMachine);
 	s_debugWindow.Update(*pMachine, s_verbose);
 	s_disassemblyWindow.Update(pMachine->cpu, s_breakpoints);
-	doBreakpointsWindow(pMachine);
+	s_breakpointsWindow.Update(s_breakpoints, pMachine->cpu);
 	doMemoryWindow(pMachine);
 }
 
