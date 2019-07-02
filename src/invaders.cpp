@@ -1,4 +1,5 @@
 
+#include "debugger/DebugWindow.h"
 #include "debugger/MachineWindow.h"
 #include "debugger/CpuWindow.h"
 #include "debugger/DisassemblyWindow.h"
@@ -36,7 +37,6 @@
 #include <string.h>
 
 static bool s_startDebugging = false;
-static bool s_stepFrame = false;
 static bool s_verbose = false;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
 static bool s_keyState[SDL_NUM_SCANCODES] = {};
@@ -51,13 +51,12 @@ static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
 CpuWindow s_cpuWindow;
 MachineWindow s_machineWindow;
-static bool s_showDebugWindow = false;
+DebugWindow s_debugWindow;
 
 static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;
 
-static bool s_showDisassemblyWindow = false;
 static DisassemblyWindow s_disassemblyWindow;
 
 static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
@@ -249,12 +248,6 @@ static void deleteOpenGLObjects()
 	s_texture = 0;
 }
 
-static void stepInto(Machine* pMachine)
-{
-	StepInstruction(pMachine, s_verbose);
-	s_disassemblyWindow.ScrollToPC();
-}
-
 static void doMenuBar(Machine* pMachine)
 {
 	if(!s_showMenuBar)
@@ -273,10 +266,10 @@ static void doMenuBar(Machine* pMachine)
 
 		ImGui::Separator();
 		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			s_stepFrame = true;
+			DebugStepFrame(*pMachine, s_verbose);
 
 		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			stepInto(pMachine);
+			StepInto(*pMachine, s_verbose);
 
 		ImGui::EndMenu();
 	}
@@ -292,8 +285,14 @@ static void doMenuBar(Machine* pMachine)
 		if(ImGui::MenuItem("CPU", nullptr, &visible))
 			s_cpuWindow.SetVisible(visible);
 
-		ImGui::MenuItem("Debug", nullptr, &s_showDebugWindow);
-		ImGui::MenuItem("Disassembly", nullptr, &s_showDisassemblyWindow);
+		visible = s_debugWindow.IsVisible();
+		if(ImGui::MenuItem("Debug", nullptr, &visible))
+			s_debugWindow.SetVisible(visible);
+
+		visible = s_disassemblyWindow.IsVisible();
+		if(ImGui::MenuItem("Disassembly", nullptr, &visible))
+			s_disassemblyWindow.SetVisible(visible);
+
 		ImGui::MenuItem("Breakpoints", nullptr, &s_showBreakpointsWindow);
 		ImGui::MenuItem("Memory", nullptr, &s_showMemoryEditor);
 
@@ -301,99 +300,6 @@ static void doMenuBar(Machine* pMachine)
 	}
 
 	ImGui::EndMainMenuBar();
-}
-
-static void doDebugWindow(Machine* pMachine)
-{
-	HP_ASSERT(pMachine);
-
-	if(!s_showDebugWindow)
-		return;
-
-	if(ImGui::Begin("Debug", &s_showDebugWindow))
-	{
-		// Continue (F5)
-		bool continueButtonEnabled = !pMachine->running;
-		if(!continueButtonEnabled)
-		{
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		}
-		if(ImGui::SmallButton("Continue") && continueButtonEnabled)
-			pMachine->running = true;
-		if(!continueButtonEnabled)
-		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
-		}
-
-		// Break (F5)
-		ImGui::SameLine();
-		bool breakButtonEnabled = pMachine->running;
-		if(!breakButtonEnabled)
-		{
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		}
-		if(ImGui::SmallButton("Break") && breakButtonEnabled)
-			pMachine->running = false;
-		if(!breakButtonEnabled)
-		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
-		}
-
-		// Step Into (F11)
-		ImGui::SameLine();
-		bool stepIntoButtonEnabled = !pMachine->running;
-		if(!stepIntoButtonEnabled)
-		{
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		}
-		if(ImGui::SmallButton("Step Into") && stepIntoButtonEnabled)
-		{
-			stepInto(pMachine);
-		}
-		if(!stepIntoButtonEnabled)
-		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
-		}
-
-		// Step Frame (F8)
-		ImGui::SameLine();
-		bool stepFrameButtonEnabled = !pMachine->running;
-		if(!stepFrameButtonEnabled)
-		{
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		}
-		if(ImGui::SmallButton("Step Frame") && stepFrameButtonEnabled)
-		{
-			s_stepFrame = true;
-		}
-		if(!stepFrameButtonEnabled)
-		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
-		}
-	}
-
-	ImGui::End();
-}
-
-static void doDisassemblyWindow(Machine* pMachine)
-{
-	HP_ASSERT(pMachine);
-
-	if(!s_showDisassemblyWindow)
-		return;
-
-	if(ImGui::Begin("Disassembly", &s_showDisassemblyWindow))
-		s_disassemblyWindow.Draw("Disassembly", &s_showDisassemblyWindow, pMachine->cpu, s_breakpoints);
-
-	ImGui::End();
 }
 
 static void doBreakpointsWindow(Machine* pMachine)
@@ -429,8 +335,8 @@ static void doDevUI(Machine* pMachine)
 	doMenuBar(pMachine);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
-	doDebugWindow(pMachine);
-	doDisassemblyWindow(pMachine);
+	s_debugWindow.Update(*pMachine, s_verbose);
+	s_disassemblyWindow.Update(pMachine->cpu, s_breakpoints);
 	doBreakpointsWindow(pMachine);
 	doMemoryWindow(pMachine);
 }
@@ -457,6 +363,9 @@ static void debugHook(Machine* pMachine)
 			break;
 		}
 	}
+
+	if(!pMachine->running)
+		s_disassemblyWindow.ScrollToPC();
 }
 
 static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
@@ -636,11 +545,11 @@ int main(int argc, char** argv)
 				else if(event.key.keysym.sym == SDLK_F5)
 					pMachine->running = !pMachine->running;
 				else if(event.key.keysym.sym == SDLK_F8)
-					s_stepFrame = true;
+					DebugStepFrame(*pMachine, s_verbose);
 				else if(event.key.keysym.sym == SDLK_F11)
 				{
 					if(!pMachine->running)
-						stepInto(pMachine);
+						StepInto(*pMachine, s_verbose);
 				}
 			}
 			else if(event.type == SDL_KEYUP)
@@ -669,16 +578,7 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pWindow);
 		ImGui::NewFrame();
 
-		if(s_stepFrame)
-			pMachine->running = true;
-
 		StepFrame(pMachine, s_verbose);
-
-		if(s_stepFrame)
-		{
-			pMachine->running = false;
-			s_stepFrame = false;
-		}
 
 //		ImGui::ShowDemoWindow();
 		doDevUI(pMachine);

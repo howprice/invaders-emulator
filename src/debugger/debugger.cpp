@@ -1,5 +1,6 @@
 #include "debugger.h"
 
+#include "machine.h"
 #include "8080.h"
 #include "Helpers.h"
 #include "Assert.h"
@@ -66,4 +67,17 @@ void DeleteBreakpoint(Breakpoints& breakpoints, unsigned int index)
 void ClearBreakpoints(Breakpoints& breakpoints)
 {
 	breakpoints.breakpointCount = 0;
+}
+
+void StepInto(Machine& machine, bool verbose)
+{
+	StepInstruction(&machine, verbose);
+}
+
+void DebugStepFrame(Machine& machine, bool verbose)
+{
+	HP_ASSERT(!machine.running);
+	machine.running = true;
+	StepFrame(&machine, verbose);
+	machine.running = false;
 }

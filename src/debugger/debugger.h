@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 struct State8080;
+struct Machine;
 
 struct Breakpoint
 {
@@ -23,6 +24,9 @@ struct Debugger
 };
 
 void Print8080State(const State8080& state);
+
+void StepInto(Machine& machine, bool verbose);
+void DebugStepFrame(Machine& machine, bool verbose);
 
 bool AddBreakpoint(Breakpoints& breakpoints, uint16_t address);
 void DeleteBreakpoint(Breakpoints& breakpoints, unsigned int index);
