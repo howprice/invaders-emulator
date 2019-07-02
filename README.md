@@ -69,17 +69,15 @@ Cycle-exact emulation is not required.
     - Store temporary "step over" breakpoint on next instruction before stepping
   - Step Out (Shift+F11)
     - Step to next Return instruction?
-  - Disassembly Window:
-    - Fix up scolling (see ImGui hex editor code)
-    - Use ImGuiListClipper (see ImGui hex editor code)
-    - Add Autoscroll option
   - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
   - "Backtrace"? (Previously executed line(s))
   - Editable registers in CPU Window
   - Trap?
-- Allow registers to be modified in CPU Window
+  - Disassembly Window:
+    - Use ImGuiListClipper (see ImGui hex editor code)
+    - Add Autoscroll option
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
 - Save/restore state
