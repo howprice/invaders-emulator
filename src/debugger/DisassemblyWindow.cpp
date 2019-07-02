@@ -113,10 +113,10 @@ void DisassemblyWindow::Refresh(const Machine& machine)
 	m_scrollToPC = true;
 }
 
-void DisassemblyWindow::Draw(const char* title, bool* p_open, const State8080& state8080, const Breakpoints& breakpoints)
+void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& breakpoints)
 {
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin(title, p_open))
+	if(!ImGui::Begin("Disassembly", &m_visible))
 	{
 		ImGui::End();
 		return;
