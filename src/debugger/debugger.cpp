@@ -38,6 +38,19 @@ void Print8080State(const State8080& state)
 #endif
 }
 
+void BreakMachine(Machine& machine, Breakpoints& breakpoints)
+{
+	HP_ASSERT(machine.running == true);
+	machine.running = false;
+	breakpoints.stepOverBreakpoint.active = false;
+}
+
+void ContinueMachine(Machine& machine)
+{
+	HP_ASSERT(machine.running == false);
+	machine.running = true;
+}
+
 bool AddBreakpoint(Breakpoints& breakpoints, uint16_t address)
 {
 	if(breakpoints.breakpointCount == COUNTOF_ARRAY(breakpoints.breakpoints))
@@ -71,7 +84,27 @@ void ClearBreakpoints(Breakpoints& breakpoints)
 
 void StepInto(Machine& machine, bool verbose)
 {
+	HP_ASSERT(machine.running == false);
 	StepInstruction(&machine, verbose);
+}
+
+void StepOver(Machine& machine, Breakpoints& breakpoints, bool verbose)
+{
+	HP_ASSERT(machine.running == false);
+
+	if(CurrentInstructionIsACall(machine.cpu))
+	{
+		// set a hidden breakpoint on the next instruction and set the machine running
+		HP_ASSERT(breakpoints.stepOverBreakpoint.active == false);
+		breakpoints.stepOverBreakpoint.active = true;
+		uint16_t nextInstructionAddress = GetNextInstructionAddress(machine.cpu);
+		breakpoints.stepOverBreakpoint.address = nextInstructionAddress;
+		ContinueMachine(machine);
+	}
+	else
+	{
+		StepInstruction(&machine, verbose);
+	}
 }
 
 void DebugStepFrame(Machine& machine, bool verbose)

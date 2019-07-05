@@ -257,10 +257,10 @@ static void doMenuBar(Machine* pMachine)
 	if(ImGui::BeginMenu("Debug"))
 	{
 		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!pMachine->running))
-			pMachine->running = true;
+			ContinueMachine(*pMachine);
 
 		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/pMachine->running))
-			pMachine->running = false;
+			BreakMachine(*pMachine, s_breakpoints);
 
 		ImGui::Separator();
 		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
@@ -268,6 +268,9 @@ static void doMenuBar(Machine* pMachine)
 
 		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
 			StepInto(*pMachine, s_verbose);
+
+		if(ImGui::MenuItem("Step Over", "F10", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
+			StepOver(*pMachine, s_breakpoints, s_verbose);
 
 		ImGui::EndMenu();
 	}
@@ -323,7 +326,7 @@ static void doDevUI(Machine* pMachine)
 	doMenuBar(pMachine);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
-	s_debugWindow.Update(*pMachine, s_verbose);
+	s_debugWindow.Update(*pMachine, s_breakpoints, s_verbose);
 	s_disassemblyWindow.Update(pMachine->cpu, s_breakpoints);
 	s_breakpointsWindow.Update(s_breakpoints, pMachine->cpu);
 	doMemoryWindow(pMachine);
@@ -345,11 +348,18 @@ static void debugHook(Machine* pMachine)
 	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
 	{
 		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
-		if(breakpoint.address == pMachine->cpu.PC && breakpoint.active)
+		if(breakpoint.active && breakpoint.address == pMachine->cpu.PC)
 		{
 			pMachine->running = false;
+			s_breakpoints.stepOverBreakpoint.active = false;
 			break;
 		}
+	}
+
+	if(s_breakpoints.stepOverBreakpoint.active && s_breakpoints.stepOverBreakpoint.address == pMachine->cpu.PC)
+	{
+		s_breakpoints.stepOverBreakpoint.active = false;
+		pMachine->running = false;
 	}
 
 	if(!pMachine->running)
@@ -534,6 +544,11 @@ int main(int argc, char** argv)
 					pMachine->running = !pMachine->running;
 				else if(event.key.keysym.sym == SDLK_F8)
 					DebugStepFrame(*pMachine, s_verbose);
+				else if(event.key.keysym.sym == SDLK_F10)
+				{
+					if(!pMachine->running)
+						StepOver(*pMachine, s_breakpoints, s_verbose);
+				}
 				else if(event.key.keysym.sym == SDLK_F11)
 				{
 					if(!pMachine->running)

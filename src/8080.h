@@ -75,4 +75,9 @@ void Generate8080Interrupt(State8080& state, unsigned int interruptNumber);
 // https://en.wikipedia.org/wiki/Intel_8080#Pin_use
 void Reset(State8080& state);
 
+// helper function
+uint16_t GetNextInstructionAddress(const State8080& state);
+
+bool CurrentInstructionIsACall(const State8080& state);
+
 #endif
