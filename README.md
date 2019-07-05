@@ -36,6 +36,7 @@ Not yet tested. May require minor fix-up.
 - Press Tab to show/hide dev UI.
 - F5 - Break / resume execution
 - F8 - Step Frame
+- F10 - Step Over
 - F11 - Step Into
 
 - Right click on Disassembly Window for context menu
@@ -63,10 +64,8 @@ Cycle-exact emulation is not required.
 - BUG: Why does pressing F12 crash the application
 
 - Get rid of Machine.memorySizeBytes
-- Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block
+- Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
 - Debugger
-  - Step Over (F10)
-    - Store temporary "step over" breakpoint on next instruction before stepping
   - Step Out (Shift+F11)
     - Step to next Return instruction?
   - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 

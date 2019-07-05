@@ -6,7 +6,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
-void DebugWindow::Update(Machine& machine, bool verbose)
+void DebugWindow::Update(Machine& machine, Breakpoints& breakpoints, bool verbose)
 {
 	if(!m_visible)
 		return;
@@ -18,70 +18,120 @@ void DebugWindow::Update(Machine& machine, bool verbose)
 	}
 
 	// Continue (F5)
-	bool continueButtonEnabled = !machine.running;
-	if(!continueButtonEnabled)
+	bool buttonEnabled = !machine.running;
+	if(!buttonEnabled)
 	{
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 	}
-	if(ImGui::SmallButton("Continue") && continueButtonEnabled)
-		machine.running = true;
-	if(!continueButtonEnabled)
+	if(ImGui::SmallButton("Continue") && buttonEnabled)
+		ContinueMachine(machine);
+	if(!buttonEnabled)
 	{
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Continue (F5)");
+		ImGui::EndTooltip();
 	}
 
 	// Break (F5)
 	ImGui::SameLine();
-	bool breakButtonEnabled = machine.running;
-	if(!breakButtonEnabled)
+	buttonEnabled = machine.running;
+	if(!buttonEnabled)
 	{
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 	}
-	if(ImGui::SmallButton("Break") && breakButtonEnabled)
-		machine.running = false;
-	if(!breakButtonEnabled)
+	if(ImGui::SmallButton("Break") && buttonEnabled)
+	{
+		BreakMachine(machine, breakpoints);
+	}
+	if(!buttonEnabled)
 	{
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Break (F5)");
+		ImGui::EndTooltip();
 	}
 
 	// Step Into (F11)
 	ImGui::SameLine();
-	bool stepIntoButtonEnabled = !machine.running;
-	if(!stepIntoButtonEnabled)
+	buttonEnabled = !machine.running;
+	if(!buttonEnabled)
 	{
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 	}
-	if(ImGui::SmallButton("Step Into") && stepIntoButtonEnabled)
+	if(ImGui::SmallButton("Step Into") && buttonEnabled)
 	{
 		StepInto(machine, verbose);
 	}
-	if(!stepIntoButtonEnabled)
+	if(!buttonEnabled)
 	{
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Step Into (F11)");
+		ImGui::EndTooltip();
+	}
+
+	// Step Over (F10)
+	ImGui::SameLine();
+	buttonEnabled = !machine.running;
+	if(!buttonEnabled)
+	{
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+	if(ImGui::SmallButton("Step Over") && buttonEnabled)
+	{
+		StepOver(machine, breakpoints, verbose);
+	}
+	if(!buttonEnabled)
+	{
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Step Over (F10)");
+		ImGui::EndTooltip();
 	}
 
 	// Step Frame (F8)
 	ImGui::SameLine();
-	bool stepFrameButtonEnabled = !machine.running;
-	if(!stepFrameButtonEnabled)
+	buttonEnabled = !machine.running;
+	if(!buttonEnabled)
 	{
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 	}
-	if(ImGui::SmallButton("Step Frame") && stepFrameButtonEnabled)
+	if(ImGui::SmallButton("Step Frame") && buttonEnabled)
 	{
 		DebugStepFrame(machine, verbose);
 	}
-	if(!stepFrameButtonEnabled)
+	if(!buttonEnabled)
 	{
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Step Frame (F8)");
+		ImGui::EndTooltip();
 	}
 
 	ImGui::End();

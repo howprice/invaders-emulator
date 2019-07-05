@@ -2888,3 +2888,37 @@ void Reset(State8080& state)
 	state.PC = 0;
 	state.halt = 0;
 }
+
+uint16_t GetNextInstructionAddress(const State8080& state)
+{
+	const uint8_t opcode = readByteFromMemory(state, state.PC);
+	const Instruction& instruction = s_instructions[opcode];
+	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
+	uint16_t nextInstructionAddress = state.PC + instruction.sizeBytes;
+	return nextInstructionAddress;
+}
+
+bool CurrentInstructionIsACall(const State8080& state)
+{
+	const uint8_t opcode = readByteFromMemory(state, state.PC);
+	if(opcode == 0xCD)
+		return true; // CALL
+	if(opcode == 0xDC)
+		return true; // CC
+	if(opcode == 0xD4)
+		return true; // CNC
+	if(opcode == 0xCC)
+		return true; // CZ
+	if(opcode == 0xC4)
+		return true; // CNZ
+	if(opcode == 0xFC)
+		return true; // CM
+	if(opcode == 0xF4)
+		return true; // CP
+	if(opcode == 0xEC)
+		return true; // CPE
+	if(opcode == 0xE4)
+		return true; // CPO
+	
+	return false;
+}
