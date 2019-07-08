@@ -61,24 +61,26 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Sounds
+  - http://www.brentradio.com/SpaceInvaders.htm
+
+- Save/restore state
 - Move debugHook into debugger class/file
 
 - Get rid of Machine.memorySizeBytes
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
-- Debugger
-  - Stack Window
-    - Store "stack base" when SP set with LXI SP,<address> instruction
-  - "Backtrace"? (Previously executed line(s))
-  - Editable registers in CPU Window
-  - Trap?
-  - Disassembly Window:
-    - Use ImGuiListClipper (see ImGui hex editor code)
-    - Add Autoscroll option
-  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
-- Sounds
-  - http://www.brentradio.com/SpaceInvaders.htm
-- Save/restore state
-- Load different ROMs
+
+- "Backtrace" Window? (Previously executed line(s))
+- Stack Window
+- Store "stack base" when SP set with LXI SP,<address> instruction
+- Editable registers in CPU Window
+- Watchpoints (break when memory read/written to)
+- Trap?
+- Disassembly Window:
+  - Use ImGuiListClipper (see ImGui hex editor code)
+  - Add Autoscroll option
+- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
+- Load different Midway 8080 Black & White compatible ROMs
   - List in mame\src\mame\drivers\mw8080bw.cpp
 - Cheats
   - How does MAME handle cheats?
