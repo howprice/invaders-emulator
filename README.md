@@ -61,8 +61,6 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- BUG: Why does pressing F12 crash the application
-
 - Get rid of Machine.memorySizeBytes
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
 - Debugger
