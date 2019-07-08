@@ -2720,7 +2720,7 @@ static const Instruction s_instructions[] =
 	/* 0xc5 */ { "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
 	/* 0xc6 */ { "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
 	/* 0xc7 */ { "RST 0",	1, nullptr }, //			CALL $0
-	/* 0xc8 */ { "RZ	1",	1, executeC8 }, // if Z, RET
+	/* 0xc8 */ { "RZ",	1, executeC8 }, // if Z, RET
 	/* 0xc9 */ { "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
 	/* 0xca */ { "JZ %04X", 3, executeCA }, // if Z, PC <- adr
 	/* 0xcb */ { "-", 1, nullptr }, //	
