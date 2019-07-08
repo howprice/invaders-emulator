@@ -18,6 +18,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 
 #include "SDL.h"
+#include "SDL_mixer.h"
 
 // About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually.
 // Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
@@ -449,6 +450,45 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	// SDL2_mixer
+	unsigned int sampleRate = 11025; // from 1.wav
+	Uint16 audioFormat = AUDIO_U8; // from 1.wav
+	if(Mix_OpenAudio(sampleRate, audioFormat, /*numChannels*/1, /*chunkSize*/512) < 0)
+	{
+		fprintf(stderr, "Failed to initialise SDL2_Mixer: %s\n", Mix_GetError());
+		return EXIT_FAILURE;
+	}
+
+	static const unsigned int kSampleCount = 19;
+	Mix_Chunk* pChunk[kSampleCount] = {};
+	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
+	{
+		char filename[64];
+		SDL_snprintf(filename, sizeof(filename), "%u.wav", sampleIndex);
+		pChunk[sampleIndex] = Mix_LoadWAV(filename);
+		if(pChunk[sampleIndex] == NULL)
+		{
+			fprintf(stderr, "Mix_LoadWAV failed: %s\n", Mix_GetError());
+			return EXIT_FAILURE;
+		}
+	}
+
+	static bool testAudio = true;
+	if(testAudio)
+	{
+		// TEST - play all samples in order
+		for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
+		{
+			int channel = Mix_PlayChannel(-1, pChunk[sampleIndex], 0);
+			if(channel == -1)
+			{
+				fprintf(stderr, "Mix_PlayChannel failed: %s\n", Mix_GetError());
+			}
+
+			while(Mix_Playing(channel) != 0);
+		}
+	}
+
 	// Decide GL+GLSL versions
 #if __APPLE__
 	// GL 3.2 Core + GLSL 150
@@ -645,6 +685,13 @@ int main(int argc, char** argv)
 	SDL_DestroyWindow(pWindow);
 	pWindow = nullptr;
 
+	// SDL2_mixer
+	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
+	{
+		Mix_FreeChunk(pChunk[sampleIndex]);
+		pChunk[sampleIndex] = nullptr;
+	}
+	Mix_CloseAudio();
 	SDL_Quit();
 
 	return 0;
