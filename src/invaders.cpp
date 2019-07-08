@@ -9,6 +9,7 @@
 
 #include "machine.h"
 #include "8080.h"
+#include "Audio.h"
 #include "Helpers.h"
 #include "Assert.h"
 
@@ -459,34 +460,10 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	static const unsigned int kSampleCount = 19;
-	Mix_Chunk* pChunk[kSampleCount] = {};
-	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
+	if(!InitAudio())
 	{
-		char filename[64];
-		SDL_snprintf(filename, sizeof(filename), "%u.wav", sampleIndex);
-		pChunk[sampleIndex] = Mix_LoadWAV(filename);
-		if(pChunk[sampleIndex] == NULL)
-		{
-			fprintf(stderr, "Mix_LoadWAV failed: %s\n", Mix_GetError());
-			return EXIT_FAILURE;
-		}
-	}
-
-	static bool testAudio = true;
-	if(testAudio)
-	{
-		// TEST - play all samples in order
-		for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
-		{
-			int channel = Mix_PlayChannel(-1, pChunk[sampleIndex], 0);
-			if(channel == -1)
-			{
-				fprintf(stderr, "Mix_PlayChannel failed: %s\n", Mix_GetError());
-			}
-
-			while(Mix_Playing(channel) != 0);
-		}
+		fprintf(stderr, "Failed to initialise audio\n");
+		return EXIT_FAILURE;
 	}
 
 	// Decide GL+GLSL versions
@@ -686,11 +663,7 @@ int main(int argc, char** argv)
 	pWindow = nullptr;
 
 	// SDL2_mixer
-	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
-	{
-		Mix_FreeChunk(pChunk[sampleIndex]);
-		pChunk[sampleIndex] = nullptr;
-	}
+	ShutdownAudio();
 	Mix_CloseAudio();
 	SDL_Quit();
 

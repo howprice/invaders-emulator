@@ -128,7 +128,7 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 
 #include "machine.h"
 
-//#include "debugger/debugger.h"
+#include "Audio.h"
 #include "Assert.h"
 #include "Helpers.h"
 
@@ -408,7 +408,13 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// bit 6 = NC (not wired)
 		// bit 7 = NC (not wired)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
-		 
+		
+		for(unsigned int i = 0; i <= 3; i++)
+		{
+			if(val & (1 << i))
+				PlaySample(i);
+		}
+
 		break;
 	case 4:
 	{
@@ -441,7 +447,14 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// bit 6 = NC (not wired)
 		// bit 7 = NC (not wired)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
+
+		for(unsigned int i = 0; i <= 4; i++)
+		{
+			if(val & (1 << i))
+				PlaySample(4 + i);
+		}
 		break;
+
 	case 6:
 		// #TODO: Is this the "Watchdog"? http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
 		break;
