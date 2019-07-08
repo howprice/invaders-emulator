@@ -398,7 +398,17 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		pMachine->shiftRegisterOffset = val;
 		break;
 	case 3:
-		// #TODO: Implement sound
+		// #TODO: Trigger samples
+		// bit 0 = UFO(repeats)        SX0 0.raw
+		// bit 1 = Shot                SX1 1.raw
+		// bit 2 = Flash (player die)  SX2 2.raw
+		// bit 3 = Invader die         SX3 3.raw
+		// bit 4 = Extended play       SX4
+		// bit 5 = AMP enable          SX5
+		// bit 6 = NC (not wired)
+		// bit 7 = NC (not wired)
+		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
+		 
 		break;
 	case 4:
 	{
@@ -416,12 +426,21 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html#DedicatedShiftHardware
 
 		pMachine->shiftRegisterValue = pMachine->shiftRegisterValue >> 8;
-		//		s_shiftRegisterValue &= 0x00ff; // redundant; the above shift will shift in zeros from the left
+//		s_shiftRegisterValue &= 0x00ff; // redundant; the above shift will shift in zeros from the left
 		pMachine->shiftRegisterValue |= (uint16_t)val << 8;
 		break;
 	}
 	case 5:
-		// #TODO: Implement sound
+		// #TODO: Trigger samples
+		// bit 0 = Fleet movement 1     SX6 4.raw
+		// bit 1 = Fleet movement 2     SX7 5.raw
+		// bit 2 = Fleet movement 3     SX8 6.raw
+		// bit 3 = Fleet movement 4     SX9 7.raw
+		// bit 4 = UFO Hit              SX10 8.raw
+		// bit 5 = NC (Cocktail mode control ... to flip screen)
+		// bit 6 = NC (not wired)
+		// bit 7 = NC (not wired)
+		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
 		break;
 	case 6:
 		// #TODO: Is this the "Watchdog"? http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
