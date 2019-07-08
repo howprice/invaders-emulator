@@ -63,7 +63,7 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Play sounds in machine Out instruction callback
+- Fix sound playback: only trigger when bit value *changes* http://emulator101.com/
 
 - Save/restore state
 - Move debugHook into debugger class/file

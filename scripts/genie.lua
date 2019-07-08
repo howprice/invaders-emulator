@@ -62,6 +62,7 @@ solution "invaders-emulator"
 			"../src/Helpers.*",
 			"../src/imgui/**",
 			"../src/debugger/*",
+			"../src/Audio/*",
 			"../3rdParty/gl3w/GL/**"
 		}
 		includedirs {
