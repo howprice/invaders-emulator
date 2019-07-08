@@ -12,29 +12,31 @@ struct Breakpoint
 	bool active;
 };
 
-struct Breakpoints
+struct Debugger
 {
 	Breakpoint breakpoints[64];
 	unsigned int breakpointCount = 0;
 
 	Breakpoint stepOverBreakpoint;
-};
 
-struct Debugger
-{
-
+	bool stepOutActive = false;
+	Breakpoint stepOutBreakpoint;
 };
 
 void Print8080State(const State8080& state);
 
-void BreakMachine(Machine& machine, Breakpoints& breakpoints);
+void BreakMachine(Machine& machine, Debugger& debugger);
 void ContinueMachine(Machine& machine);
 void StepInto(Machine& machine, bool verbose);
-void StepOver(Machine& machine, Breakpoints& breakpoints, bool verbose);
+void StepOver(Machine& machine, Debugger& debugger, bool verbose);
+void StepOut(Machine& machine, Debugger& debugger, bool verbose);
 void DebugStepFrame(Machine& machine, bool verbose);
 
-bool AddBreakpoint(Breakpoints& breakpoints, uint16_t address);
-void DeleteBreakpoint(Breakpoints& breakpoints, unsigned int index);
-void ClearBreakpoints(Breakpoints& breakpoints);
+bool AddBreakpoint(Debugger& debugger, uint16_t address);
+void DeleteBreakpoint(Debugger& debugger, unsigned int index);
+void ClearBreakpoints(Debugger& debugger);
+
+// helpers
+bool CurrentInstructionIsAReturnThatEvaluatesToTrue(const Machine& machine, uint16_t& returnAddress);
 
 #endif

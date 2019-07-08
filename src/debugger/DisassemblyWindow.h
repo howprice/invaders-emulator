@@ -7,7 +7,7 @@
 
 struct Machine;
 struct State8080;
-struct Breakpoints;
+struct Debugger;
 
 class DisassemblyWindow
 {
@@ -17,7 +17,7 @@ public:
 	~DisassemblyWindow();
 
 	void Refresh(const Machine& machine);
-	void Update(const Machine& machine, const Breakpoints& breakpoints);
+	void Update(const Machine& machine, const Debugger& debugger);
 
 	void ScrollToPC() { m_scrollToPC = true; }
 

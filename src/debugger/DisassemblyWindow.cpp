@@ -114,7 +114,7 @@ void DisassemblyWindow::Refresh(const Machine& machine)
 	}
 }
 
-void DisassemblyWindow::Update(const Machine& machine, const Breakpoints& breakpoints)
+void DisassemblyWindow::Update(const Machine& machine, const Debugger& debugger)
 {
 	if(!m_visible)
 		return;
@@ -158,9 +158,9 @@ void DisassemblyWindow::Update(const Machine& machine, const Breakpoints& breakp
 		bool pcAtLine = line.address == machine.cpu.PC;
 		bool breakpointAtLine = false;
 		bool breakpointActive = false;
-		for(unsigned int breakpointIndex = 0; breakpointIndex < breakpoints.breakpointCount; breakpointIndex++)
+		for(unsigned int breakpointIndex = 0; breakpointIndex < debugger.breakpointCount; breakpointIndex++)
 		{
-			const Breakpoint& breakpoint = breakpoints.breakpoints[breakpointIndex];
+			const Breakpoint& breakpoint = debugger.breakpoints[breakpointIndex];
 			if(breakpoint.address == line.address)
 			{
 				breakpointAtLine = true;

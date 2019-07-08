@@ -209,7 +209,7 @@ bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatal
 	return false;
 }
 
-uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail /*= false*/)
+uint8_t ReadByteFromMemory(const void* userdata, uint16_t address, bool fatalOnFail /*= false*/)
 {
 	HP_ASSERT(userdata);
 	Machine* pMachine = (Machine*)userdata;

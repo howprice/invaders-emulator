@@ -58,7 +58,7 @@ static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;
 
-static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
+static Debugger s_debugger; // #TODO: This may become DebuggerContext
 static BreakpointsWindow s_breakpointsWindow;
 
 static void printUsage()
@@ -260,7 +260,7 @@ static void doMenuBar(Machine* pMachine)
 			ContinueMachine(*pMachine);
 
 		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/pMachine->running))
-			BreakMachine(*pMachine, s_breakpoints);
+			BreakMachine(*pMachine, s_debugger);
 
 		ImGui::Separator();
 		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
@@ -270,7 +270,10 @@ static void doMenuBar(Machine* pMachine)
 			StepInto(*pMachine, s_verbose);
 
 		if(ImGui::MenuItem("Step Over", "F10", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			StepOver(*pMachine, s_breakpoints, s_verbose);
+			StepOver(*pMachine, s_debugger, s_verbose);
+
+		if(ImGui::MenuItem("Step Out", "Shift+F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
+			StepOut(*pMachine, s_debugger, s_verbose);
 
 		ImGui::EndMenu();
 	}
@@ -326,9 +329,9 @@ static void doDevUI(Machine* pMachine)
 	doMenuBar(pMachine);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
-	s_debugWindow.Update(*pMachine, s_breakpoints, s_verbose);
-	s_disassemblyWindow.Update(*pMachine, s_breakpoints);
-	s_breakpointsWindow.Update(s_breakpoints, pMachine->cpu);
+	s_debugWindow.Update(*pMachine, s_debugger, s_verbose);
+	s_disassemblyWindow.Update(*pMachine, s_debugger);
+	s_breakpointsWindow.Update(s_debugger, pMachine->cpu);
 	doMemoryWindow(pMachine);
 }
 
@@ -345,21 +348,38 @@ static void debugHook(Machine* pMachine)
 		// #TODO: Print scanline number
 	}
 
-	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
+	for(unsigned int breakpointIndex = 0; breakpointIndex < s_debugger.breakpointCount; breakpointIndex++)
 	{
-		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
+		const Breakpoint& breakpoint = s_debugger.breakpoints[breakpointIndex];
 		if(breakpoint.active && breakpoint.address == pMachine->cpu.PC)
 		{
-			pMachine->running = false;
-			s_breakpoints.stepOverBreakpoint.active = false;
+			BreakMachine(*pMachine, s_debugger);
 			break;
 		}
 	}
 
-	if(s_breakpoints.stepOverBreakpoint.active && s_breakpoints.stepOverBreakpoint.address == pMachine->cpu.PC)
+	if(s_debugger.stepOverBreakpoint.active && s_debugger.stepOverBreakpoint.address == pMachine->cpu.PC)
 	{
-		s_breakpoints.stepOverBreakpoint.active = false;
-		pMachine->running = false;
+		BreakMachine(*pMachine, s_debugger);
+	}
+
+	if(s_debugger.stepOutActive)
+	{
+		if(s_debugger.stepOutBreakpoint.active)
+		{
+			// we've just hit a return so expect to break on next instruction
+			HP_ASSERT(pMachine->cpu.PC == s_debugger.stepOutBreakpoint.address);
+			BreakMachine(*pMachine, s_debugger);
+		}
+		else
+		{ 
+			uint16_t returnAddress;
+			if(CurrentInstructionIsAReturnThatEvaluatesToTrue(*pMachine, returnAddress))
+			{
+				s_debugger.stepOutBreakpoint.address = returnAddress;
+				s_debugger.stepOutBreakpoint.active = true;
+			}
+		}
 	}
 
 	if(!pMachine->running)
@@ -501,7 +521,6 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-
 	pMachine->debugHook = debugHook;
 
 	createOpenGLObjects(displayWidth, displayHeight);
@@ -547,12 +566,22 @@ int main(int argc, char** argv)
 				else if(event.key.keysym.sym == SDLK_F10)
 				{
 					if(!pMachine->running)
-						StepOver(*pMachine, s_breakpoints, s_verbose);
+						StepOver(*pMachine, s_debugger, s_verbose);
 				}
 				else if(event.key.keysym.sym == SDLK_F11)
 				{
-					if(!pMachine->running)
-						StepInto(*pMachine, s_verbose);
+					SDL_Keymod keymod = SDL_GetModState();
+					bool shiftDown = (keymod & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+					if(shiftDown)
+					{
+						if(!pMachine->running)
+							StepOut(*pMachine, s_debugger, s_verbose);
+					}
+					else
+					{
+						if(!pMachine->running)
+							StepInto(*pMachine, s_verbose);
+					}
 				}
 			}
 			else if(event.type == SDL_KEYUP)

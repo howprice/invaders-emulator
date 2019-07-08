@@ -10,7 +10,7 @@ static const unsigned int kMaxInstructionSizeBytes = 3;
 
 // #TODO: What is the correct initial value of registers? Zero or garbage?
 
-typedef uint8_t(*ReadByteFromMemoryFuncPtr)(void* userdata, uint16_t address, bool fatalOnFail);
+typedef uint8_t(*ReadByteFromMemoryFuncPtr)(const void* userdata, uint16_t address, bool fatalOnFail);
 typedef bool(*WriteByteToMemoryFuncPtr)(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail);
 typedef uint8_t(*InFuncPtr)(uint8_t port, void* userdata);
 typedef void(*OutFuncPtr)(uint8_t port, uint8_t val, void* userdata);
