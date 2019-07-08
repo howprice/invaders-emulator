@@ -6,7 +6,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
-void DebugWindow::Update(Machine& machine, Breakpoints& breakpoints, bool verbose)
+void DebugWindow::Update(Machine& machine, Debugger& debugger, bool verbose)
 {
 	if(!m_visible)
 		return;
@@ -48,7 +48,7 @@ void DebugWindow::Update(Machine& machine, Breakpoints& breakpoints, bool verbos
 	}
 	if(ImGui::SmallButton("Break") && buttonEnabled)
 	{
-		BreakMachine(machine, breakpoints);
+		BreakMachine(machine, debugger);
 	}
 	if(!buttonEnabled)
 	{
@@ -96,7 +96,7 @@ void DebugWindow::Update(Machine& machine, Breakpoints& breakpoints, bool verbos
 	}
 	if(ImGui::SmallButton("Step Over") && buttonEnabled)
 	{
-		StepOver(machine, breakpoints, verbose);
+		StepOver(machine, debugger, verbose);
 	}
 	if(!buttonEnabled)
 	{
@@ -107,6 +107,30 @@ void DebugWindow::Update(Machine& machine, Breakpoints& breakpoints, bool verbos
 	{
 		ImGui::BeginTooltip();
 		ImGui::TextUnformatted("Step Over (F10)");
+		ImGui::EndTooltip();
+	}
+
+	// Step Out (Shift+F11)
+	ImGui::SameLine();
+	buttonEnabled = !machine.running;
+	if(!buttonEnabled)
+	{
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+	if(ImGui::SmallButton("Step Out ") && buttonEnabled)
+	{
+		StepOut(machine, debugger, verbose);
+	}
+	if(!buttonEnabled)
+	{
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
+	if(ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted("Step Out (Shift+F11)");
 		ImGui::EndTooltip();
 	}
 

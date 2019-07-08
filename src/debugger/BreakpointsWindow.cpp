@@ -19,7 +19,7 @@
 #define ImSnprintf  snprintf
 #endif
 
-void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8080)
+void BreakpointsWindow::Update(Debugger& debugger, const State8080& state8080)
 {
 	if(!m_visible)
 		return;
@@ -32,7 +32,7 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 	}
 
 	// New button
-	bool newButtonEnabled = breakpoints.breakpointCount < COUNTOF_ARRAY(breakpoints.breakpoints);
+	bool newButtonEnabled = debugger.breakpointCount < COUNTOF_ARRAY(debugger.breakpoints);
 	if(!newButtonEnabled)
 	{
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -41,10 +41,10 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 	if(ImGui::SmallButton("New"))
 	{
 		uint16_t address = state8080.PC;
-		if(AddBreakpoint(breakpoints, address))
+		if(AddBreakpoint(debugger, address))
 		{
-			HP_ASSERT(breakpoints.breakpointCount > 0);
-			m_selectedBreakpointIndex = (int)breakpoints.breakpointCount - 1;
+			HP_ASSERT(debugger.breakpointCount > 0);
+			m_selectedBreakpointIndex = (int)debugger.breakpointCount - 1;
 		}
 	}
 	if(!newButtonEnabled)
@@ -63,8 +63,8 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 	ImGui::SameLine();
 	if(ImGui::SmallButton("Delete"))
 	{
-		HP_ASSERT(m_selectedBreakpointIndex >= 0 && m_selectedBreakpointIndex < (int)breakpoints.breakpointCount);
-		DeleteBreakpoint(breakpoints, (unsigned int)m_selectedBreakpointIndex);
+		HP_ASSERT(m_selectedBreakpointIndex >= 0 && m_selectedBreakpointIndex < (int)debugger.breakpointCount);
+		DeleteBreakpoint(debugger, (unsigned int)m_selectedBreakpointIndex);
 		m_selectedBreakpointIndex = -1;
 	}
 	if(!deleteButtonEnabled)
@@ -77,7 +77,7 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 	ImGui::SameLine();
 	if(ImGui::SmallButton("Delete All"))
 	{
-		ClearBreakpoints(breakpoints);
+		ClearBreakpoints(debugger);
 		m_selectedBreakpointIndex = -1;
 	}
 
@@ -89,8 +89,8 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 		size_t address;
 		if(sscanf(m_addressInputbuffer, "%" _PRISizeT "X", &address) == 1 && address < UINT16_MAX)
 		{
-			HP_ASSERT(m_selectedBreakpointIndex >= 0 && m_selectedBreakpointIndex < (int)breakpoints.breakpointCount);
-			Breakpoint& breakpoint = breakpoints.breakpoints[m_selectedBreakpointIndex];
+			HP_ASSERT(m_selectedBreakpointIndex >= 0 && m_selectedBreakpointIndex < (int)debugger.breakpointCount);
+			Breakpoint& breakpoint = debugger.breakpoints[m_selectedBreakpointIndex];
 			breakpoint.address = (uint16_t)address;
 		}
 		m_addressInputbuffer[0] = '\0';
@@ -102,9 +102,9 @@ void BreakpointsWindow::Update(Breakpoints& breakpoints, const State8080& state8
 	ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
-	for(unsigned int breakpointIndex = 0; breakpointIndex < breakpoints.breakpointCount; breakpointIndex++)
+	for(unsigned int breakpointIndex = 0; breakpointIndex < debugger.breakpointCount; breakpointIndex++)
 	{
-		Breakpoint& breakpoint = breakpoints.breakpoints[breakpointIndex];
+		Breakpoint& breakpoint = debugger.breakpoints[breakpointIndex];
 		ImGui::PushID(breakpointIndex);
 
 		bool isSelectedBreakpoint = m_selectedBreakpointIndex == (int)breakpointIndex;

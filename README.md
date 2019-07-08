@@ -61,12 +61,11 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Move debugHook into debugger class/file
+
 - Get rid of Machine.memorySizeBytes
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
 - Debugger
-  - Step Out (Shift+F11)
-    - Step to next Return instruction?
-  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
   - Stack Window
     - Store "stack base" when SP set with LXI SP,<address> instruction
   - "Backtrace"? (Previously executed line(s))
@@ -75,6 +74,7 @@ Cycle-exact emulation is not required.
   - Disassembly Window:
     - Use ImGuiListClipper (see ImGui hex editor code)
     - Add Autoscroll option
+  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
 - Sounds
   - http://www.brentradio.com/SpaceInvaders.htm
 - Save/restore state
