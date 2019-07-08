@@ -90,16 +90,49 @@ void StepInto(Machine& machine, bool verbose)
 	StepInstruction(&machine, verbose);
 }
 
+static uint16_t GetNextInstructionAddress(const Machine& machine)
+{
+	const uint8_t opcode = ReadByteFromMemory((void*)&machine, machine.cpu.PC, /*fatalOnFail*/true);
+	unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
+	uint16_t nextInstructionAddress = machine.cpu.PC + (uint16_t)instructionSizeBytes;
+	return nextInstructionAddress;
+}
+
+static bool CurrentInstructionIsACall(const Machine& machine)
+{
+	const uint8_t opcode = ReadByteFromMemory((void*)&machine, machine.cpu.PC, /*fatalOnFail*/true);
+	if(opcode == 0xCD)
+		return true; // CALL
+	if(opcode == 0xDC)
+		return true; // CC
+	if(opcode == 0xD4)
+		return true; // CNC
+	if(opcode == 0xCC)
+		return true; // CZ
+	if(opcode == 0xC4)
+		return true; // CNZ
+	if(opcode == 0xFC)
+		return true; // CM
+	if(opcode == 0xF4)
+		return true; // CP
+	if(opcode == 0xEC)
+		return true; // CPE
+	if(opcode == 0xE4)
+		return true; // CPO
+
+	return false;
+}
+
 void StepOver(Machine& machine, Debugger& debugger, bool verbose)
 {
 	HP_ASSERT(machine.running == false);
 
-	if(CurrentInstructionIsACall(machine.cpu))
+	if(CurrentInstructionIsACall(machine))
 	{
 		// set a hidden breakpoint on the next instruction and set the machine running
 		HP_ASSERT(debugger.stepOverBreakpoint.active == false);
 		debugger.stepOverBreakpoint.active = true;
-		uint16_t nextInstructionAddress = GetNextInstructionAddress(machine.cpu);
+		uint16_t nextInstructionAddress = GetNextInstructionAddress(machine);
 		debugger.stepOverBreakpoint.address = nextInstructionAddress;
 		ContinueMachine(machine);
 	}
