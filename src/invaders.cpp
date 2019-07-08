@@ -327,7 +327,7 @@ static void doDevUI(Machine* pMachine)
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
 	s_debugWindow.Update(*pMachine, s_breakpoints, s_verbose);
-	s_disassemblyWindow.Update(pMachine->cpu, s_breakpoints);
+	s_disassemblyWindow.Update(*pMachine, s_breakpoints);
 	s_breakpointsWindow.Update(s_breakpoints, pMachine->cpu);
 	doMemoryWindow(pMachine);
 }
