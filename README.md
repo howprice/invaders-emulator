@@ -12,6 +12,8 @@ This project depends on [SDL2](https://www.libsdl.org). The [SDL2 Development li
 
 Unzipped invaders ROMs should be placed the 'data' folder.
 
+Unzip samples 0.wav .. 18.wav from http://samples.mameworld.info/ into the 'data' folder
+
 ## Building
 
 This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform.
@@ -61,8 +63,7 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Sounds
-  - http://www.brentradio.com/SpaceInvaders.htm
+- Play sounds in machine Out instruction callback
 
 - Save/restore state
 - Move debugHook into debugger class/file
