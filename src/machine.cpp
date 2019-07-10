@@ -399,7 +399,7 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		break;
 	case 3:
 		// #TODO: Trigger samples
-		// bit 0 = UFO(repeats)        SX0 0.raw
+		// bit 0 = UFO (repeats)       SX0 0.raw
 		// bit 1 = Shot                SX1 1.raw
 		// bit 2 = Flash (player die)  SX2 2.raw
 		// bit 3 = Invader die         SX3 3.raw
@@ -411,12 +411,11 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		
 		if((val & (1<<0)) && !(pMachine->prevOut3 & (1<<0)))
 		{
-			// #TODO: Start UFO sound looping
 			PlaySample(0);
 		}
 		else if(!(val & (1<<0)) && (pMachine->prevOut3 & (1<<0)))
 		{
-			// #TODO: Stop UFO sound
+			StopSample(0);
 		}
 
 		if((val & (1<<1)) && !(pMachine->prevOut3 & (1<<1)))

@@ -63,8 +63,7 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Looping UFO sound
-- BUG: Score glitches when goes past 90. Probably a bug in 8080 BCD instructions
+- BUG: Score glitches when goes into 3 decimal digits. Probably a bug in 8080 BCD instructions.
 - Save/restore state
 - Move debugHook into debugger class/file
 - Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
