@@ -9,7 +9,7 @@ void CpuWindow::Update(State8080& state)
 	if(!m_visible)
 		return;
 
-	if(ImGui::Begin("CPU", &m_visible))
+	if(ImGui::Begin("CPU", &m_visible, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("Clock rate: %u", State8080::kClockRate);
 	
