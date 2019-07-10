@@ -29,6 +29,9 @@ struct Machine
 
 	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
 
+	uint16_t prevOut3 = 0; // #TODO: Move into Audio?
+	uint16_t prevOut5 = 0; // #TODO: Move into Audio?
+
 	// Input
 	// #TODO: Factor these out of this struct
 	bool coinInserted;

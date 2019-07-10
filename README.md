@@ -63,14 +63,12 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Fix sound playback: only trigger when bit value *changes* http://emulator101.com/
-
+- Looping UFO sound
+- BUG: Score glitches when goes past 90. Probably a bug in 8080 BCD instructions
 - Save/restore state
 - Move debugHook into debugger class/file
-
-- Get rid of Machine.memorySizeBytes
+- Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
-
 - "Backtrace" Window? (Previously executed line(s))
 - Stack Window
 - Store "stack base" when SP set with LXI SP,<address> instruction

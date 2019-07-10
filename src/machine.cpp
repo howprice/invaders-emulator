@@ -409,12 +409,46 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// bit 7 = NC (not wired)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
 		
-		for(unsigned int i = 0; i <= 3; i++)
+		if((val & (1<<0)) && !(pMachine->prevOut3 & (1<<0)))
 		{
-			if(val & (1 << i))
-				PlaySample(i);
+			// #TODO: Start UFO sound looping
+			PlaySample(0);
+		}
+		else if(!(val & (1<<0)) && (pMachine->prevOut3 & (1<<0)))
+		{
+			// #TODO: Stop UFO sound
 		}
 
+		if((val & (1<<1)) && !(pMachine->prevOut3 & (1<<1)))
+			PlaySample(1); // Shot
+
+		if((val & (1<<2)) && !(pMachine->prevOut3 & (1<<2)))
+			PlaySample(2); // Flash (player die)
+
+		if((val & (1<<3)) && !(pMachine->prevOut3 & (1<<3)))
+			PlaySample(3); // Invader die
+
+		if((val & (1<<4)) && !(pMachine->prevOut3 & (1<<4)))
+		{
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 3 bit 4 Extended play SX4 not implemented\n");
+				first = false;
+			}
+		}
+
+		if((val & (1<<5)) && !(pMachine->prevOut3 & (1<<5)))
+		{
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 3 bit 5 AMP enable SX5 not implemented\n");
+				first = false;
+			}
+		}
+
+		pMachine->prevOut3 = val;
 		break;
 	case 4:
 	{
@@ -448,11 +482,32 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// bit 7 = NC (not wired)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
 
-		for(unsigned int i = 0; i <= 4; i++)
+		if((val & (1<<0)) && !(pMachine->prevOut5 & (1<<0)))
+			PlaySample(4); // Fleet movement 1
+
+		if((val & (1<<1)) && !(pMachine->prevOut5 & (1<<1)))
+			PlaySample(5); // Fleet movement 2
+
+		if((val & (1<<2)) && !(pMachine->prevOut5 & (1<<2)))
+			PlaySample(6); // Fleet movement 3
+
+		if((val & (1<<3)) && !(pMachine->prevOut5 & (1<<3)))
+			PlaySample(7); // Fleet movement 4
+
+		if((val & (1<<4)) && !(pMachine->prevOut5 & (1<<4)))
+			PlaySample(8); // UFO Hit
+
+		if((val & (1<<5)) && !(pMachine->prevOut5 & (1<<5)))
 		{
-			if(val & (1 << i))
-				PlaySample(4 + i);
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 5 bit 5 (Cocktail mode control ... to flip screen) not implemented\n");
+				first = false;
+			}
 		}
+
+		pMachine->prevOut5 = val;
 		break;
 
 	case 6:
@@ -461,6 +516,7 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 	default:
 		HP_FATAL_ERROR("Unexpected OUT port: %u", port);
 	}
+
 }
 
 //------------------------------------------------------------------------------
