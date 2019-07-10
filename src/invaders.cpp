@@ -314,7 +314,7 @@ static void doMenuBar(Machine* pMachine)
 	
 	if(ImGui::BeginMenu("Machine"))
 	{
-		if(ImGui::MenuItem("Reset"))
+		if(ImGui::MenuItem("Reset", "F3"))
 			ResetMachine(pMachine);
 
 		if(ImGui::MenuItem("Restore State", "F7", /*pSelected*/nullptr, /*enabled*/s_stateSaved))
@@ -655,6 +655,8 @@ int main(int argc, char** argv)
 					pMachine->tilt = true;
 				else if(event.key.keysym.sym == SDLK_TAB)
 					s_showDevUI = !s_showDevUI;
+				else if(event.key.keysym.sym == SDLK_F3)
+					ResetMachine(pMachine);
 				else if(event.key.keysym.sym == SDLK_F5)
 					pMachine->running = !pMachine->running;
 				else if(event.key.keysym.sym == SDLK_F7)
