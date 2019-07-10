@@ -717,7 +717,7 @@ static unsigned int execute2A(State8080& state)
 //------------------------------------------------------------------------------
 // 0x27  DAA
 //
-// Decimal Adiust Accumulator
+// Decimal Adjust Accumulator
 //
 // The eight-bit hexadecimal number in the accumulator is adjusted to form two
 // four-bit binary-coded-decimal (BCD) digits by the following process:
@@ -753,13 +753,13 @@ static unsigned int execute27(State8080& state)
 
 		// now add 6 to the actual result
 		result16 += 6;
+	}
 
-		uint8_t upperNibble = (result16 & 0xf0) >> 4;
-		if(upperNibble > 9 || state.flags.C == 1)
-		{
-			result16 += 0x60;
-			setC = (result16 > 0xff);
-		}
+	uint8_t upperNibble = (result16 & 0xf0) >> 4;
+	if(upperNibble > 9 || state.flags.C == 1)
+	{
+		result16 += 0x60;
+		setC = (result16 > 0xff);
 	}
 
 	state.flags.AC = setAC ? 1 : 0;
