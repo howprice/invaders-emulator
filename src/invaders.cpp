@@ -248,6 +248,62 @@ static void deleteOpenGLObjects()
 	s_texture = 0;
 }
 
+//------------------------------------------------------------------------------
+
+static Machine* s_pSavedMachine = nullptr;
+static bool s_stateSaved = false;
+
+static void restoreMachineState(Machine& machine)
+{
+	HP_ASSERT(s_stateSaved);
+	HP_ASSERT(s_pSavedMachine);
+
+	machine.running = s_pSavedMachine->running;
+	machine.cpu = s_pSavedMachine->cpu;
+
+	// restore memory
+	// #TODO: Only restore RAM
+	SDL_memcpy(machine.pMemory, s_pSavedMachine->pMemory, machine.memorySizeBytes);
+
+	machine.frameCount = s_pSavedMachine->frameCount;
+	machine.frameCycleCount = s_pSavedMachine->frameCycleCount;
+	machine.scanLine = s_pSavedMachine->scanLine;
+
+	machine.shiftRegisterValue = s_pSavedMachine->shiftRegisterValue;
+	machine.shiftRegisterOffset = s_pSavedMachine->shiftRegisterOffset;
+
+	machine.prevOut3 = s_pSavedMachine->prevOut3;
+	machine.prevOut5 = s_pSavedMachine->prevOut3;
+
+	machine.dipSwitchBits = s_pSavedMachine->dipSwitchBits;
+}
+
+static void saveMachineState(const Machine& machine)
+{
+	s_pSavedMachine->running = machine.running;
+	s_pSavedMachine->cpu = machine.cpu;
+
+	// save memory
+	// #TODO: Only save RAM
+	SDL_memcpy(s_pSavedMachine->pMemory, machine.pMemory, machine.memorySizeBytes);
+
+	s_pSavedMachine->frameCount = machine.frameCount;
+	s_pSavedMachine->frameCycleCount = machine.frameCycleCount;
+	s_pSavedMachine->scanLine = machine.scanLine;
+
+	s_pSavedMachine->shiftRegisterValue = machine.shiftRegisterValue;
+	s_pSavedMachine->shiftRegisterOffset = machine.shiftRegisterOffset;
+
+	s_pSavedMachine->prevOut3 = machine.prevOut3;
+	s_pSavedMachine->prevOut5 = machine.prevOut3;
+
+	s_pSavedMachine->dipSwitchBits = machine.dipSwitchBits;
+	
+	s_stateSaved = true;
+}
+
+//------------------------------------------------------------------------------
+
 static void doMenuBar(Machine* pMachine)
 {
 	if(!s_showMenuBar)
@@ -255,7 +311,21 @@ static void doMenuBar(Machine* pMachine)
 
 	if(ImGui::BeginMainMenuBar() == false)
 		return;
-	 
+	
+	if(ImGui::BeginMenu("Machine"))
+	{
+		if(ImGui::MenuItem("Reset"))
+			ResetMachine(pMachine);
+
+		if(ImGui::MenuItem("Restore State", "F7", /*pSelected*/nullptr, /*enabled*/s_stateSaved))
+			restoreMachineState(*pMachine);
+
+		if(ImGui::MenuItem("Save State", "Shift+F7"))
+			saveMachineState(*pMachine);
+
+		ImGui::EndMenu();
+	}
+
 	if(ImGui::BeginMenu("Debug"))
 	{
 		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!pMachine->running))
@@ -540,6 +610,12 @@ int main(int argc, char** argv)
 
 	pMachine->debugHook = debugHook;
 
+	if(!CreateMachine(&s_pSavedMachine))
+	{
+		fprintf(stderr, "Failed to create save state\n");
+		return EXIT_FAILURE;
+	}
+
 	createOpenGLObjects(displayWidth, displayHeight);
 
 	s_disassemblyWindow.Refresh(*pMachine);
@@ -561,6 +637,9 @@ int main(int argc, char** argv)
 			}
 			else if(event.type == SDL_KEYDOWN)
 			{
+				SDL_Keymod keymod = SDL_GetModState();
+				const bool shiftDown = (keymod & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+
 				if(event.key.repeat == 0)
 					s_keyState[event.key.keysym.scancode] = true;
 
@@ -578,6 +657,13 @@ int main(int argc, char** argv)
 					s_showDevUI = !s_showDevUI;
 				else if(event.key.keysym.sym == SDLK_F5)
 					pMachine->running = !pMachine->running;
+				else if(event.key.keysym.sym == SDLK_F7)
+				{
+					if(shiftDown)
+						saveMachineState(*pMachine);
+					else if(s_stateSaved)
+						restoreMachineState(*pMachine);
+				}
 				else if(event.key.keysym.sym == SDLK_F8)
 					DebugStepFrame(*pMachine, s_verbose);
 				else if(event.key.keysym.sym == SDLK_F10)
@@ -587,8 +673,6 @@ int main(int argc, char** argv)
 				}
 				else if(event.key.keysym.sym == SDLK_F11)
 				{
-					SDL_Keymod keymod = SDL_GetModState();
-					bool shiftDown = (keymod & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
 					if(shiftDown)
 					{
 						if(!pMachine->running)
@@ -652,6 +736,9 @@ int main(int argc, char** argv)
 
 	DestroyMachine(pMachine);
 	pMachine = nullptr;
+
+	DestroyMachine(s_pSavedMachine);
+	s_pSavedMachine = nullptr;
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();

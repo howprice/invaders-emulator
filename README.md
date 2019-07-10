@@ -63,7 +63,6 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Save/restore state
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file
 - Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
