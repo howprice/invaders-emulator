@@ -47,6 +47,9 @@ static GLuint s_vertexShader = 0;
 static GLuint s_fragmentShader = 0;
 static GLuint s_program = 0;
 static GLuint s_texture = 0;
+static GLuint s_pointSampler = 0;
+static GLuint s_bilinearSampler = 0;
+static GLuint s_selectedSampler = 0;
 static GLuint s_vao = 0;
 
 static bool s_showDevUI = false;
@@ -140,7 +143,8 @@ static const char s_vertexShaderSource[] =
 
 static const char s_fragmentShaderSource[] =
 	"#version 420\n"
-	"uniform sampler2D diffuseSampler;\n"
+//	"uniform sampler2D sampler0;\n"
+	"layout(binding = 0) uniform sampler2D sampler0;\n"
 	"\n"
 	"// n.b. This name \"block\" needs to match that of the VS output!\n"
 	"// n.b. \"input\" is a reserved word\n"
@@ -153,7 +157,7 @@ static const char s_fragmentShaderSource[] =
 	"\n"
 	"void main()\n"
 	"{\n"
-	"	float r = texture2D(diffuseSampler, In.texCoord).r; // 1 channel texture\n"
+	"	float r = texture2D(sampler0, In.texCoord).r; // 1 channel texture\n"
 	"	oColor0 = vec4(r,r,r,1);\n"
 	"}\n";
 
@@ -228,6 +232,18 @@ static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureH
 	glBindTexture(GL_TEXTURE_2D, s_texture);
 
 	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, textureWidth, textureHeight);
+
+	glGenSamplers(1, &s_pointSampler);
+	glBindSampler(0, s_pointSampler);
+	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glGenSamplers(1, &s_bilinearSampler);
+	glBindSampler(1, s_bilinearSampler);
+	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	s_selectedSampler = s_bilinearSampler;
 }
 
 static void deleteOpenGLObjects()
@@ -246,6 +262,12 @@ static void deleteOpenGLObjects()
 
 	glDeleteTextures(1, &s_texture);
 	s_texture = 0;
+
+	glDeleteSamplers(1, &s_pointSampler);
+	s_pointSampler = 0;
+
+	glDeleteSamplers(1, &s_bilinearSampler);
+	s_bilinearSampler = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -322,6 +344,15 @@ static void doMenuBar(Machine* pMachine)
 
 		if(ImGui::MenuItem("Save State", "Shift+F7"))
 			saveMachineState(*pMachine);
+
+		ImGui::EndMenu();
+	}
+
+	if(ImGui::BeginMenu("Display"))
+	{
+		bool bilinearSampling = s_selectedSampler == s_bilinearSampler;
+		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
+			s_selectedSampler = bilinearSampling ? s_bilinearSampler : s_pointSampler;
 
 		ImGui::EndMenu();
 	}
@@ -508,6 +539,7 @@ static void drawTexture()
 	glBindVertexArray(s_vao);
 	glUseProgram(s_program);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glBindSampler(0, s_selectedSampler);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

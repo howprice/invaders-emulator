@@ -63,13 +63,14 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file
 - Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
-- "Backtrace" Window? (Previously executed line(s))
+- "Backtrace" Window (Previously executed line(s))
 - Stack Window
-- Store "stack base" when SP set with LXI SP,<address> instruction
+  - Store "stack base" when SP set with LXI SP,<address> instruction
 - Editable registers in CPU Window
 - Trap?
 - Disassembly Window:
@@ -82,8 +83,6 @@ Cycle-exact emulation is not required.
   - How does MAME handle cheats?
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
-- Use point sampler in shader
 - Headless mode (command line arg)
 - Test on Linux/Mac
 - What is the purpose of the RAM mirror? (It *is* used)
-- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
