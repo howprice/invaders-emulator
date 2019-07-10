@@ -63,8 +63,8 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- BUG: Score glitches when goes into 3 decimal digits. Probably a bug in 8080 BCD instructions.
 - Save/restore state
+- Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file
 - Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
@@ -72,7 +72,6 @@ Cycle-exact emulation is not required.
 - Stack Window
 - Store "stack base" when SP set with LXI SP,<address> instruction
 - Editable registers in CPU Window
-- Watchpoints (break when memory read/written to)
 - Trap?
 - Disassembly Window:
   - Use ImGuiListClipper (see ImGui hex editor code)
