@@ -63,6 +63,8 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Test on Linux
+- Test on Mac
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file
@@ -84,5 +86,4 @@ Cycle-exact emulation is not required.
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Headless mode (command line arg)
-- Test on Linux/Mac
 - What is the purpose of the RAM mirror? (It *is* used)
