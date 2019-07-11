@@ -9,6 +9,7 @@
 
 #include "machine.h"
 #include "8080.h"
+#include "Input.h"
 #include "Audio.h"
 #include "Helpers.h"
 #include "Assert.h"
@@ -41,7 +42,6 @@
 static bool s_startDebugging = false;
 static bool s_verbose = false;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
-static bool s_keyState[SDL_NUM_SCANCODES] = {};
 
 static GLuint s_vertexShader = 0;
 static GLuint s_fragmentShader = 0;
@@ -426,6 +426,43 @@ static void doMemoryWindow(Machine* pMachine)
 
 static void doDevUI(Machine* pMachine)
 {
+	const bool shiftDown = Input::GetKeyState(SDL_SCANCODE_LSHIFT) || Input::GetKeyState(SDL_SCANCODE_RSHIFT);
+
+	if(Input::IsKeyDownThisFrame(SDL_SCANCODE_TAB))
+		s_showDevUI = !s_showDevUI;
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F3))
+		ResetMachine(pMachine);
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F5))
+		pMachine->running = !pMachine->running;
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F7))
+	{
+		if(shiftDown)
+			saveMachineState(*pMachine);
+		else if(s_stateSaved)
+			restoreMachineState(*pMachine);
+	}
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F8))
+		DebugStepFrame(*pMachine, s_verbose);
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F10))
+	{
+		if(!pMachine->running)
+			StepOver(*pMachine, s_debugger, s_verbose);
+	}
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F11))
+	{
+		if(shiftDown)
+		{
+			if(!pMachine->running)
+				StepOut(*pMachine, s_debugger, s_verbose);
+		}
+		else
+		{
+			if(!pMachine->running)
+				StepInto(*pMachine, s_verbose);
+		}
+	}
+
+
 	if(!s_showDevUI)
 		return;
 
@@ -553,6 +590,8 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	Input::Init();
+
 	// SDL2_mixer
 	unsigned int sampleRate = 11025; // from 1.wav
 	Uint16 audioFormat = AUDIO_U8; // from 1.wav
@@ -656,7 +695,7 @@ int main(int argc, char** argv)
 	uint64_t frameIndex = 0;
 	while(!bDone)
 	{
-		StartFrame(pMachine);
+		Input::FrameStart();
 		
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
@@ -669,76 +708,36 @@ int main(int argc, char** argv)
 			}
 			else if(event.type == SDL_KEYDOWN)
 			{
-				SDL_Keymod keymod = SDL_GetModState();
-				const bool shiftDown = (keymod & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
-
-				if(event.key.repeat == 0)
-					s_keyState[event.key.keysym.scancode] = true;
+				Input::OnKeyDown(event.key);
 
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					bDone = true;
-				else if(event.key.keysym.sym == SDLK_1)
-					pMachine->player1StartButton = true;
-				else if(event.key.keysym.sym == SDLK_2)
-					pMachine->player2StartButton = true;
-				else if(event.key.keysym.sym == SDLK_5)
-					pMachine->coinInserted = true;
-				else if(event.key.keysym.sym == SDLK_t)
-					pMachine->tilt = true;
-				else if(event.key.keysym.sym == SDLK_TAB)
-					s_showDevUI = !s_showDevUI;
-				else if(event.key.keysym.sym == SDLK_F3)
-					ResetMachine(pMachine);
-				else if(event.key.keysym.sym == SDLK_F5)
-					pMachine->running = !pMachine->running;
-				else if(event.key.keysym.sym == SDLK_F7)
-				{
-					if(shiftDown)
-						saveMachineState(*pMachine);
-					else if(s_stateSaved)
-						restoreMachineState(*pMachine);
-				}
-				else if(event.key.keysym.sym == SDLK_F8)
-					DebugStepFrame(*pMachine, s_verbose);
-				else if(event.key.keysym.sym == SDLK_F10)
-				{
-					if(!pMachine->running)
-						StepOver(*pMachine, s_debugger, s_verbose);
-				}
-				else if(event.key.keysym.sym == SDLK_F11)
-				{
-					if(shiftDown)
-					{
-						if(!pMachine->running)
-							StepOut(*pMachine, s_debugger, s_verbose);
-					}
-					else
-					{
-						if(!pMachine->running)
-							StepInto(*pMachine, s_verbose);
-					}
-				}
 			}
 			else if(event.type == SDL_KEYUP)
-			{
-				s_keyState[event.key.keysym.scancode] = false;
-			}
+				Input::OnKeyUp(event.key);
+			else if(event.type == SDL_JOYAXISMOTION)
+				Input::OnJoyAxisMotion(event.jaxis);
+			else if(event.type == SDL_JOYHATMOTION)
+				Input::OnJoyHatMotion(event.jhat);
+			else if(event.type == SDL_JOYDEVICEADDED)
+				Input::OnJoyDeviceAdded(event.jdevice);
+			else if(event.type == SDL_JOYDEVICEREMOVED)
+				Input::OnJoyDeviceRemoved(event.jdevice);
+			else if(event.type == SDL_JOYBUTTONDOWN)
+				Input::OnJoyButtonDown(event.jbutton);
+			else if(event.type == SDL_JOYBUTTONUP)
+				Input::OnJoyButtonUp(event.jbutton);
+			else if(event.type == SDL_CONTROLLERBUTTONDOWN)
+				Input::OnControllerButtonDown(event.cbutton);
+			else if(event.type == SDL_CONTROLLERBUTTONUP)
+				Input::OnControllerButtonUp(event.cbutton);
+			else if(event.type == SDL_CONTROLLERAXISMOTION)
+				Input::OnControllerAxisMotion(event.caxis);
+			else if(event.type == SDL_CONTROLLERDEVICEADDED)
+				Input::OnControllerDeviceAdded(event.cdevice);
+			else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
+				Input::OnControllerDeviceRemoved(event.cdevice);
 		}
-
-		pMachine->player1ShootButton = s_keyState[SDL_SCANCODE_SPACE];
-		pMachine->player1JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
-		pMachine->player1JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
-
-#if 1
-		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_Q];
-		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_O];
-		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_P];
-#else
-		// share with Player 1
-		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_SPACE];
-		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
-		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
-#endif
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -786,6 +785,9 @@ int main(int argc, char** argv)
 	// SDL2_mixer
 	ShutdownAudio();
 	Mix_CloseAudio();
+
+	Input::Shutdown();
+
 	SDL_Quit();
 
 	return 0;

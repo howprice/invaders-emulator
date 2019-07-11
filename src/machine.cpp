@@ -129,6 +129,7 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 #include "machine.h"
 
 #include "Audio.h"
+#include "Input.h"
 #include "Assert.h"
 #include "Helpers.h"
 
@@ -285,6 +286,7 @@ static uint8_t In(uint8_t port, void* userdata)
 {
 	HP_ASSERT(userdata);
 	Machine* pMachine = (Machine*)userdata;
+	MachineInput& input = pMachine->input;
 
 	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
 
@@ -302,12 +304,12 @@ static uint8_t In(uint8_t port, void* userdata)
 		// BIT 6    P1 joystick right
 		// BIT 7 ?
 		uint8_t val = 0x00;
-		val |= pMachine->coinInserted ? 0 : (1 << 0);
-		val |= pMachine->player2StartButton ? (1 << 1) : 0;
-		val |= pMachine->player1StartButton ? (1 << 2) : 0;
-		val |= pMachine->player1ShootButton ? (1 << 4) : 0;
-		val |= pMachine->player1JoystickLeft ? (1 << 5) : 0;
-		val |= pMachine->player1JoystickRight ? (1 << 6) : 0;
+		val |= input.coinInserted ? 0 : (1 << 0);
+		val |= input.player2StartButton ? (1 << 1) : 0;
+		val |= input.player1StartButton ? (1 << 2) : 0;
+		val |= input.player1ShootButton ? (1 << 4) : 0;
+		val |= input.player1JoystickLeft ? (1 << 5) : 0;
+		val |= input.player1JoystickRight ? (1 << 6) : 0;
 		return val;
 	}
 	else if(port == 2)
@@ -327,10 +329,10 @@ static uint8_t In(uint8_t port, void* userdata)
 		uint8_t dipSwitchMask = 0b10001011; // see Machine.dipSwitchBits 
 		val = pMachine->dipSwitchBits & dipSwitchMask;
 
-		val |= pMachine->tilt ? (1<<2) : 0;
-		val |= pMachine->player2ShootButton ? (1 << 4) : 0;
-		val |= pMachine->player2JoystickLeft ? (1 << 5) : 0;
-		val |= pMachine->player2JoystickRight ? (1 << 6) : 0;
+		val |= input.tilt ? (1<<2) : 0;
+		val |= input.player2ShootButton ? (1 << 4) : 0;
+		val |= input.player2JoystickLeft ? (1 << 5) : 0;
+		val |= input.player2JoystickRight ? (1 << 6) : 0;
 
 		return val;
 	}
@@ -647,27 +649,39 @@ void ResetMachine(Machine* pMachine)
 	pMachine->scanLine = 0;
 }
 
-void StartFrame(Machine* pMachine)
+static void getInput(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 
-	pMachine->coinInserted = false;
-	pMachine->player2StartButton = false;
-	pMachine->player1StartButton = false;
-	pMachine->player1ShootButton = false;
-	pMachine->player1JoystickLeft = false;
-	pMachine->player1JoystickRight = false;
-	pMachine->player2ShootButton = false;
-	pMachine->player2JoystickLeft = false;
-	pMachine->player2JoystickRight = false;
-	pMachine->tilt = false;
+	// #TODO: Controller input too
+ 	MachineInput& input = pMachine->input;
+	input = {};
+	input.coinInserted = Input::IsKeyDownThisFrame(SDL_SCANCODE_5);
+ 	input.player1StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_1);
+ 	input.player2StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_2);
+ 	input.player1ShootButton = Input::GetKeyState(SDL_SCANCODE_SPACE); 
+ 	input.player1JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT);
+ 	input.player1JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT);
+#if 1
+ 	input.player2ShootButton = Input::GetKeyState(SDL_SCANCODE_Q);
+ 	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_O);
+ 	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_P);
+#else
+	// share with Player 1
+	input.player2ShootButton = Input::GetKeyState(SDL_SCANCODE_SPACE);
+	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT);
+	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT);
+#endif
+ 	input.tilt = Input::GetKeyState(SDL_SCANCODE_T);
 }
 
 void StepFrame(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 //	HP_ASSERT(pMachine->frameCycleCount == 0); // Assert not valid - it is perfectly valid to step to end of frame from part way through
-	
+
+	getInput(pMachine);
+
 	do 
 	{
 		if(pMachine->running)

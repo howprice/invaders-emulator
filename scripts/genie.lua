@@ -60,9 +60,10 @@ solution "invaders-emulator"
 			"../src/machine.*",
 			"../src/Assert.*",
 			"../src/Helpers.*",
+			"../src/Audio.*",
+			"../src/Input.*",
 			"../src/imgui/**",
 			"../src/debugger/*",
-			"../src/Audio/*",
 			"../3rdParty/gl3w/GL/**"
 		}
 		includedirs {

@@ -9,6 +9,20 @@ struct Machine;
 
 typedef void (*DebugHookFuncPtr)(Machine* pMachine);
 
+struct MachineInput
+{
+	bool coinInserted;
+	bool player1StartButton;
+	bool player2StartButton;
+	bool player1ShootButton;
+	bool player1JoystickLeft;
+	bool player1JoystickRight;
+	bool player2ShootButton;
+	bool player2JoystickLeft;
+	bool player2JoystickRight;
+	bool tilt;
+};
+
 struct Machine
 {
 	static const unsigned int kDisplayWidth = 256;
@@ -32,18 +46,7 @@ struct Machine
 	uint16_t prevOut3 = 0; // #TODO: Move into Audio?
 	uint16_t prevOut5 = 0; // #TODO: Move into Audio?
 
-	// Input
-	// #TODO: Factor these out of this struct
-	bool coinInserted;
-	bool player2StartButton;
-	bool player1StartButton;
-	bool player1ShootButton;
-	bool player1JoystickLeft;
-	bool player1JoystickRight;
-	bool player2ShootButton;
-	bool player2JoystickLeft;
-	bool player2JoystickRight;
-	bool tilt;
+	MachineInput input;
 
 	// bits 0 and 1  number of lives
 	// bit 2  Check RAM and sound
@@ -59,7 +62,6 @@ bool CreateMachine(Machine** ppMachine);
 void DestroyMachine(Machine* pMachine);
 
 void ResetMachine(Machine* pMachine);
-void StartFrame(Machine* pMachine);
 
 bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail = false);
 uint8_t ReadByteFromMemory(const void* userdata, uint16_t address, bool fatalOnFail = false);
