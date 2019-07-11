@@ -194,17 +194,31 @@ void Input::OnJoyButtonDown(const SDL_JoyButtonEvent& jbutton)
 {
 	Sint32 instanceId = jbutton.which;
 //	printf("SDL_JOYBUTTONDOWN  ControllerInstanceId: %u  Button: %u  State: %s\n", instanceId, jbutton.button, jbutton.state == SDL_RELEASED ? "SDL_RELEASED" : "SDL_PRESSED");
-	Controller& controller = getControllerFromInstanceId(instanceId);
-	controller.buttonDownThisFrame[jbutton.button] = true;
-	controller.buttonState[jbutton.button] = true;
+
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
+
+	if(pController->pGameController)
+		return; // handled by OnControllerButtonDown
+
+	pController->buttonDownThisFrame[jbutton.button] = true;
+	pController->buttonState[jbutton.button] = true;
 }
 
 void Input::OnJoyButtonUp(const SDL_JoyButtonEvent& jbutton)
 {
 	Sint32 instanceId = jbutton.which;
 //	printf("SDL_JOYBUTTONUP  InstanceId: %u  Button: %u  State: %s\n", jbutton.which, jbutton.button, jbutton.state == SDL_RELEASED ? "SDL_RELEASED" : "SDL_PRESSED");
-	Controller& controller = getControllerFromInstanceId(instanceId);
-	controller.buttonState[jbutton.button] = false;
+
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
+
+	if(pController->pGameController)
+		return; // handled by OnControllerButtonUp
+
+	pController->buttonState[jbutton.button] = false;
 }
 
 void Input::OnJoyAxisMotion(const SDL_JoyAxisEvent& jaxis)
@@ -212,10 +226,12 @@ void Input::OnJoyAxisMotion(const SDL_JoyAxisEvent& jaxis)
 	Sint32 instanceId = jaxis.which;
 //	printf("SDL_JOYAXISMOTION, instanceId: %d  axis: %u  value: %d\n", instanceId, jaxis.axis, jaxis.value);
 
-	Controller& controller = getControllerFromInstanceId(instanceId);
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
 
 	// Both SDL_JOYAXISMOTION and SDL_CONTROLLERAXISMOTION fire for game controllers
-	if(controller.pGameController)
+	if(pController->pGameController)
 		return;
 
 	if(jaxis.axis == 0)
@@ -224,20 +240,20 @@ void Input::OnJoyAxisMotion(const SDL_JoyAxisEvent& jaxis)
 
 		if(jaxis.value > 0)
 		{
-			controller.buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = false;
+			pController->buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = false;
 		}
 		else if(jaxis.value < 0)
 		{
-			controller.buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = false;
+			pController->buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = false;
 		}
 		else // jaxis.value == 0
 		{
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = false;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = false;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = false;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = false;
 		}
 	}
 	else if(jaxis.axis == 1)
@@ -246,20 +262,20 @@ void Input::OnJoyAxisMotion(const SDL_JoyAxisEvent& jaxis)
 
 		if(jaxis.value > 0)
 		{
-			controller.buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = false;
+			pController->buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = false;
 		}
 		else if(jaxis.value < 0)
 		{
-			controller.buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_UP] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = true;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = false;
+			pController->buttonDownThisFrame[SDL_CONTROLLER_BUTTON_DPAD_UP] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = true;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = false;
 		}
 		else // jaxis.value == 0
 		{
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = false;
-			controller.buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = false;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_UP] = false;
+			pController->buttonState[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = false;
 		}
 	}
 }
@@ -357,17 +373,23 @@ void Input::OnControllerButtonDown(const SDL_ControllerButtonEvent& cbutton)
 {
 //	printf("SDL_CONTROLLERBUTTONDOWN  ControllerInstanceId: %u  Button: %u  State: %s\n", cbutton.which, cbutton.button, cbutton.state == SDL_RELEASED ? "SDL_RELEASED" : "SDL_PRESSED");
 	int instanceId = cbutton.which;
-	Controller& controller = getControllerFromInstanceId(instanceId);
-	controller.buttonDownThisFrame[cbutton.button] = true;
-	controller.buttonState[cbutton.button] = true;
+
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
+
+	pController->buttonDownThisFrame[cbutton.button] = true;
+	pController->buttonState[cbutton.button] = true;
 }
 
 void Input::OnControllerButtonUp(const SDL_ControllerButtonEvent& cbutton)
 {
 //	printf("SDL_CONTROLLERBUTTONUP  ControllerInstanceId: %u  Button: %u  State: %s\n", cbutton.which, cbutton.button, cbutton.state == SDL_RELEASED ? "SDL_RELEASED" : "SDL_PRESSED");
 	int instanceId = cbutton.which;
-	Controller& controller = getControllerFromInstanceId(instanceId);
-	controller.buttonState[cbutton.button] = false;
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
+	pController->buttonState[cbutton.button] = false;
 }
 
 void Input::OnControllerAxisMotion(const SDL_ControllerAxisEvent& caxis)
@@ -380,19 +402,24 @@ void Input::OnControllerAxisMotion(const SDL_ControllerAxisEvent& caxis)
 	}
 
 	int instanceId = caxis.which;
-	getControllerFromInstanceId(instanceId).axisValue[caxis.axis] = caxis.value;
+	Controller* pController = getControllerFromInstanceId(instanceId);
+	if(!pController)
+		return; // controller may have been pulled while events still in queue
+
+	pController->axisValue[caxis.axis] = caxis.value;
 }
 
-Input::Controller& Input::getControllerFromInstanceId(int instanceId)
+// returns null if controller is not recognised, which can happen when pad cable is pulled.
+
+Input::Controller* Input::getControllerFromInstanceId(int instanceId)
 {
 	for(unsigned int i = 0; i < kMaxControllers; ++i)
 	{
 		if(s_controller[i].instanceId == instanceId)
-			return s_controller[i];
+			return &s_controller[i];
 	}
 
-	HP_FATAL_ERROR("Failed to find controller\n");
-	return *(Controller*)nullptr;
+	return nullptr;
 }
 
 void Input::OnKeyDown(const SDL_KeyboardEvent& key)
