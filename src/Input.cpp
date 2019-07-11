@@ -120,7 +120,6 @@ bool Input::GetButtonState(unsigned int controllerIndex, unsigned int buttonId)
 {
 	HP_ASSERT(controllerIndex < kMaxControllers);
 	HP_ASSERT(buttonId < SDL_CONTROLLER_BUTTON_MAX);
-	HP_ASSERT(IsControllerConnected(controllerIndex));
 	return s_controller[controllerIndex].buttonState[buttonId];
 }
 
@@ -128,7 +127,6 @@ bool Input::IsButtonDownThisFrame(unsigned int controllerIndex, unsigned int but
 {
 	HP_ASSERT(controllerIndex < kMaxControllers);
 	HP_ASSERT(buttonId < SDL_CONTROLLER_BUTTON_MAX);
-	HP_ASSERT(IsControllerConnected(controllerIndex));
 	return s_controller[controllerIndex].buttonDownThisFrame[buttonId];
 }
 
@@ -136,7 +134,6 @@ float Input::GetAxisValue(unsigned int controllerIndex, unsigned int axisId)
 {
 	HP_ASSERT(controllerIndex < kMaxControllers);
 	HP_ASSERT(axisId < SDL_CONTROLLER_AXIS_MAX);
-	HP_ASSERT(IsControllerConnected(controllerIndex));
 
 	const Sint16 iValue = s_controller[controllerIndex].axisValue[axisId];
 
@@ -213,9 +210,13 @@ void Input::OnJoyButtonUp(const SDL_JoyButtonEvent& jbutton)
 void Input::OnJoyAxisMotion(const SDL_JoyAxisEvent& jaxis)
 {
 	Sint32 instanceId = jaxis.which;
-//	printf("JoyAxisMotion, instanceId: %d  axis: %u  value: %d\n", instanceId, jaxis.axis, jaxis.value);
+//	printf("SDL_JOYAXISMOTION, instanceId: %d  axis: %u  value: %d\n", instanceId, jaxis.axis, jaxis.value);
 
 	Controller& controller = getControllerFromInstanceId(instanceId);
+
+	// Both SDL_JOYAXISMOTION and SDL_CONTROLLERAXISMOTION fire for game controllers
+	if(controller.pGameController)
+		return;
 
 	if(jaxis.axis == 0)
 	{ 
