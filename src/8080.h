@@ -2,6 +2,7 @@
 #define HP_8080_H
 
 #include <stdint.h>
+#include <stddef.h> // gcc size_t
 
 static const unsigned int kMinInstructionSizeBytes = 1;
 static const unsigned int kMaxInstructionSizeBytes = 3;

@@ -4,7 +4,6 @@
 
 void HpAssertMessage(const char* expr, const char* type, const char* file, int line, const char* func, const char* fmt /*= nullptr*/, ...)
 {
-	const unsigned int kMaxChars = 1023;
 	char message[1024];
 	message[0] = '\0';
 

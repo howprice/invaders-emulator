@@ -3,8 +3,6 @@
 #include "Helpers.h"
 #include "Assert.h"
 
-#include "SDL.h" // portable size_t
-
 // returns the execution time, which may vary depending on 
 typedef unsigned int (*ExecuteInstruction)(State8080& state);
 
