@@ -8,11 +8,24 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## Dependencies
 
-This project depends on [SDL2](https://www.libsdl.org). The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+This project depends on [SDL2](https://www.libsdl.org). 
 
 Unzipped invaders ROMs should be placed the 'data' folder.
 
-Unzip samples 0.wav .. 18.wav from http://samples.mameworld.info/ into the 'data' folder
+Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder
+
+## Windows
+
+The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+
+## Linux
+
+Install using your package manager, e.g.
+
+	$ sudo apt-get install libsdl2-dev
+	$ sudo apt-get install libsdl2-ttf-dev
+	
+or [download](https://www.libsdl.org/download-2.0.php) and install from source
 
 ## Building
 
@@ -21,6 +34,18 @@ This project uses [GENie](https://github.com/bkaradzic/genie) to generate the bu
 ### Windows
 
 Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
+
+### Linux
+
+	$ git clone https://github.com/howprice/invaders-emulator
+	$ cd invaders-emulator
+	$ tools/bin/linux/genie gmake
+	$ cd build
+	$ make
+
+n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to make the checked in file executable.
+
+`make` with no confic specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `release`, `debug32`, `release32`, `debug64` or `release64`. 
 
 ### Other Platforms
 
