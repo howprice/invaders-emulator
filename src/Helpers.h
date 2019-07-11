@@ -2,6 +2,8 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#include <stddef.h> // gcc size_t
+
 #define PI 3.14159265359f
 #define TWOPI 6.28318530718f
 

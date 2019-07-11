@@ -1,12 +1,14 @@
 #include "Helpers.h"
 
-#include <stdlib.h> // errno
+#include <errno.h>
+#include <stdlib.h> // strtol
+#include <limits.h> // LONG_MIN
 
 bool ParseUnsignedInt(const char* arg, unsigned int& val)
 {
 	errno = 0;
 	char *pEnd = NULL;
-	int iVal = strtol(arg, &pEnd, 0);
+	long int iVal = strtol(arg, &pEnd, 0);
 	if(iVal < 0 || arg == pEnd || errno != 0 || iVal == LONG_MIN || iVal == LONG_MAX)
 	{
 		return false;

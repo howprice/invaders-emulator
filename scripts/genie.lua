@@ -43,12 +43,12 @@ solution "invaders-emulator"
 			buildoptions { "/wd4505" } -- unreferenced local function has been removed
 			
 		configuration "linux"
-			buildoptions { "-std=c++0x" }
+			buildoptions_cpp { "-std=c++0x" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
-
+			
 	project "emulator"
 		location "../build"
 		kind "ConsoleApp"
@@ -123,7 +123,7 @@ solution "invaders-emulator"
 			}
 			
 		configuration "linux"
-			buildoptions { "-std=c++0x" }
+			buildoptions_cpp { "-std=c++0x" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
