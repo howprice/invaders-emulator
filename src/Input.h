@@ -23,6 +23,8 @@ public:
 
 	static bool GetButtonState(unsigned int controllerIndex, unsigned int buttonId);
 	static bool IsButtonDownThisFrame(unsigned int controllerIndex, unsigned int buttonId);
+
+	// Returns [-1.0f,+1.0f] where -ve is left and +ve is right
 	static float GetAxisValue(unsigned int controllerIndex, unsigned int axisId);
 
 	// SDL event handlers
@@ -60,7 +62,7 @@ private:
 
 	static void	addSdlGameController(Sint32 joystickDeviceIndex);
 	static void	addSdlJoystick(Sint32 joystickDeviceIndex);
-	static Controller& getControllerFromInstanceId(int instanceId);
+	static Controller* getControllerFromInstanceId(int instanceId);
 
 	static bool s_keyState[SDL_NUM_SCANCODES];
 	static bool s_keyDownThisFrame[SDL_NUM_SCANCODES];

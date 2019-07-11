@@ -63,7 +63,6 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Joystick input
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file

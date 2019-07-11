@@ -660,18 +660,18 @@ static void getInput(Machine* pMachine)
  	input.player1StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_1) || Input::IsButtonDownThisFrame(0, SDL_CONTROLLER_BUTTON_START) || Input::IsButtonDownThisFrame(0, SDL_CONTROLLER_BUTTON_A);
  	input.player2StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_2) || Input::IsButtonDownThisFrame(1, SDL_CONTROLLER_BUTTON_START) || Input::IsButtonDownThisFrame(1, SDL_CONTROLLER_BUTTON_A);
  	input.player1ShootButton = Input::GetKeyState(SDL_SCANCODE_SPACE) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_A);
- 	input.player1JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
- 	input.player1JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-#if 1
+ 	input.player1JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || Input::GetAxisValue(0, SDL_CONTROLLER_AXIS_LEFTX) < -0.5f;
+ 	input.player1JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || Input::GetAxisValue(0, SDL_CONTROLLER_AXIS_LEFTX) > 0.5f;
  	input.player2ShootButton = Input::GetKeyState(SDL_SCANCODE_Q) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_A);
- 	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_O) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
- 	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_P) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-#else
-	// share with Player 1
-	input.player2ShootButton = Input::GetKeyState(SDL_SCANCODE_SPACE) || Input::IsButtonDownThisFrame(0, SDL_CONTROLLER_BUTTON_A);
-	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+ 	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_O) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || Input::GetAxisValue(1, SDL_CONTROLLER_AXIS_LEFTX) < -0.5f;
+ 	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_P) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || Input::GetAxisValue(1, SDL_CONTROLLER_AXIS_LEFTX) > 0.5f;
+#if 1
+	// Player 2 share Player controls
+	input.player2ShootButton |= input.player1ShootButton;
+	input.player2JoystickLeft |= input.player1JoystickLeft;
+	input.player2JoystickRight |= input.player1JoystickRight;
 #endif
+
  	input.tilt = Input::GetKeyState(SDL_SCANCODE_T);
 }
 
