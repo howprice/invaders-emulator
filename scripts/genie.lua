@@ -68,8 +68,6 @@ solution "invaders-emulator"
 		}
 		includedirs {
 			"../src",
-			"../3rdparty/SDL2-2.0.9/include",
-			"../3rdparty/SDL2_mixer-2.0.4/include",
 			"../3rdparty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
@@ -92,6 +90,10 @@ solution "invaders-emulator"
 			targetdir "../bin/release"
 			
 		configuration "windows"
+			includedirs {
+				"../3rdparty/SDL2-2.0.9/include",
+				"../3rdparty/SDL2_mixer-2.0.4/include"
+			}
 			flags { "ReleaseRuntime" }  
 			links { "SDL2main" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
