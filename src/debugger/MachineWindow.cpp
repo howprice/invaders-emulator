@@ -28,7 +28,7 @@ void MachineWindow::Update(Machine& machine)
 	ImGui::Text("Scan line: %u", machine.scanLine);
 
 	ImGui::Text("Shift register value:  %04X", machine.shiftRegisterValue);
-	ImGui::Text("Shift register offset: ", machine.shiftRegisterOffset);
+	ImGui::Text("Shift register offset: %02X", machine.shiftRegisterOffset);
 
 	ImGui::Spacing();
 	ImGui::Text("DIP switches:");

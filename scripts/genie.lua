@@ -68,7 +68,7 @@ solution "invaders-emulator"
 		}
 		includedirs {
 			"../src",
-			"../3rdparty/gl3w"
+			"../3rdParty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
 		links { "SDL2", "SDL2_mixer", "opengl32" }
@@ -91,8 +91,8 @@ solution "invaders-emulator"
 			
 		configuration "windows"
 			includedirs {
-				"../3rdparty/SDL2-2.0.9/include",
-				"../3rdparty/SDL2_mixer-2.0.4/include"
+				"../3rdParty/SDL2-2.0.9/include",
+				"../3rdParty/SDL2_mixer-2.0.4/include"
 			}
 			flags { "ReleaseRuntime" }  
 			links { "SDL2main" }
@@ -104,22 +104,22 @@ solution "invaders-emulator"
 
 		configuration { "windows", "not x64" }
 			libdirs { 
-				"../3rdparty/SDL2-2.0.9/lib/x86",
-				"../3rdparty/SDL2_mixer-2.0.4/lib/x86"
+				"../3rdParty/SDL2-2.0.9/lib/x86",
+				"../3rdParty/SDL2_mixer-2.0.4/lib/x86"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)",
-				"copy ..\\3rdparty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)",
+				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
 			}
 
 		configuration { "windows", "x64" }		
 			libdirs { 
-				"../3rdparty/SDL2-2.0.9/lib/x64",
-				"../3rdparty/SDL2_mixer-2.0.4/lib/x64"
+				"../3rdParty/SDL2-2.0.9/lib/x64",
+				"../3rdParty/SDL2_mixer-2.0.4/lib/x64"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)",
-				"copy ..\\3rdparty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)",
+				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
 			}
 			
 		configuration "linux"

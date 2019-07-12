@@ -170,7 +170,7 @@ void DisassemblyWindow::Update(const Machine& machine, const Debugger& debugger)
 		}
 
 		if(pcAtLine || breakpointAtLine)
-			ImGui::Text("%c%c", pcAtLine ? '>' : '  ', breakpointAtLine ? (breakpointActive ? '*' : 'o') : ' ');
+			ImGui::Text("%c%c", pcAtLine ? '>' : ' ', breakpointAtLine ? (breakpointActive ? '*' : 'o') : ' ');
 		else
 			ImGui::TextUnformatted("  ");
 
