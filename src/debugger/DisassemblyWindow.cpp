@@ -57,15 +57,18 @@ void DisassemblyWindow::addLine(const Machine& machine, const uint16_t address)
 	SDL_strlcat(text, temp, sizeof(text));
 
 	// hex
-	for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
+	if(m_showHex)
 	{
-		SDL_snprintf(temp, sizeof(temp), "%02X ", *(pInstruction + byteIndex));
-		SDL_strlcat(text, temp, sizeof(text));
-	}
-	for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
-	{
-		SDL_snprintf(temp, sizeof(temp), "   ");
-		SDL_strlcat(text, temp, sizeof(text));
+		for(unsigned int byteIndex = 0; byteIndex < instructionSizeBytes; byteIndex++)
+		{
+			SDL_snprintf(temp, sizeof(temp), "%02X ", *(pInstruction + byteIndex));
+			SDL_strlcat(text, temp, sizeof(text));
+		}
+		for(unsigned int byteIndex = instructionSizeBytes; byteIndex < kMaxInstructionSizeBytes; byteIndex++)
+		{
+			SDL_snprintf(temp, sizeof(temp), "   ");
+			SDL_strlcat(text, temp, sizeof(text));
+		}
 	}
 
 	// mnemonic
@@ -109,11 +112,9 @@ void DisassemblyWindow::Refresh(const Machine& machine)
 		addLine(machine, address);
 		address += (uint16_t)GetInstructionSizeBytes(opcode);
 	}
-
-	m_scrollToPC = true;
 }
 
-void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& breakpoints)
+void DisassemblyWindow::Update(const Machine& machine, const Debugger& debugger)
 {
 	if(!m_visible)
 		return;
@@ -132,6 +133,12 @@ void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& br
 		if(ImGui::Selectable("Show Next Instruction"))
 			m_scrollToPC = true;
 
+		if(ImGui::Checkbox("Show Hex", &m_showHex))
+		{
+			Refresh(machine);
+			ImGui::CloseCurrentPopup();
+		}
+
 		ImGui::EndPopup();
 	}
 
@@ -148,12 +155,12 @@ void DisassemblyWindow::Update(const State8080& state8080, const Breakpoints& br
 	{
 		const Line& line = m_lines[lineIndex];
 
-		bool pcAtLine = line.address == state8080.PC;
+		bool pcAtLine = line.address == machine.cpu.PC;
 		bool breakpointAtLine = false;
 		bool breakpointActive = false;
-		for(unsigned int breakpointIndex = 0; breakpointIndex < breakpoints.breakpointCount; breakpointIndex++)
+		for(unsigned int breakpointIndex = 0; breakpointIndex < debugger.breakpointCount; breakpointIndex++)
 		{
-			const Breakpoint& breakpoint = breakpoints.breakpoints[breakpointIndex];
+			const Breakpoint& breakpoint = debugger.breakpoints[breakpointIndex];
 			if(breakpoint.address == line.address)
 			{
 				breakpointAtLine = true;

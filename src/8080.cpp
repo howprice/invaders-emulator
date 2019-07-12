@@ -717,7 +717,7 @@ static unsigned int execute2A(State8080& state)
 //------------------------------------------------------------------------------
 // 0x27  DAA
 //
-// Decimal Adiust Accumulator
+// Decimal Adjust Accumulator
 //
 // The eight-bit hexadecimal number in the accumulator is adjusted to form two
 // four-bit binary-coded-decimal (BCD) digits by the following process:
@@ -753,13 +753,13 @@ static unsigned int execute27(State8080& state)
 
 		// now add 6 to the actual result
 		result16 += 6;
+	}
 
-		uint8_t upperNibble = (result16 & 0xf0) >> 4;
-		if(upperNibble > 9 || state.flags.C == 1)
-		{
-			result16 += 0x60;
-			setC = (result16 > 0xff);
-		}
+	uint8_t upperNibble = (result16 & 0xf0) >> 4;
+	if(upperNibble > 9 || state.flags.C == 1)
+	{
+		result16 += 0x60;
+		setC = (result16 > 0xff);
 	}
 
 	state.flags.AC = setAC ? 1 : 0;
@@ -2720,7 +2720,7 @@ static const Instruction s_instructions[] =
 	/* 0xc5 */ { "PUSH BC", 1, executeC5 }, // (sp - 2) < -C; (sp - 1) < -B; sp < -sp - 2
 	/* 0xc6 */ { "ADI %02X", 2, executeC6 }, // aka ADD A,<d8>
 	/* 0xc7 */ { "RST 0",	1, nullptr }, //			CALL $0
-	/* 0xc8 */ { "RZ	1",	1, executeC8 }, // if Z, RET
+	/* 0xc8 */ { "RZ",	1, executeC8 }, // if Z, RET
 	/* 0xc9 */ { "RET",	1, executeC9 }, // PC.lo <- (sp); PC.hi <- (sp + 1); SP <- SP + 2
 	/* 0xca */ { "JZ %04X", 3, executeCA }, // if Z, PC <- adr
 	/* 0xcb */ { "-", 1, nullptr }, //	
@@ -2827,7 +2827,9 @@ const char* GetInstructionMnemonic(uint8_t opcode)
 
 unsigned int GetInstructionSizeBytes(uint8_t opcode)
 {
-	return s_instructions[opcode].sizeBytes;
+	const Instruction& instruction = s_instructions[opcode];
+	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
+	return instruction.sizeBytes;
 }
 
 // returns the number of cycles that the instruction took to execute
@@ -2887,38 +2889,4 @@ void Reset(State8080& state)
 {
 	state.PC = 0;
 	state.halt = 0;
-}
-
-uint16_t GetNextInstructionAddress(const State8080& state)
-{
-	const uint8_t opcode = readByteFromMemory(state, state.PC);
-	const Instruction& instruction = s_instructions[opcode];
-	HP_ASSERT(instruction.sizeBytes >= kMinInstructionSizeBytes && instruction.sizeBytes <= kMaxInstructionSizeBytes);
-	uint16_t nextInstructionAddress = state.PC + instruction.sizeBytes;
-	return nextInstructionAddress;
-}
-
-bool CurrentInstructionIsACall(const State8080& state)
-{
-	const uint8_t opcode = readByteFromMemory(state, state.PC);
-	if(opcode == 0xCD)
-		return true; // CALL
-	if(opcode == 0xDC)
-		return true; // CC
-	if(opcode == 0xD4)
-		return true; // CNC
-	if(opcode == 0xCC)
-		return true; // CZ
-	if(opcode == 0xC4)
-		return true; // CNZ
-	if(opcode == 0xFC)
-		return true; // CM
-	if(opcode == 0xF4)
-		return true; // CP
-	if(opcode == 0xEC)
-		return true; // CPE
-	if(opcode == 0xE4)
-		return true; // CPO
-	
-	return false;
 }

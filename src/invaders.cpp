@@ -9,6 +9,8 @@
 
 #include "machine.h"
 #include "8080.h"
+#include "Input.h"
+#include "Audio.h"
 #include "Helpers.h"
 #include "Assert.h"
 
@@ -18,6 +20,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 
 #include "SDL.h"
+#include "SDL_mixer.h"
 
 // About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually.
 // Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
@@ -39,12 +42,14 @@
 static bool s_startDebugging = false;
 static bool s_verbose = false;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
-static bool s_keyState[SDL_NUM_SCANCODES] = {};
 
 static GLuint s_vertexShader = 0;
 static GLuint s_fragmentShader = 0;
 static GLuint s_program = 0;
 static GLuint s_texture = 0;
+static GLuint s_pointSampler = 0;
+static GLuint s_bilinearSampler = 0;
+static GLuint s_selectedSampler = 0;
 static GLuint s_vao = 0;
 
 static bool s_showDevUI = false;
@@ -58,7 +63,7 @@ static bool s_showMemoryEditor = false;
 static uint16_t s_memoryWindowAddress = 0x0000;
 static MemoryEditor s_memoryEditor;
 
-static Breakpoints s_breakpoints; // #TODO: This may become DebuggerContext
+static Debugger s_debugger; // #TODO: This may become DebuggerContext
 static BreakpointsWindow s_breakpointsWindow;
 
 static void printUsage()
@@ -138,7 +143,8 @@ static const char s_vertexShaderSource[] =
 
 static const char s_fragmentShaderSource[] =
 	"#version 420\n"
-	"uniform sampler2D diffuseSampler;\n"
+//	"uniform sampler2D sampler0;\n"
+	"layout(binding = 0) uniform sampler2D sampler0;\n"
 	"\n"
 	"// n.b. This name \"block\" needs to match that of the VS output!\n"
 	"// n.b. \"input\" is a reserved word\n"
@@ -151,7 +157,7 @@ static const char s_fragmentShaderSource[] =
 	"\n"
 	"void main()\n"
 	"{\n"
-	"	float r = texture2D(diffuseSampler, In.texCoord).r; // 1 channel texture\n"
+	"	float r = texture2D(sampler0, In.texCoord).r; // 1 channel texture\n"
 	"	oColor0 = vec4(r,r,r,1);\n"
 	"}\n";
 
@@ -226,6 +232,18 @@ static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureH
 	glBindTexture(GL_TEXTURE_2D, s_texture);
 
 	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, textureWidth, textureHeight);
+
+	glGenSamplers(1, &s_pointSampler);
+	glBindSampler(0, s_pointSampler);
+	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glGenSamplers(1, &s_bilinearSampler);
+	glBindSampler(1, s_bilinearSampler);
+	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	s_selectedSampler = s_bilinearSampler;
 }
 
 static void deleteOpenGLObjects()
@@ -244,7 +262,69 @@ static void deleteOpenGLObjects()
 
 	glDeleteTextures(1, &s_texture);
 	s_texture = 0;
+
+	glDeleteSamplers(1, &s_pointSampler);
+	s_pointSampler = 0;
+
+	glDeleteSamplers(1, &s_bilinearSampler);
+	s_bilinearSampler = 0;
 }
+
+//------------------------------------------------------------------------------
+
+static Machine* s_pSavedMachine = nullptr;
+static bool s_stateSaved = false;
+
+static void restoreMachineState(Machine& machine)
+{
+	HP_ASSERT(s_stateSaved);
+	HP_ASSERT(s_pSavedMachine);
+
+	machine.running = s_pSavedMachine->running;
+	machine.cpu = s_pSavedMachine->cpu;
+
+	// restore memory
+	// #TODO: Only restore RAM
+	SDL_memcpy(machine.pMemory, s_pSavedMachine->pMemory, machine.memorySizeBytes);
+
+	machine.frameCount = s_pSavedMachine->frameCount;
+	machine.frameCycleCount = s_pSavedMachine->frameCycleCount;
+	machine.scanLine = s_pSavedMachine->scanLine;
+
+	machine.shiftRegisterValue = s_pSavedMachine->shiftRegisterValue;
+	machine.shiftRegisterOffset = s_pSavedMachine->shiftRegisterOffset;
+
+	machine.prevOut3 = s_pSavedMachine->prevOut3;
+	machine.prevOut5 = s_pSavedMachine->prevOut3;
+
+	machine.dipSwitchBits = s_pSavedMachine->dipSwitchBits;
+}
+
+static void saveMachineState(const Machine& machine)
+{
+	s_pSavedMachine->running = machine.running;
+	s_pSavedMachine->cpu = machine.cpu;
+
+	// save memory
+	// #TODO: Only save RAM
+	SDL_memcpy(s_pSavedMachine->pMemory, machine.pMemory, machine.memorySizeBytes);
+
+	s_pSavedMachine->frameCount = machine.frameCount;
+	s_pSavedMachine->frameCycleCount = machine.frameCycleCount;
+	s_pSavedMachine->scanLine = machine.scanLine;
+
+	s_pSavedMachine->shiftRegisterValue = machine.shiftRegisterValue;
+	s_pSavedMachine->shiftRegisterOffset = machine.shiftRegisterOffset;
+
+	s_pSavedMachine->prevOut3 = machine.prevOut3;
+	s_pSavedMachine->prevOut5 = machine.prevOut3;
+
+	s_pSavedMachine->dipSwitchBits = machine.dipSwitchBits;
+	
+	s_stateSaved = true;
+}
+
+//------------------------------------------------------------------------------
 
 static void doMenuBar(Machine* pMachine)
 {
@@ -253,14 +333,37 @@ static void doMenuBar(Machine* pMachine)
 
 	if(ImGui::BeginMainMenuBar() == false)
 		return;
-	 
+	
+	if(ImGui::BeginMenu("Machine"))
+	{
+		if(ImGui::MenuItem("Reset", "F3"))
+			ResetMachine(pMachine);
+
+		if(ImGui::MenuItem("Restore State", "F7", /*pSelected*/nullptr, /*enabled*/s_stateSaved))
+			restoreMachineState(*pMachine);
+
+		if(ImGui::MenuItem("Save State", "Shift+F7"))
+			saveMachineState(*pMachine);
+
+		ImGui::EndMenu();
+	}
+
+	if(ImGui::BeginMenu("Display"))
+	{
+		bool bilinearSampling = s_selectedSampler == s_bilinearSampler;
+		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
+			s_selectedSampler = bilinearSampling ? s_bilinearSampler : s_pointSampler;
+
+		ImGui::EndMenu();
+	}
+
 	if(ImGui::BeginMenu("Debug"))
 	{
 		if(ImGui::MenuItem("Continue", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/!pMachine->running))
 			ContinueMachine(*pMachine);
 
 		if(ImGui::MenuItem("Break", /*shortcut*/nullptr, /*pSelected*/nullptr, /*enabled*/pMachine->running))
-			BreakMachine(*pMachine, s_breakpoints);
+			BreakMachine(*pMachine, s_debugger);
 
 		ImGui::Separator();
 		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
@@ -270,7 +373,10 @@ static void doMenuBar(Machine* pMachine)
 			StepInto(*pMachine, s_verbose);
 
 		if(ImGui::MenuItem("Step Over", "F10", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			StepOver(*pMachine, s_breakpoints, s_verbose);
+			StepOver(*pMachine, s_debugger, s_verbose);
+
+		if(ImGui::MenuItem("Step Out", "Shift+F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
+			StepOut(*pMachine, s_debugger, s_verbose);
 
 		ImGui::EndMenu();
 	}
@@ -320,15 +426,52 @@ static void doMemoryWindow(Machine* pMachine)
 
 static void doDevUI(Machine* pMachine)
 {
+	const bool shiftDown = Input::GetKeyState(SDL_SCANCODE_LSHIFT) || Input::GetKeyState(SDL_SCANCODE_RSHIFT);
+
+	if(Input::IsKeyDownThisFrame(SDL_SCANCODE_TAB))
+		s_showDevUI = !s_showDevUI;
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F3))
+		ResetMachine(pMachine);
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F5))
+		pMachine->running = !pMachine->running;
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F7))
+	{
+		if(shiftDown)
+			saveMachineState(*pMachine);
+		else if(s_stateSaved)
+			restoreMachineState(*pMachine);
+	}
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F8))
+		DebugStepFrame(*pMachine, s_verbose);
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F10))
+	{
+		if(!pMachine->running)
+			StepOver(*pMachine, s_debugger, s_verbose);
+	}
+	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F11))
+	{
+		if(shiftDown)
+		{
+			if(!pMachine->running)
+				StepOut(*pMachine, s_debugger, s_verbose);
+		}
+		else
+		{
+			if(!pMachine->running)
+				StepInto(*pMachine, s_verbose);
+		}
+	}
+
+
 	if(!s_showDevUI)
 		return;
 
 	doMenuBar(pMachine);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
-	s_debugWindow.Update(*pMachine, s_breakpoints, s_verbose);
-	s_disassemblyWindow.Update(pMachine->cpu, s_breakpoints);
-	s_breakpointsWindow.Update(s_breakpoints, pMachine->cpu);
+	s_debugWindow.Update(*pMachine, s_debugger, s_verbose);
+	s_disassemblyWindow.Update(*pMachine, s_debugger);
+	s_breakpointsWindow.Update(s_debugger, pMachine->cpu);
 	doMemoryWindow(pMachine);
 }
 
@@ -345,21 +488,38 @@ static void debugHook(Machine* pMachine)
 		// #TODO: Print scanline number
 	}
 
-	for(unsigned int breakpointIndex = 0; breakpointIndex < s_breakpoints.breakpointCount; breakpointIndex++)
+	for(unsigned int breakpointIndex = 0; breakpointIndex < s_debugger.breakpointCount; breakpointIndex++)
 	{
-		const Breakpoint& breakpoint = s_breakpoints.breakpoints[breakpointIndex];
+		const Breakpoint& breakpoint = s_debugger.breakpoints[breakpointIndex];
 		if(breakpoint.active && breakpoint.address == pMachine->cpu.PC)
 		{
-			pMachine->running = false;
-			s_breakpoints.stepOverBreakpoint.active = false;
+			BreakMachine(*pMachine, s_debugger);
 			break;
 		}
 	}
 
-	if(s_breakpoints.stepOverBreakpoint.active && s_breakpoints.stepOverBreakpoint.address == pMachine->cpu.PC)
+	if(s_debugger.stepOverBreakpoint.active && s_debugger.stepOverBreakpoint.address == pMachine->cpu.PC)
 	{
-		s_breakpoints.stepOverBreakpoint.active = false;
-		pMachine->running = false;
+		BreakMachine(*pMachine, s_debugger);
+	}
+
+	if(s_debugger.stepOutActive)
+	{
+		if(s_debugger.stepOutBreakpoint.active)
+		{
+			// we've just hit a return so expect to break on next instruction
+			HP_ASSERT(pMachine->cpu.PC == s_debugger.stepOutBreakpoint.address);
+			BreakMachine(*pMachine, s_debugger);
+		}
+		else
+		{ 
+			uint16_t returnAddress;
+			if(CurrentInstructionIsAReturnThatEvaluatesToTrue(*pMachine, returnAddress))
+			{
+				s_debugger.stepOutBreakpoint.address = returnAddress;
+				s_debugger.stepOutBreakpoint.active = true;
+			}
+		}
 	}
 
 	if(!pMachine->running)
@@ -416,6 +576,7 @@ static void drawTexture()
 	glBindVertexArray(s_vao);
 	glUseProgram(s_program);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glBindSampler(0, s_selectedSampler);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -426,6 +587,23 @@ int main(int argc, char** argv)
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
 		fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+		return EXIT_FAILURE;
+	}
+
+	Input::Init();
+
+	// SDL2_mixer
+	unsigned int sampleRate = 11025; // from 1.wav
+	Uint16 audioFormat = AUDIO_U8; // from 1.wav
+	if(Mix_OpenAudio(sampleRate, audioFormat, /*numChannels*/1, /*chunkSize*/512) < 0)
+	{
+		fprintf(stderr, "Failed to initialise SDL2_Mixer: %s\n", Mix_GetError());
+		return EXIT_FAILURE;
+	}
+
+	if(!InitAudio())
+	{
+		fprintf(stderr, "Failed to initialise audio\n");
 		return EXIT_FAILURE;
 	}
 
@@ -501,8 +679,13 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-
 	pMachine->debugHook = debugHook;
+
+	if(!CreateMachine(&s_pSavedMachine))
+	{
+		fprintf(stderr, "Failed to create save state\n");
+		return EXIT_FAILURE;
+	}
 
 	createOpenGLObjects(displayWidth, displayHeight);
 
@@ -512,7 +695,7 @@ int main(int argc, char** argv)
 	uint64_t frameIndex = 0;
 	while(!bDone)
 	{
-		StartFrame(pMachine);
+		Input::FrameStart();
 		
 		SDL_Event event;
 		while(SDL_PollEvent(&event))
@@ -525,56 +708,36 @@ int main(int argc, char** argv)
 			}
 			else if(event.type == SDL_KEYDOWN)
 			{
-				if(event.key.repeat == 0)
-					s_keyState[event.key.keysym.scancode] = true;
+				Input::OnKeyDown(event.key);
 
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					bDone = true;
-				else if(event.key.keysym.sym == SDLK_1)
-					pMachine->player1StartButton = true;
-				else if(event.key.keysym.sym == SDLK_2)
-					pMachine->player2StartButton = true;
-				else if(event.key.keysym.sym == SDLK_5)
-					pMachine->coinInserted = true;
-				else if(event.key.keysym.sym == SDLK_t)
-					pMachine->tilt = true;
-				else if(event.key.keysym.sym == SDLK_TAB)
-					s_showDevUI = !s_showDevUI;
-				else if(event.key.keysym.sym == SDLK_F5)
-					pMachine->running = !pMachine->running;
-				else if(event.key.keysym.sym == SDLK_F8)
-					DebugStepFrame(*pMachine, s_verbose);
-				else if(event.key.keysym.sym == SDLK_F10)
-				{
-					if(!pMachine->running)
-						StepOver(*pMachine, s_breakpoints, s_verbose);
-				}
-				else if(event.key.keysym.sym == SDLK_F11)
-				{
-					if(!pMachine->running)
-						StepInto(*pMachine, s_verbose);
-				}
 			}
 			else if(event.type == SDL_KEYUP)
-			{
-				s_keyState[event.key.keysym.scancode] = false;
-			}
+				Input::OnKeyUp(event.key);
+			else if(event.type == SDL_JOYAXISMOTION)
+				Input::OnJoyAxisMotion(event.jaxis);
+			else if(event.type == SDL_JOYHATMOTION)
+				Input::OnJoyHatMotion(event.jhat);
+			else if(event.type == SDL_JOYDEVICEADDED)
+				Input::OnJoyDeviceAdded(event.jdevice);
+			else if(event.type == SDL_JOYDEVICEREMOVED)
+				Input::OnJoyDeviceRemoved(event.jdevice);
+			else if(event.type == SDL_JOYBUTTONDOWN)
+				Input::OnJoyButtonDown(event.jbutton);
+			else if(event.type == SDL_JOYBUTTONUP)
+				Input::OnJoyButtonUp(event.jbutton);
+			else if(event.type == SDL_CONTROLLERBUTTONDOWN)
+				Input::OnControllerButtonDown(event.cbutton);
+			else if(event.type == SDL_CONTROLLERBUTTONUP)
+				Input::OnControllerButtonUp(event.cbutton);
+			else if(event.type == SDL_CONTROLLERAXISMOTION)
+				Input::OnControllerAxisMotion(event.caxis);
+			else if(event.type == SDL_CONTROLLERDEVICEADDED)
+				Input::OnControllerDeviceAdded(event.cdevice);
+			else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
+				Input::OnControllerDeviceRemoved(event.cdevice);
 		}
-
-		pMachine->player1ShootButton = s_keyState[SDL_SCANCODE_SPACE];
-		pMachine->player1JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
-		pMachine->player1JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
-
-#if 1
-		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_Q];
-		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_O];
-		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_P];
-#else
-		// share with Player 1
-		pMachine->player2ShootButton = s_keyState[SDL_SCANCODE_SPACE];
-		pMachine->player2JoystickLeft = s_keyState[SDL_SCANCODE_LEFT];
-		pMachine->player2JoystickRight = s_keyState[SDL_SCANCODE_RIGHT];
-#endif
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -607,6 +770,9 @@ int main(int argc, char** argv)
 	DestroyMachine(pMachine);
 	pMachine = nullptr;
 
+	DestroyMachine(s_pSavedMachine);
+	s_pSavedMachine = nullptr;
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
@@ -615,6 +781,12 @@ int main(int argc, char** argv)
 
 	SDL_DestroyWindow(pWindow);
 	pWindow = nullptr;
+
+	// SDL2_mixer
+	ShutdownAudio();
+	Mix_CloseAudio();
+
+	Input::Shutdown();
 
 	SDL_Quit();
 

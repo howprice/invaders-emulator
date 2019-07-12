@@ -1,1 +1,1 @@
-Unzip INVADERS.E, INVADERS.F, INVADERS.G and INVADERS.H into this folder.
+Unzip INVADERS.E, INVADERS.F, INVADERS.G and INVADERS.H and samples 0.wav .. 18.wav into this folder.

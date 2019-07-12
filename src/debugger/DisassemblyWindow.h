@@ -7,7 +7,7 @@
 
 struct Machine;
 struct State8080;
-struct Breakpoints;
+struct Debugger;
 
 class DisassemblyWindow
 {
@@ -17,7 +17,7 @@ public:
 	~DisassemblyWindow();
 
 	void Refresh(const Machine& machine);
-	void Update(const State8080& state8080, const Breakpoints& breakpoints);
+	void Update(const Machine& machine, const Debugger& debugger);
 
 	void ScrollToPC() { m_scrollToPC = true; }
 
@@ -37,5 +37,6 @@ private:
 
 	bool m_visible = false;
 	ImVector<Line> m_lines;
-	bool  m_scrollToPC;
+	bool  m_scrollToPC = false;
+	bool  m_showHex = true;
 };

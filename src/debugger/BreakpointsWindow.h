@@ -1,13 +1,13 @@
 #pragma once
 
-struct Breakpoints;
+struct Debugger;
 struct State8080;
 
 class BreakpointsWindow
 {
 public:
 
-	void Update(Breakpoints& breakpoints, const State8080& state8080);
+	void Update(Debugger& debugger, const State8080& state8080);
 
 	bool IsVisible() const { return m_visible; }
 	void SetVisible(bool visible) { m_visible = visible; }
