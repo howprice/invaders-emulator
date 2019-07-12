@@ -627,6 +627,12 @@ int main(int argc, char** argv)
 
 	SDL_GLContext gl_context = SDL_GL_CreateContext(pWindow);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
+	const int swapInterval = SDL_GL_GetSwapInterval();
+	const bool hasVsync = swapInterval > 0;
+	if(hasVsync)
+		printf("Display has VSYNC. SwapInterval=%i\n", swapInterval);
+	else
+		printf("Display does not have VSYNC\n");
 
 	// Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -656,6 +662,7 @@ int main(int argc, char** argv)
 	// Setup Platform/Renderer bindings
 	ImGui_ImplSDL2_InitForOpenGL(pWindow, gl_context);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+
 
 	Machine* pMachine = nullptr;
 	if(!CreateMachine(&pMachine))
