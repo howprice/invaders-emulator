@@ -8,7 +8,7 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## Dependencies
 
-This project depends on [SDL2](https://www.libsdl.org). 
+This project depends on [SDL2](https://www.libsdl.org) and [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/)
 
 Unzipped invaders ROMs should be placed the 'data' folder.
 
@@ -23,7 +23,7 @@ The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-
 Install using your package manager, e.g.
 
 	$ sudo apt-get install libsdl2-dev
-	$ sudo apt-get install libsdl2-ttf-dev
+	$ sudo apt-get install libsdl2-mixer-dev
 	
 or [download](https://www.libsdl.org/download-2.0.php) and install from source
 
