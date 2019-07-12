@@ -136,8 +136,8 @@ if os.get() == "linux" then
 --			linkoptions { "`sdl2-config --libs`" } -- magic quotes are shell-dependent
 --			linkoptions { os.outputof("sdl2-config --libs") } -- requires GENie to be run on target machine
 end
-			libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
-			links { "EGL", "GLESv2", "GL" }
+			--libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
+			links { "EGL", "GLESv2", "GL", "dl" }
 			
 newaction
 {
