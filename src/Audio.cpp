@@ -37,7 +37,7 @@ void InitGameAudio()
 		s_pChunk[sampleIndex] = Mix_LoadWAV(sample.filename);
 		if(s_pChunk[sampleIndex] == NULL)
 		{
-			fprintf(stderr, "Failed to load audio file: \"%s\" %s\n", sample.filename, Mix_GetError());
+			fprintf(stderr, "Warning: Failed to load audio file: \"%s\" %s  Sound effect will be unavailable.\n", sample.filename, Mix_GetError());
 		}
 	}
 
