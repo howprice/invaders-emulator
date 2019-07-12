@@ -89,6 +89,8 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Test on Linux
+- Test all builds (Dev, Release etc, all platforms)
+  - GitHub continuous Integration?
 - Test on Mac
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)

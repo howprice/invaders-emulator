@@ -601,11 +601,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	if(!InitAudio())
-	{
-		fprintf(stderr, "Failed to initialise audio\n");
-		return EXIT_FAILURE;
-	}
+	InitGameAudio();
 
 	// Decide GL+GLSL versions
 #if __APPLE__
@@ -783,7 +779,7 @@ int main(int argc, char** argv)
 	pWindow = nullptr;
 
 	// SDL2_mixer
-	ShutdownAudio();
+	ShutdownGameAudio();
 	Mix_CloseAudio();
 
 	Input::Shutdown();
