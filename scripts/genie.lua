@@ -71,7 +71,7 @@ solution "invaders-emulator"
 			"../3rdParty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
-		links { "SDL2", "SDL2_mixer", "opengl32" }
+		links { "SDL2", "SDL2_mixer" }
 		debugdir "../data"		-- debugger working directory
 		
 		configuration "Debug"
@@ -95,7 +95,7 @@ solution "invaders-emulator"
 				"../3rdParty/SDL2_mixer-2.0.4/include"
 			}
 			flags { "ReleaseRuntime" }  
-			links { "SDL2main" }
+			links { "SDL2main", "opengl32" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
 			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
@@ -137,7 +137,7 @@ if os.get() == "linux" then
 --			linkoptions { os.outputof("sdl2-config --libs") } -- requires GENie to be run on target machine
 end
 			libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
-			links { "EGL", "GLESv2" }
+			links { "EGL", "GLESv2", "GL" }
 			
 newaction
 {
