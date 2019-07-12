@@ -29,7 +29,7 @@ static_assert(COUNTOF_ARRAY(s_samples) == kSampleCount, "Array size incorrect");
 
 static Mix_Chunk* s_pChunk[kSampleCount] = {};
 
-bool InitAudio()
+void InitGameAudio()
 {
 	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
 	{
@@ -37,8 +37,7 @@ bool InitAudio()
 		s_pChunk[sampleIndex] = Mix_LoadWAV(sample.filename);
 		if(s_pChunk[sampleIndex] == NULL)
 		{
-			fprintf(stderr, "Mix_LoadWAV failed: %s\n", Mix_GetError());
-			return false;
+			fprintf(stderr, "Failed to load audio file: \"%s\" %s\n", sample.filename, Mix_GetError());
 		}
 	}
 
@@ -57,11 +56,9 @@ bool InitAudio()
 			while(Mix_Playing(channel) != 0);
 		}
 	}
-
-	return true;
 }
 
-void ShutdownAudio()
+void ShutdownGameAudio()
 {
 	for(unsigned int sampleIndex = 0; sampleIndex < kSampleCount; sampleIndex++)
 	{
@@ -73,6 +70,9 @@ void ShutdownAudio()
 void PlaySample(unsigned int index)
 {
 	HP_ASSERT(index < kSampleCount);
+	if(s_pChunk[index] == nullptr)
+		return; // sample not loaded
+
 	int loops = s_samples[index].loop ? -1 : 0;
 	int channel = Mix_PlayChannel(/*index*/-1, s_pChunk[index], loops);
 	if(channel == -1)
