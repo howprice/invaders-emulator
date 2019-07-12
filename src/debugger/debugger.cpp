@@ -38,11 +38,13 @@ void Print8080State(const State8080& state)
 #endif
 }
 
-void BreakMachine(Machine& machine, Breakpoints& breakpoints)
+void BreakMachine(Machine& machine, Debugger& debugger)
 {
 	HP_ASSERT(machine.running == true);
 	machine.running = false;
-	breakpoints.stepOverBreakpoint.active = false;
+	debugger.stepOverBreakpoint.active = false;
+	debugger.stepOutActive = false;
+	debugger.stepOutBreakpoint.active = false;
 }
 
 void ContinueMachine(Machine& machine)
@@ -51,35 +53,35 @@ void ContinueMachine(Machine& machine)
 	machine.running = true;
 }
 
-bool AddBreakpoint(Breakpoints& breakpoints, uint16_t address)
+bool AddBreakpoint(Debugger& debugger, uint16_t address)
 {
-	if(breakpoints.breakpointCount == COUNTOF_ARRAY(breakpoints.breakpoints))
+	if(debugger.breakpointCount == COUNTOF_ARRAY(debugger.breakpoints))
 		return false;
 
 	// #TODO: Don't add duplicates
 
-	Breakpoint& breakpoint = breakpoints.breakpoints[breakpoints.breakpointCount++];
+	Breakpoint& breakpoint = debugger.breakpoints[debugger.breakpointCount++];
 	breakpoint.address = address;
 	breakpoint.active = true;
 	return true;
 }
 
-void DeleteBreakpoint(Breakpoints& breakpoints, unsigned int index)
+void DeleteBreakpoint(Debugger& debugger, unsigned int index)
 {
-	HP_ASSERT(index < COUNTOF_ARRAY(breakpoints.breakpoints));
-	HP_ASSERT(index < breakpoints.breakpointCount);
+	HP_ASSERT(index < COUNTOF_ARRAY(debugger.breakpoints));
+	HP_ASSERT(index < debugger.breakpointCount);
 
 	// shuffle down to retain order
-	for(unsigned int i = index; i < breakpoints.breakpointCount - 1; i++)
+	for(unsigned int i = index; i < debugger.breakpointCount - 1; i++)
 	{
-		breakpoints.breakpoints[i] = breakpoints.breakpoints[i + 1];
+		debugger.breakpoints[i] = debugger.breakpoints[i + 1];
 	}
-	breakpoints.breakpointCount--;
+	debugger.breakpointCount--;
 }
 
-void ClearBreakpoints(Breakpoints& breakpoints)
+void ClearBreakpoints(Debugger& debugger)
 {
-	breakpoints.breakpointCount = 0;
+	debugger.breakpointCount = 0;
 }
 
 void StepInto(Machine& machine, bool verbose)
@@ -88,17 +90,50 @@ void StepInto(Machine& machine, bool verbose)
 	StepInstruction(&machine, verbose);
 }
 
-void StepOver(Machine& machine, Breakpoints& breakpoints, bool verbose)
+static uint16_t GetNextInstructionAddress(const Machine& machine)
+{
+	const uint8_t opcode = ReadByteFromMemory((void*)&machine, machine.cpu.PC, /*fatalOnFail*/true);
+	unsigned int instructionSizeBytes = GetInstructionSizeBytes(opcode);
+	uint16_t nextInstructionAddress = machine.cpu.PC + (uint16_t)instructionSizeBytes;
+	return nextInstructionAddress;
+}
+
+static bool CurrentInstructionIsACall(const Machine& machine)
+{
+	const uint8_t opcode = ReadByteFromMemory((void*)&machine, machine.cpu.PC, /*fatalOnFail*/true);
+	if(opcode == 0xCD)
+		return true; // CALL
+	if(opcode == 0xDC)
+		return true; // CC
+	if(opcode == 0xD4)
+		return true; // CNC
+	if(opcode == 0xCC)
+		return true; // CZ
+	if(opcode == 0xC4)
+		return true; // CNZ
+	if(opcode == 0xFC)
+		return true; // CM
+	if(opcode == 0xF4)
+		return true; // CP
+	if(opcode == 0xEC)
+		return true; // CPE
+	if(opcode == 0xE4)
+		return true; // CPO
+
+	return false;
+}
+
+void StepOver(Machine& machine, Debugger& debugger, bool verbose)
 {
 	HP_ASSERT(machine.running == false);
 
-	if(CurrentInstructionIsACall(machine.cpu))
+	if(CurrentInstructionIsACall(machine))
 	{
 		// set a hidden breakpoint on the next instruction and set the machine running
-		HP_ASSERT(breakpoints.stepOverBreakpoint.active == false);
-		breakpoints.stepOverBreakpoint.active = true;
-		uint16_t nextInstructionAddress = GetNextInstructionAddress(machine.cpu);
-		breakpoints.stepOverBreakpoint.address = nextInstructionAddress;
+		HP_ASSERT(debugger.stepOverBreakpoint.active == false);
+		debugger.stepOverBreakpoint.active = true;
+		uint16_t nextInstructionAddress = GetNextInstructionAddress(machine);
+		debugger.stepOverBreakpoint.address = nextInstructionAddress;
 		ContinueMachine(machine);
 	}
 	else
@@ -107,10 +142,77 @@ void StepOver(Machine& machine, Breakpoints& breakpoints, bool verbose)
 	}
 }
 
+void StepOut(Machine& machine, Debugger& debugger, bool /*verbose*/)
+{
+	HP_ASSERT(machine.running == false);
+	HP_ASSERT(debugger.stepOutActive == false);
+	HP_ASSERT(debugger.stepOutBreakpoint.active == false); // just in case
+	debugger.stepOutActive = true;
+	ContinueMachine(machine);
+}
+
 void DebugStepFrame(Machine& machine, bool verbose)
 {
 	HP_ASSERT(!machine.running);
 	machine.running = true;
 	StepFrame(&machine, verbose);
 	machine.running = false;
+}
+
+bool CurrentInstructionIsAReturnThatEvaluatesToTrue(const Machine& machine, uint16_t& returnAddress)
+{
+	const State8080& cpu = machine.cpu;
+
+	const uint8_t opcode = ReadByteFromMemory((void*)&machine, cpu.PC, /*fatalOnFail*/true);
+
+	bool willReturn = false;
+
+	if(opcode == 0xC0)
+	{
+		// 0xC0  RNZ
+		// Return If Not Zero
+		// If the Zero bit is 0, a return operation is performed
+		if(cpu.flags.Z == 0)
+			willReturn = true;
+	}
+	else if(opcode == 0xC8)
+	{
+		// 0xC8  RZ	
+		// Return If Zero
+		// If the Zero bit is 1, a return operation is performed.
+		if(cpu.flags.Z == 1)
+			willReturn = true;
+	}
+	else if(opcode == 0xC9)
+	{
+		// 0xC9 RET
+		willReturn = true;
+	}
+	else if(opcode == 0xd0)
+	{
+		// 0xd0 RNC
+		// Return If No Carry
+		// If the Carry bit is zero, a return operation is performed
+		if(cpu.flags.C == 0)
+			willReturn = true;
+	}
+	else if(opcode == 0xd8)
+	{
+		// 0xd8  RC
+		// Return If Carry
+		// If the Carry bit is 1, a return operation is performed
+		if(cpu.flags.C == 1)
+			willReturn = true;
+	}
+
+	if(willReturn)
+	{
+		// return address is stored in stack memory in little-endian format
+		uint8_t lsb = ReadByteFromMemory((void*)&machine, cpu.SP, /*fatalOnFail*/true);
+		uint8_t msb = ReadByteFromMemory((void*)&machine, cpu.SP + 1, /*fatalOnFail*/true);
+		returnAddress = ((uint8_t)msb << 8) | (uint8_t)lsb;
+		return true;
+	}
+
+	return false;
 }

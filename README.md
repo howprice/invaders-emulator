@@ -8,9 +8,24 @@ Space Invaders emulator. My first emulator. Inspired by the excellent tutorial a
 
 ## Dependencies
 
-This project depends on [SDL2](https://www.libsdl.org). The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+This project depends on [SDL2](https://www.libsdl.org). 
 
 Unzipped invaders ROMs should be placed the 'data' folder.
+
+Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder
+
+## Windows
+
+The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+
+## Linux
+
+Install using your package manager, e.g.
+
+	$ sudo apt-get install libsdl2-dev
+	$ sudo apt-get install libsdl2-ttf-dev
+	
+or [download](https://www.libsdl.org/download-2.0.php) and install from source
 
 ## Building
 
@@ -19,6 +34,18 @@ This project uses [GENie](https://github.com/bkaradzic/genie) to generate the bu
 ### Windows
 
 Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
+
+### Linux
+
+	$ git clone https://github.com/howprice/invaders-emulator
+	$ cd invaders-emulator
+	$ tools/bin/linux/genie gmake
+	$ cd build
+	$ make
+
+n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to make the checked in file executable.
+
+`make` with no confic specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `release`, `debug32`, `release32`, `debug64` or `release64`. 
 
 ### Other Platforms
 
@@ -61,33 +88,27 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- BUG: Why does pressing F12 crash the application
-
-- Get rid of Machine.memorySizeBytes
+- Test on Linux
+- Test on Mac
+- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
+- Watchpoints (break when memory read/written to)
+- Move debugHook into debugger class/file
+- Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
 - Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
-- Debugger
-  - Step Out (Shift+F11)
-    - Step to next Return instruction?
-  - Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
-  - Stack Window
-    - Store "stack base" when SP set with LXI SP,<address> instruction
-  - "Backtrace"? (Previously executed line(s))
-  - Editable registers in CPU Window
-  - Trap?
-  - Disassembly Window:
-    - Use ImGuiListClipper (see ImGui hex editor code)
-    - Add Autoscroll option
-- Sounds
-  - http://www.brentradio.com/SpaceInvaders.htm
-- Save/restore state
-- Load different ROMs
+- "Backtrace" Window (Previously executed line(s))
+- Stack Window
+  - Store "stack base" when SP set with LXI SP,<address> instruction
+- Editable registers in CPU Window
+- Trap?
+- Disassembly Window:
+  - Use ImGuiListClipper (see ImGui hex editor code)
+  - Add Autoscroll option
+- Load Computer Archaeology annotated disassembly and memory files to auto annotate! 
+- Load different Midway 8080 Black & White compatible ROMs
   - List in mame\src\mame\drivers\mw8080bw.cpp
 - Cheats
   - How does MAME handle cheats?
 - Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
 - What is the correct point in the frame to generate the interrupts? See machine update function
-- Use point sampler in shader
 - Headless mode (command line arg)
-- Test on Linux/Mac
 - What is the purpose of the RAM mirror? (It *is* used)
-- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)

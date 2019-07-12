@@ -2,6 +2,7 @@
 #define HP_8080_H
 
 #include <stdint.h>
+#include <stddef.h> // gcc size_t
 
 static const unsigned int kMinInstructionSizeBytes = 1;
 static const unsigned int kMaxInstructionSizeBytes = 3;
@@ -10,7 +11,7 @@ static const unsigned int kMaxInstructionSizeBytes = 3;
 
 // #TODO: What is the correct initial value of registers? Zero or garbage?
 
-typedef uint8_t(*ReadByteFromMemoryFuncPtr)(void* userdata, uint16_t address, bool fatalOnFail);
+typedef uint8_t(*ReadByteFromMemoryFuncPtr)(const void* userdata, uint16_t address, bool fatalOnFail);
 typedef bool(*WriteByteToMemoryFuncPtr)(void* userdata, uint16_t address, uint8_t val, bool fatalOnFail);
 typedef uint8_t(*InFuncPtr)(uint8_t port, void* userdata);
 typedef void(*OutFuncPtr)(uint8_t port, uint8_t val, void* userdata);
@@ -74,10 +75,5 @@ void Generate8080Interrupt(State8080& state, unsigned int interruptNumber);
 // Forces execution of commands located at address 0000. The content of other processor registers is not modified.
 // https://en.wikipedia.org/wiki/Intel_8080#Pin_use
 void Reset(State8080& state);
-
-// helper function
-uint16_t GetNextInstructionAddress(const State8080& state);
-
-bool CurrentInstructionIsACall(const State8080& state);
 
 #endif

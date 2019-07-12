@@ -43,12 +43,12 @@ solution "invaders-emulator"
 			buildoptions { "/wd4505" } -- unreferenced local function has been removed
 			
 		configuration "linux"
-			buildoptions { "-std=c++0x" }
+			buildoptions_cpp { "-std=c++0x" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
-
+			
 	project "emulator"
 		location "../build"
 		kind "ConsoleApp"
@@ -60,17 +60,18 @@ solution "invaders-emulator"
 			"../src/machine.*",
 			"../src/Assert.*",
 			"../src/Helpers.*",
+			"../src/Audio.*",
+			"../src/Input.*",
 			"../src/imgui/**",
 			"../src/debugger/*",
 			"../3rdParty/gl3w/GL/**"
 		}
 		includedirs {
 			"../src",
-			"../3rdparty/SDL2-2.0.9/include",
 			"../3rdparty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
-		links { "SDL2", "opengl32" }
+		links { "SDL2", "SDL2_mixer", "opengl32" }
 		debugdir "../data"		-- debugger working directory
 		
 		configuration "Debug"
@@ -89,6 +90,10 @@ solution "invaders-emulator"
 			targetdir "../bin/release"
 			
 		configuration "windows"
+			includedirs {
+				"../3rdparty/SDL2-2.0.9/include",
+				"../3rdparty/SDL2_mixer-2.0.4/include"
+			}
 			flags { "ReleaseRuntime" }  
 			links { "SDL2main" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
@@ -99,27 +104,41 @@ solution "invaders-emulator"
 
 		configuration { "windows", "not x64" }
 			libdirs { 
-				"../3rdparty/SDL2-2.0.9/lib/x86"
+				"../3rdparty/SDL2-2.0.9/lib/x86",
+				"../3rdparty/SDL2_mixer-2.0.4/lib/x86"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)",
+				"copy ..\\3rdparty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
 			}
 
 		configuration { "windows", "x64" }		
 			libdirs { 
-				"../3rdparty/SDL2-2.0.9/lib/x64"
+				"../3rdparty/SDL2-2.0.9/lib/x64",
+				"../3rdparty/SDL2_mixer-2.0.4/lib/x64"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdparty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)",
+				"copy ..\\3rdparty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
 			}
 			
 		configuration "linux"
-			buildoptions { "-std=c++0x" }
+			buildoptions_cpp { "-std=c++0x" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
-								
+			
+if os.get() == "linux" then
+--			buildoptions { "`sdl2-config --cflags`" }  -- magic quotes are shell-dependent
+			buildoptions { os.outputof("sdl2-config --cflags") }  -- requires GENie to be run on target machine
+
+--			linkoptions { "`sdl2-config --libs`" } -- magic quotes are shell-dependent
+--			linkoptions { os.outputof("sdl2-config --libs") } -- requires GENie to be run on target machine
+end
+			libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
+			links { "EGL", "GLESv2" }
+			
 newaction
 {
 	trigger = "clean",

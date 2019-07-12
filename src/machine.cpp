@@ -128,7 +128,8 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 
 #include "machine.h"
 
-//#include "debugger/debugger.h"
+#include "Audio.h"
+#include "Input.h"
 #include "Assert.h"
 #include "Helpers.h"
 
@@ -209,7 +210,7 @@ bool WriteByteToMemory(void* userdata, uint16_t address, uint8_t val, bool fatal
 	return false;
 }
 
-uint8_t ReadByteFromMemory(void* userdata, uint16_t address, bool fatalOnFail /*= false*/)
+uint8_t ReadByteFromMemory(const void* userdata, uint16_t address, bool fatalOnFail /*= false*/)
 {
 	HP_ASSERT(userdata);
 	Machine* pMachine = (Machine*)userdata;
@@ -285,6 +286,7 @@ static uint8_t In(uint8_t port, void* userdata)
 {
 	HP_ASSERT(userdata);
 	Machine* pMachine = (Machine*)userdata;
+	MachineInput& input = pMachine->input;
 
 	// http://www.emutalk.net/threads/38177-Space-Invaders?s=e58df01e41111c4efc6f3207b2890054&p=359411&viewfull=1#post359411
 
@@ -302,12 +304,12 @@ static uint8_t In(uint8_t port, void* userdata)
 		// BIT 6    P1 joystick right
 		// BIT 7 ?
 		uint8_t val = 0x00;
-		val |= pMachine->coinInserted ? 0 : (1 << 0);
-		val |= pMachine->player2StartButton ? (1 << 1) : 0;
-		val |= pMachine->player1StartButton ? (1 << 2) : 0;
-		val |= pMachine->player1ShootButton ? (1 << 4) : 0;
-		val |= pMachine->player1JoystickLeft ? (1 << 5) : 0;
-		val |= pMachine->player1JoystickRight ? (1 << 6) : 0;
+		val |= input.coinInserted ? 0 : (1 << 0);
+		val |= input.player2StartButton ? (1 << 1) : 0;
+		val |= input.player1StartButton ? (1 << 2) : 0;
+		val |= input.player1ShootButton ? (1 << 4) : 0;
+		val |= input.player1JoystickLeft ? (1 << 5) : 0;
+		val |= input.player1JoystickRight ? (1 << 6) : 0;
 		return val;
 	}
 	else if(port == 2)
@@ -327,10 +329,10 @@ static uint8_t In(uint8_t port, void* userdata)
 		uint8_t dipSwitchMask = 0b10001011; // see Machine.dipSwitchBits 
 		val = pMachine->dipSwitchBits & dipSwitchMask;
 
-		val |= pMachine->tilt ? (1<<2) : 0;
-		val |= pMachine->player2ShootButton ? (1 << 4) : 0;
-		val |= pMachine->player2JoystickLeft ? (1 << 5) : 0;
-		val |= pMachine->player2JoystickRight ? (1 << 6) : 0;
+		val |= input.tilt ? (1<<2) : 0;
+		val |= input.player2ShootButton ? (1 << 4) : 0;
+		val |= input.player2JoystickLeft ? (1 << 5) : 0;
+		val |= input.player2JoystickRight ? (1 << 6) : 0;
 
 		return val;
 	}
@@ -398,7 +400,56 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		pMachine->shiftRegisterOffset = val;
 		break;
 	case 3:
-		// #TODO: Implement sound
+		// #TODO: Trigger samples
+		// bit 0 = UFO (repeats)       SX0 0.raw
+		// bit 1 = Shot                SX1 1.raw
+		// bit 2 = Flash (player die)  SX2 2.raw
+		// bit 3 = Invader die         SX3 3.raw
+		// bit 4 = Extended play       SX4
+		// bit 5 = AMP enable          SX5
+		// bit 6 = NC (not wired)
+		// bit 7 = NC (not wired)
+		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
+		
+		if((val & (1<<0)) && !(pMachine->prevOut3 & (1<<0)))
+		{
+			PlaySample(0);
+		}
+		else if(!(val & (1<<0)) && (pMachine->prevOut3 & (1<<0)))
+		{
+			StopSample(0);
+		}
+
+		if((val & (1<<1)) && !(pMachine->prevOut3 & (1<<1)))
+			PlaySample(1); // Shot
+
+		if((val & (1<<2)) && !(pMachine->prevOut3 & (1<<2)))
+			PlaySample(2); // Flash (player die)
+
+		if((val & (1<<3)) && !(pMachine->prevOut3 & (1<<3)))
+			PlaySample(3); // Invader die
+
+		if((val & (1<<4)) && !(pMachine->prevOut3 & (1<<4)))
+		{
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 3 bit 4 Extended play SX4 not implemented\n");
+				first = false;
+			}
+		}
+
+		if((val & (1<<5)) && !(pMachine->prevOut3 & (1<<5)))
+		{
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 3 bit 5 AMP enable SX5 not implemented\n");
+				first = false;
+			}
+		}
+
+		pMachine->prevOut3 = val;
 		break;
 	case 4:
 	{
@@ -416,19 +467,57 @@ static void Out(uint8_t port, uint8_t val, void* userdata)
 		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html#DedicatedShiftHardware
 
 		pMachine->shiftRegisterValue = pMachine->shiftRegisterValue >> 8;
-		//		s_shiftRegisterValue &= 0x00ff; // redundant; the above shift will shift in zeros from the left
+//		s_shiftRegisterValue &= 0x00ff; // redundant; the above shift will shift in zeros from the left
 		pMachine->shiftRegisterValue |= (uint16_t)val << 8;
 		break;
 	}
 	case 5:
-		// #TODO: Implement sound
+		// #TODO: Trigger samples
+		// bit 0 = Fleet movement 1     SX6 4.raw
+		// bit 1 = Fleet movement 2     SX7 5.raw
+		// bit 2 = Fleet movement 3     SX8 6.raw
+		// bit 3 = Fleet movement 4     SX9 7.raw
+		// bit 4 = UFO Hit              SX10 8.raw
+		// bit 5 = NC (Cocktail mode control ... to flip screen)
+		// bit 6 = NC (not wired)
+		// bit 7 = NC (not wired)
+		// http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html
+
+		if((val & (1<<0)) && !(pMachine->prevOut5 & (1<<0)))
+			PlaySample(4); // Fleet movement 1
+
+		if((val & (1<<1)) && !(pMachine->prevOut5 & (1<<1)))
+			PlaySample(5); // Fleet movement 2
+
+		if((val & (1<<2)) && !(pMachine->prevOut5 & (1<<2)))
+			PlaySample(6); // Fleet movement 3
+
+		if((val & (1<<3)) && !(pMachine->prevOut5 & (1<<3)))
+			PlaySample(7); // Fleet movement 4
+
+		if((val & (1<<4)) && !(pMachine->prevOut5 & (1<<4)))
+			PlaySample(8); // UFO Hit
+
+		if((val & (1<<5)) && !(pMachine->prevOut5 & (1<<5)))
+		{
+			static bool first = true;
+			if(first)
+			{
+				printf("Out port 5 bit 5 (Cocktail mode control ... to flip screen) not implemented\n");
+				first = false;
+			}
+		}
+
+		pMachine->prevOut5 = val;
 		break;
+
 	case 6:
 		// #TODO: Is this the "Watchdog"? http://computerarcheology.com/Arcade/SpaceInvaders/Code.html
 		break;
 	default:
 		HP_FATAL_ERROR("Unexpected OUT port: %u", port);
 	}
+
 }
 
 //------------------------------------------------------------------------------
@@ -560,27 +649,39 @@ void ResetMachine(Machine* pMachine)
 	pMachine->scanLine = 0;
 }
 
-void StartFrame(Machine* pMachine)
+static void getInput(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 
-	pMachine->coinInserted = false;
-	pMachine->player2StartButton = false;
-	pMachine->player1StartButton = false;
-	pMachine->player1ShootButton = false;
-	pMachine->player1JoystickLeft = false;
-	pMachine->player1JoystickRight = false;
-	pMachine->player2ShootButton = false;
-	pMachine->player2JoystickLeft = false;
-	pMachine->player2JoystickRight = false;
-	pMachine->tilt = false;
+	// #TODO: Controller input too
+ 	MachineInput& input = pMachine->input;
+	input = {};
+	input.coinInserted = Input::IsKeyDownThisFrame(SDL_SCANCODE_5);
+ 	input.player1StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_1) || Input::IsButtonDownThisFrame(0, SDL_CONTROLLER_BUTTON_START) || Input::IsButtonDownThisFrame(0, SDL_CONTROLLER_BUTTON_A);
+ 	input.player2StartButton = Input::IsKeyDownThisFrame(SDL_SCANCODE_2) || Input::IsButtonDownThisFrame(1, SDL_CONTROLLER_BUTTON_START) || Input::IsButtonDownThisFrame(1, SDL_CONTROLLER_BUTTON_A);
+ 	input.player1ShootButton = Input::GetKeyState(SDL_SCANCODE_SPACE) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_A);
+ 	input.player1JoystickLeft = Input::GetKeyState(SDL_SCANCODE_LEFT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || Input::GetAxisValue(0, SDL_CONTROLLER_AXIS_LEFTX) < -0.5f;
+ 	input.player1JoystickRight = Input::GetKeyState(SDL_SCANCODE_RIGHT) || Input::GetButtonState(0, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || Input::GetAxisValue(0, SDL_CONTROLLER_AXIS_LEFTX) > 0.5f;
+ 	input.player2ShootButton = Input::GetKeyState(SDL_SCANCODE_Q) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_A);
+ 	input.player2JoystickLeft = Input::GetKeyState(SDL_SCANCODE_O) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || Input::GetAxisValue(1, SDL_CONTROLLER_AXIS_LEFTX) < -0.5f;
+ 	input.player2JoystickRight = Input::GetKeyState(SDL_SCANCODE_P) || Input::GetButtonState(1, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || Input::GetAxisValue(1, SDL_CONTROLLER_AXIS_LEFTX) > 0.5f;
+#if 1
+	// Player 2 share Player controls
+	input.player2ShootButton |= input.player1ShootButton;
+	input.player2JoystickLeft |= input.player1JoystickLeft;
+	input.player2JoystickRight |= input.player1JoystickRight;
+#endif
+
+ 	input.tilt = Input::GetKeyState(SDL_SCANCODE_T);
 }
 
 void StepFrame(Machine* pMachine, bool verbose)
 {
 	HP_ASSERT(pMachine);
 //	HP_ASSERT(pMachine->frameCycleCount == 0); // Assert not valid - it is perfectly valid to step to end of frame from part way through
-	
+
+	getInput(pMachine);
+
 	do 
 	{
 		if(pMachine->running)
