@@ -1,7 +1,7 @@
 #include "DebugWindow.h"
 
 #include "debugger.h"
-#include "Machine.h"
+#include "machine.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
