@@ -15,7 +15,7 @@ void CpuWindow::Update(State8080& state)
 	
 		// #TODO: Allow registers to be modified
 		ImGui::Text("A: %02X  Flags: %02X %c%c%c%c%c\n",
-			state.A, state.flags,
+			state.A, *(uint8_t*)&state.flags,
 			state.flags.S ? 'S' : '-',
 			state.flags.Z ? 'Z' : '-',
 			state.flags.AC ? 'A' : '-',
