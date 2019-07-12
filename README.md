@@ -95,9 +95,7 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Test on Linux
-  - VirtualBox with Ubuntu guest only supports up to GLSL 140 "#version 140" (OpenGL 3.1). 
-  - ImGui SDL2 OpenGL3 example works in the VM out of the box using "#version 130" (OpenGL 3.0)  
+- Fix timing on Linux. Don't think there is any vsync, so might have to resort to timing.
 
 - Test all builds (Dev, Release etc, all platforms)
   - GitHub continuous Integration?
