@@ -51,6 +51,13 @@ n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to 
 
 Not yet tested. May require minor fix-up.
 
+## Running
+
+### Linux
+
+	$ cd data
+	$ ../bin/debug/emulator
+
 ## Controls
 
 - Press Esc to quit
