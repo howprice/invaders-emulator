@@ -4,17 +4,17 @@
 
 ## About
 
-Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com)
+Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com).
 
-<img src="docs/screenshot.png">
+<br><img src="docs/screenshot.png">
 
 ## Dependencies
 
 This project depends on [SDL2](https://www.libsdl.org) and [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/)
 
-Unzipped invaders ROMs should be placed the 'data' folder.
+Unzipped invaders ROMs should be placed the 'data' folder. The emulator will not run if the ROMs are not present.
 
-Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder
+Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder. The emulator can run without samples present.
 
 ## Windows
 
@@ -62,18 +62,25 @@ Not yet tested. May require minor fix-up.
 
 ## Controls
 
-- Press Esc to quit
+### Game Controls
 - Press 5 to insert coin
 - Press 1 to start one player game
 - Press 2 to start two player game
-- Player 1 controls: cursors left/right and space
-- Player 2 controls: O/P to move left and right and Q to fire
+- Player 1 controls: Controller or keyboard cursors left/right and space
+- Player 2 controls: Share Player 1 controls, or second controller and O, P, and Q keys
+- Press Esc to quit
+- Press T to tilt
 
-- Press Tab to show/hide dev UI.
+### Emulator Controls
+- Tab - Toggle user interface.
+- F3 - Reset machine
 - F5 - Break / resume execution
+- Shift+F7 - Save state (to memory)
+- F7 - Restore state (from memory)
 - F8 - Step Frame
 - F10 - Step Over
 - F11 - Step Into
+- Shift+F11 - Step Out
 
 - Right click on Disassembly Window for context menu
 
