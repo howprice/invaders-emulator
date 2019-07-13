@@ -6,6 +6,8 @@
 
 Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com)
 
+<img src="docs/screenshot.png">
+
 ## Dependencies
 
 This project depends on [SDL2](https://www.libsdl.org) and [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/)
