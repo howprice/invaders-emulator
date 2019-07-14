@@ -2784,6 +2784,7 @@ unsigned int Disassemble8080(const uint8_t* buffer, const size_t bufferSize, uns
 {
 	HP_ASSERT(buffer);
 	HP_ASSERT(pc < bufferSize);
+	HP_UNUSED(bufferSize);
 
 	const uint8_t* pInstruction = &buffer[pc];
 	const uint8_t opcode = *pInstruction;
