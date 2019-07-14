@@ -93,6 +93,8 @@ static struct {
 	int major, minor;
 } version;
 
+#include <stdio.h>
+
 static int parse_version(void)
 {
 	if (!glGetIntegerv)
@@ -100,6 +102,8 @@ static int parse_version(void)
 
 	glGetIntegerv(GL_MAJOR_VERSION, &version.major);
 	glGetIntegerv(GL_MINOR_VERSION, &version.minor);
+
+	printf("GL_MAJOR_VERSION %d GL_MINOR_VERSION %d\n", version.major, version.minor);
 
 	if (version.major < 3)
 		return -1;
