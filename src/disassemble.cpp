@@ -54,7 +54,11 @@ int main(int argc, char** argv)
 		fseek(pFile, 0, SEEK_END);
 		size_t fileSizeBytes = ftell(pFile);
 		fseek(pFile, 0, SEEK_SET);
-		fread(buffer + bufferOffset, 1, fileSizeBytes, pFile);
+		if(fread(buffer + bufferOffset, 1, fileSizeBytes, pFile) != fileSizeBytes)
+		{
+			fprintf(stderr, "Failed to read file: %s\n", fileName);
+			return EXIT_FAILURE;
+		}
 		fclose(pFile);
 		pFile = nullptr;
 

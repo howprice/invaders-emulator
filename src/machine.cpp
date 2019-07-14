@@ -555,7 +555,11 @@ static bool loadRoms(uint8_t* pMemory, size_t memorySizeBytes)
 			return false;
 		}
 
-		fread(pMemory + address, 1, fileSizeBytes, pFile);
+		if(fread(pMemory + address, 1, fileSizeBytes, pFile) != fileSizeBytes)
+		{
+			fprintf(stderr, "Failed to read file: %s\n", fileName);
+			return false;
+		}
 		fclose(pFile);
 		pFile = nullptr;
 
