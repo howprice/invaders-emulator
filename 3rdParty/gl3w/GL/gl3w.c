@@ -100,9 +100,12 @@ static int parse_version(void)
 	if (!glGetIntegerv)
 		return -1;
 
+	printf("GL_VERSION %s\n", glGetString(GL_VERSION));
+
+	version.major = 0;
+	version.minor = 0;
 	glGetIntegerv(GL_MAJOR_VERSION, &version.major);
 	glGetIntegerv(GL_MINOR_VERSION, &version.minor);
-
 	printf("GL_MAJOR_VERSION %d GL_MINOR_VERSION %d\n", version.major, version.minor);
 
 	if (version.major < 3)
