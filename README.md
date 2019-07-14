@@ -41,17 +41,17 @@ Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and
 
 	$ git clone https://github.com/howprice/invaders-emulator
 	$ cd invaders-emulator
-	$ tools/bin/linux/genie gmake
+	$ tools/bin/linux/genie gmake  (OR ./genie_gmake.sh) 
 	$ cd build
 	$ make
 
 n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to make the checked in file executable.
 
-`make` with no confic specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `release`, `debug32`, `release32`, `debug64` or `release64`. 
+`make` with no config specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `release`, `debug32`, `release32`, `debug64` or `release64`. Or type `make help` for more info. Make sure you're in the `build` folder.
 
 ### Other Platforms
 
-Not yet tested. May require minor fix-up.
+Not yet tested. May require minor fix-up for Raspberry Pi and OSX
 
 ## Running
 
@@ -104,10 +104,9 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Fix timing on Linux. Don't think there is any vsync, so might have to resort to timing.
-
 - Test all builds (Dev, Release etc, all platforms)
-  - GitHub continuous Integration?
+- Option to disable VSYNC. Manual (high performance) frame timing instead.
+- GitHub Continuous Integration?
 - Test on Mac
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
