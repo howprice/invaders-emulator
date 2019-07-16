@@ -41,6 +41,7 @@
 
 static bool s_startDebugging = false;
 static bool s_verbose = false;
+static unsigned int s_zoom = 3;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
 
 static GLuint s_vertexShader = 0;
@@ -73,6 +74,7 @@ static void printUsage()
 		"  --help                       Shows this message\n"
 		"  -d or --debug                Start in debugger\n"
 		"  --verbose                    \n"
+		"  -z --zoom                    Pixel zoom (scale). Default = 3\n"
 //		"  -r or --rotate-display       Rotate display 90 degrees anticlockwise\n"
 	);
 }
@@ -95,6 +97,22 @@ static void parseCommandLine(int argc, char** argv)
 		else if(strcmp(arg, "--verbose") == 0)
 		{
 			s_verbose = true;
+		}
+		else if(strcmp(arg, "-z") == 0 || strcmp(arg, "--zoom") == 0)
+		{
+			if(i + 1 == argc)
+			{
+				printUsage();
+				exit(EXIT_FAILURE);
+			}
+
+			arg = argv[++i];
+			if(!ParseUnsignedInt(arg, s_zoom))
+			{
+				fprintf(stderr, "ERROR: Specified zoom is invalid\n");
+				printUsage();
+				exit(EXIT_FAILURE);
+			}
 		}
 		else if(strcmp(arg, "-r") == 0 || strcmp(arg, "--rotate-display") == 0)
 		{
@@ -617,9 +635,8 @@ int main(int argc, char** argv)
 	const unsigned int displayWidth = s_rotateDisplay ? Machine::kDisplayHeight : Machine::kDisplayWidth;
 	const unsigned int displayHeight = s_rotateDisplay ? Machine::kDisplayWidth : Machine::kDisplayHeight;
 
-	static const unsigned int kPixelScale = 3;
-	unsigned int windowWidth = kPixelScale * displayWidth;
-	unsigned int windowHeight = kPixelScale * displayHeight;
+	unsigned int windowWidth = s_zoom * displayWidth;
+	unsigned int windowHeight = s_zoom * displayHeight;
 
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 
