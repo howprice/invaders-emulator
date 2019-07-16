@@ -129,13 +129,12 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
 			
-if os.get() == "linux" then
 --			buildoptions { "`sdl2-config --cflags`" }  -- magic quotes are shell-dependent
 			buildoptions { os.outputof("sdl2-config --cflags") }  -- requires GENie to be run on target machine
 
 --			linkoptions { "`sdl2-config --libs`" } -- magic quotes are shell-dependent
 --			linkoptions { os.outputof("sdl2-config --libs") } -- requires GENie to be run on target machine
-end
+
 			--libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
 			links { "EGL", "GLESv2", "GL", "dl" }
 			
