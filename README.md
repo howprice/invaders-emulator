@@ -47,7 +47,7 @@ Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and
 
 n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to make the checked in file executable.
 
-`make` with no config specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `release`, `debug32`, `release32`, `debug64` or `release64`. Or type `make help` for more info. Make sure you're in the `build` folder.
+`make` with no config specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `dev`, `release`, `debug32`, `dev32`, `release32`, `debug64`, `dev64` or `release64`. Or type `make help` for more info. Make sure you're in the `build` folder.
 
 ### Other Platforms
 
