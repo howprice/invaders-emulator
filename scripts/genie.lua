@@ -128,7 +128,7 @@ solution "invaders-emulator"
 			}
 			
 		configuration "linux"
-			buildoptions_cpp { "-std=c++0x" }
+			buildoptions_cpp { "-std=c++11" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
