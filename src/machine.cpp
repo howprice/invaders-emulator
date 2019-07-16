@@ -241,6 +241,8 @@ uint8_t ReadByteFromMemory(const void* userdata, uint16_t address, bool fatalOnF
 	return 0;
 }
 
+#ifndef RELEASE
+
 static void TestMemory(uint8_t* pMemory)
 {
 	HP_ASSERT(pMemory);
@@ -267,6 +269,7 @@ static void TestMemory(uint8_t* pMemory)
 		HP_ASSERT(ReadByteFromMemory(pMemory, address) == val);
 	}
 }
+#endif
 
 struct Rom
 {

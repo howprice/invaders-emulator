@@ -99,8 +99,13 @@ solution "invaders-emulator"
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
 			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
-			buildoptions { "/wd4127" } -- conditional expression is constant
-			buildoptions { "/wd4505" } -- unreferenced local function has been removed
+			buildoptions { 
+				"/wd4127", -- conditional expression is constant
+				"/wd4505" -- unreferenced local function has been removed
+			}
+
+		configuration { "windows", "release" }
+			buildoptions "/wd4390" -- empty controlled statement found; is this the intent? Required for ImGui in release
 
 		configuration { "windows", "not x64" }
 			libdirs { 
