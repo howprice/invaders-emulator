@@ -1,6 +1,6 @@
 # invaders-emulator
-
----
+=====
+[![Build Status](https://travis-ci.org/howprice/invaders-emulator.svg?branch=master)](https://travis-ci.org/howprice/invaders-emulator)
 
 ## About
 
