@@ -4,13 +4,13 @@ invaders-emulator
 
 ## About
 
-Space Invaders emulator. My first emulator. Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com).
+Cross-platform Space Invaders emulator. My first emulator! Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com).
 
 <br><img src="docs/screenshot.png">
 
 ## Dependencies
 
-This project depends on [SDL2](https://www.libsdl.org) and [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/)
+This project depends on [SDL2](https://www.libsdl.org) (at least version 2.0.6) and [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/)
 
 Unzipped invaders ROMs should be placed the 'data' folder. The emulator will not run if the ROMs are not present.
 
@@ -104,10 +104,12 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Test all builds (Dev, Release etc, all platforms)
-- Option to disable VSYNC. Manual (high performance) frame timing instead.
-- GitHub Continuous Integration?
-- Test on Mac
+- Fix OSX build
+- Configure travis to build OSX
+- Can travis job results be reported separately? i.e. by configuration and platform?
+- Deploy with travis?
+- Configure travis to build Windows
+- Option to disable VSYNC. Manual (high performance) frame timing instead. Required for Raspberry Pi
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file
