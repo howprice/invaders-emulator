@@ -7,15 +7,17 @@ branches:
  only:
    - master
 
-install:
-  
+before_install:
   - sudo add-apt-repository ppa:litenstein/sdl2-xenial -y # libsdl2 2.0.8 for xenial https://launchpad.net/~litenstein/+archive/ubuntu/sdl2-xenial
-  - sudo apt-get update -q
+  - sudo apt-get update -qq
+
+install:
+  # install any dependencies required
   - sudo apt-get install libsdl2-dev -y
+  - sdl2-config --version
   - sudo apt-get install libsdl2-mixer-dev -y
     
 script:
-  - sdl2-config --version
   - ./genie_gmake.sh
   - cd build
   - make
