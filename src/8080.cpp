@@ -2196,7 +2196,22 @@ static unsigned int executeF1(State8080& state)
 
 	// First register of register pair always contains the MSB
 	state.A = msb;
-	state.flags = *(Flags8080*)& lsb;
+
+#if 0
+	state.flags = *(Flags8080*)&lsb; // GCC error: dereferencing type-punned pointer will break strict-aliasing rules[-Werror = strict-aliasing]
+#else
+	// union to avoid strict-aliasing
+	static_assert(sizeof(Flags8080) == sizeof(uint8_t), "Expect Flags8080 to be 1 byte in size");
+	union
+	{
+		Flags8080 flags;
+		uint8_t u8val;
+	} flagsUnion;
+
+	flagsUnion.u8val = lsb;
+	state.flags = flagsUnion.flags;
+#endif
+
 	state.SP += 2;
 
 	return 10;
