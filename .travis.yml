@@ -11,7 +11,7 @@ addons:
   apt:
     update: true
     packages:
-      - libsdl2-dev
+ #     - libsdl2-dev
       - libsdl2-mixer-dev
 
 before_install:
@@ -19,7 +19,8 @@ before_install:
   # Download, make and install SDL2-2.0.8 (stable)
   - set -e
   - |
-    wget https://www.libsdl.org/release/SDL2-2.0.8.tar.gz | tar xz
+    wget https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
+    tar -xzvf SDL2-2.0.8.tar.gz
     cd SDL2-2.0.8
     ./configure
     make
