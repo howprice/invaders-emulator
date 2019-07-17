@@ -20,7 +20,7 @@ before_install:
 #    sudo make install
 #    cd ..
     
-  - sudo add-apt-repository ppa:litenstein/sdl2-xenial
+  - sudo add-apt-repository ppa:litenstein/sdl2-xenial -y
   - sudo apt-get update -q
   - sudo apt-get install libsdl2-dev -y
   - sudo apt-get install libsdl2-mixer-dev -y
