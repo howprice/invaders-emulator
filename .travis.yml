@@ -17,13 +17,14 @@ addons:
 before_install:
   
   # Download, make and install SDL2-2.0.8 (stable)
-#  - |
-#    travis_retry curl -L https://www.libsdl.org/release/SDL2-2.0.8.tar.gz | tar xz
-#    cd SDL2-2.0.8
-#    ./configure
-#    make
-#    sudo make install
-#    cd ..
+  - set -e
+  - |
+    wget https://www.libsdl.org/release/SDL2-2.0.8.tar.gz | tar xz
+    cd SDL2-2.0.8
+    ./configure
+    make
+    sudo make install
+    cd ..
     
 script:
   - sdl2-config --version
