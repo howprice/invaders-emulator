@@ -10,6 +10,7 @@ addons:
       - libsdl2-mixer-dev
 
 script:
+  - sdl2-config --version
   - ./genie_gmake.sh
   - cd build
   - make
