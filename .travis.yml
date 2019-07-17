@@ -10,18 +10,19 @@ branches:
 before_install:
   
   # Download, make and install SDL2-2.0.8 (stable)
-  - set -e
-  - |
-    wget https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
-    tar -xzvf SDL2-2.0.8.tar.gz
-    cd SDL2-2.0.8
-    ./configure
-    make
-    sudo make install
-    cd ..
+#  - set -e
+#  - |
+#    wget https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
+#    tar -xzvf SDL2-2.0.8.tar.gz
+#    cd SDL2-2.0.8
+#    ./configure
+#    make
+#    sudo make install
+#    cd ..
     
-  # install sdl2-mixer package
-  - sudo apt get update -qq
+  - sudo add-apt-repository ppa:litenstein/sdl2-xenial
+  - sudo apt-get update -q
+  - sudo apt-get install libsdl2-dev -y
   - sudo apt-get install libsdl2-mixer-dev -y
     
 script:
