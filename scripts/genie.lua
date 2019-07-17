@@ -134,6 +134,9 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
 			
+			-- ImGui with my HP_ASSERT macro gives: error: assuming signed overflow does not occur when assuming that (X - c) > X is always false [-Werror=strict-overflow]
+			buildoptions { "-Wno-error=strict-overflow" }
+			
 			buildoptions { "`sdl2-config --cflags`" }  -- magic quotes are shell-dependent
 --			buildoptions { os.outputof("sdl2-config --cflags") }  -- requires GENie to be run on target machine
 
