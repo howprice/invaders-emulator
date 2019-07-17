@@ -12,7 +12,7 @@ addons:
 script:
   - ./genie_gmake.sh
   - cd build
-  - make -n
+  - make
 
 notifications:
   email: false
