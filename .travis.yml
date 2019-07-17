@@ -1,18 +1,15 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: cpp
 compiler: gcc
 
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
     packages:
       - libsdl2-dev
       - libsdl2-mixer-dev
 
 script:
   - ./genie_gmake.sh
-  - cd build;
+  - cd build
   - make
-  
