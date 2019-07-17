@@ -146,6 +146,8 @@ solution "invaders-emulator"
 			--libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
 			links { "EGL", "GLESv2", "GL", "dl" }
 			
+		configuration { "linux", "release" }
+			buildoptions { "-Wno-empty-body" } -- ImGui GCC release error: suggest braces around empty body in an ‘if’ statement [-Werror=empty-body] (assert related)
 newaction
 {
 	trigger = "clean",
