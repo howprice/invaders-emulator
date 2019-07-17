@@ -9,14 +9,12 @@ branches:
 
 addons:
   apt:
+    update: true
     packages:
-      #- libsdl2-dev
+      - libsdl2-dev
       - libsdl2-mixer-dev
 
 before_install:
-
-  - sudo apt-get update
-  - sudo apt-get install libsdl2-dev
   
   # Download, make and install SDL2-2.0.8 (stable)
 #  - |
@@ -25,7 +23,8 @@ before_install:
 #    ./configure
 #    make
 #    sudo make install
-
+#    cd ..
+    
 script:
   - sdl2-config --version
   - ./genie_gmake.sh
