@@ -43,11 +43,13 @@ solution "invaders-emulator"
 			buildoptions { "/wd4505" } -- unreferenced local function has been removed
 			
 		configuration "linux"
-			buildoptions_cpp { "-std=c++0x" }
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
-			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
+
+		configuration "gcc"
+			buildoptions_cpp { "-std=c++11" }
+			buildoptions { "-Wno-missing-field-initializers" }
 			
 	project "emulator"
 		location "../build"
@@ -148,6 +150,15 @@ solution "invaders-emulator"
 			
 		configuration { "linux", "release" }
 			buildoptions { "-Wno-empty-body" } -- ImGui GCC release error: suggest braces around empty body in an ‘if’ statement [-Werror=empty-body] (assert related)
+
+		configuration "macosx"
+			options { "ForceCPP" }
+			buildoptions_cpp { "-std=c++11" }
+			buildoptions { "`sdl2-config --cflags`" }
+			linkoptions { "`sdl2-config --libs`" }
+			--buildoptions { "-Wno-unused-function" }
+			--buildoptions { "-Wno-missing-braces" }
+
 newaction
 {
 	trigger = "clean",
