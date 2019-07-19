@@ -131,11 +131,11 @@ solution "invaders-emulator"
 
 		configuration "gcc"
 			buildoptions_cpp { "-std=c++11" }
-
+			buildoptions { "-Wno-missing-field-initializers" }
+			
 		configuration "linux"
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
-			buildoptions { "-Wno-missing-field-initializers" }
 			buildoptions { "-Wno-missing-braces" }
 			
 			-- ImGui with my HP_ASSERT macro gives: error: assuming signed overflow does not occur when assuming that (X - c) > X is always false [-Werror=strict-overflow]
@@ -153,6 +153,14 @@ solution "invaders-emulator"
 		configuration "macosx"
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-braces" }
+
+			-- ImGui OSX dependencies from example makefile
+			-- OpenGL, Cocoa, IOKit CoreVideo
+			linkoptions {
+				    "-framework CoreFoundation",
+				    "-framework Cocoa"
+				    
+			}
 
 		configuration { "macosx", "xcode*" }
 if os.get() == "macosx" then
