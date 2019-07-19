@@ -171,5 +171,8 @@ if _ACTION == "clean" then
 	if os.get() == "windows" then
 		os.outputof("rmdir ..\\build\\.vs /s /q") -- remove the hidden .vs directory
 	end
+	if os.get() == "macosx" then
+		os.outputof("rm -rf build") -- remove the build folder, including hidden .DS_Store file
+	end
 	os.rmdir("../build")			-- this doesn't work because the directory contains .vs folder
 end
