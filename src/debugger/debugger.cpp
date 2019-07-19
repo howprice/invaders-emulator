@@ -3,7 +3,7 @@
 #include "machine.h"
 #include "8080.h"
 #include "Helpers.h"
-#include "Assert.h"
+#include "hp_assert.h"
 
 #include <stdio.h>
 

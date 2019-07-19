@@ -1,7 +1,7 @@
 #include "8080.h"
 
 #include "Helpers.h"
-#include "Assert.h"
+#include "hp_assert.h"
 
 // returns the execution time, which may vary depending on 
 typedef unsigned int (*ExecuteInstruction)(State8080& state);

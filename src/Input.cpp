@@ -1,6 +1,6 @@
 #include "Input.h"
 
-#include "Assert.h"
+#include "hp_assert.h"
 #include "Helpers.h"
 
 #include <stdio.h>

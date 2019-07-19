@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "Assert.h"
+#include "hp_assert.h"
 
 //---- Define assertion handler. Defaults to calling assert().
 #define IM_ASSERT(_EXPR)  HP_ASSERT(_EXPR)

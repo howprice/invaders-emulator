@@ -1,6 +1,6 @@
 #include "Audio.h"
 
-#include "Assert.h"
+#include "hp_assert.h"
 #include "Helpers.h"
 
 #include "SDL_mixer.h"

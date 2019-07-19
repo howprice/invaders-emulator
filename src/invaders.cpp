@@ -12,7 +12,7 @@
 #include "Input.h"
 #include "Audio.h"
 #include "Helpers.h"
-#include "Assert.h"
+#include "hp_assert.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"

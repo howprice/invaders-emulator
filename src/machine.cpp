@@ -130,7 +130,7 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 
 #include "Audio.h"
 #include "Input.h"
-#include "Assert.h"
+#include "hp_assert.h"
 #include "Helpers.h"
 
 static const unsigned int kRefreshRate = 60; // Hz
