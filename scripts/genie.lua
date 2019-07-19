@@ -73,7 +73,7 @@ solution "invaders-emulator"
 			"../3rdParty/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
-		links { "SDL2", "SDL2_mixer" }
+		links { "SDL2_mixer" }  -- not in the string returned by `sdl2-config --links`
 		debugdir "../data"		-- debugger working directory
 		
 		configuration "Debug"
@@ -97,7 +97,7 @@ solution "invaders-emulator"
 				"../3rdParty/SDL2_mixer-2.0.4/include"
 			}
 			flags { "ReleaseRuntime" }  
-			links { "SDL2main", "opengl32" }
+			links { "SDL2", "SDL2main", "opengl32" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
 			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
@@ -140,10 +140,7 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-strict-overflow" }
 			
 			buildoptions { "`sdl2-config --cflags`" }  -- magic quotes are shell-dependent
---			buildoptions { os.outputof("sdl2-config --cflags") }  -- requires GENie to be run on target machine
-
---			linkoptions { "`sdl2-config --libs`" } -- magic quotes are shell-dependent
---			linkoptions { os.outputof("sdl2-config --libs") } -- requires GENie to be run on target machine
+			linkoptions { "`sdl2-config --libs`" } -- magic quotes are shell-dependent
 
 			--libdirs { "/opt/vc/lib" } -- really just Raspberry Pi only (VideoCore) 
 			links { "EGL", "GLESv2", "GL", "dl" }
@@ -152,12 +149,19 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-empty-body" } -- ImGui GCC release error: suggest braces around empty body in an ‘if’ statement [-Werror=empty-body] (assert related)
 
 		configuration "macosx"
-			options { "ForceCPP" }
-			buildoptions_cpp { "-std=c++11" }
-			buildoptions { "`sdl2-config --cflags`" }
+			buildoptions { "-std=c++11" }
+			buildoptions { "-Wno-unused-function" }
+			buildoptions { "-Wno-missing-braces" }
+
+		configuration { "macosx", "xcode*" }
+if os.get() == "macosx" then
+			buildoptions { os.outputof("sdl2-config --cflags") } -- magic quotes are no good for Xcode so can't use `sdl2-config --cflags`
+			linkoptions { os.outputof("sdl2-config --libs") }
+end
+
+		configuration { "macosx", "not xcode*" }
+			buildoptions { "`sdl2-config --cflags`" } -- magic quotes are no good for Xcode
 			linkoptions { "`sdl2-config --libs`" }
-			--buildoptions { "-Wno-unused-function" }
-			--buildoptions { "-Wno-missing-braces" }
 
 newaction
 {
