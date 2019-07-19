@@ -1,7 +1,7 @@
 // Run with command line: invaders.h invaders.g invaders.f invaders.e
 
 #include "8080.h"
-#include "Assert.h"
+#include "hp_assert.h"
 #include "Helpers.h"
 
 #include <stdio.h>

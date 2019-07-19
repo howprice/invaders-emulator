@@ -3,7 +3,7 @@
 
 #include "debugger.h"
 #include "machine.h"
-#include "Assert.h"
+#include "hp_assert.h"
 #include "Helpers.h"
 
 #include "imgui/imgui.h"

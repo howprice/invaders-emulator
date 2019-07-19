@@ -10,7 +10,7 @@ solution "invaders-emulator"
 		files {
 			"../src/disassemble.cpp",
 			"../src/8080.*",
-			"../src/Assert.*",
+			"../src/hp_assert.*",
 			"../src/Helpers.*"
 		}
 		includedirs {
@@ -60,7 +60,7 @@ solution "invaders-emulator"
 			"../src/invaders.cpp",
 			"../src/8080.*",
 			"../src/machine.*",
-			"../src/Assert.*",
+			"../src/hp_assert.*",
 			"../src/Helpers.*",
 			"../src/Audio.*",
 			"../src/Input.*",
