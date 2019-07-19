@@ -67,6 +67,8 @@ static MemoryEditor s_memoryEditor;
 static Debugger s_debugger; // #TODO: This may become DebuggerContext
 static BreakpointsWindow s_breakpointsWindow;
 
+static const char* s_GlslVersionString = nullptr;
+
 static void printUsage()
 {
 	puts("Usage: invaders [OPTIONS]");
@@ -128,7 +130,6 @@ static void parseCommandLine(int argc, char** argv)
 }
 
 static const char s_vertexShaderSource[] =
-	"#version 130\n"
 	"// Generate single triangle in homogenous clip space that, when clipped, fills the screen\n"
 	"out vec2 texCoord;\n"
 	"\n"
@@ -158,7 +159,6 @@ static const char s_vertexShaderSource[] =
 	"}\n";
 
 static const char s_fragmentShaderSource[] =
-	"#version 130\n"
 	"uniform sampler2D sampler0;\n"
 	"in vec2 texCoord;\n"
 	"out vec4 Out_Color;\n"
@@ -207,13 +207,13 @@ static void CheckProgram(GLuint program)
 static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureHeight)
 {
 	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	const GLchar* vertexShaderSources[] = { s_vertexShaderSource };
+	const GLchar* vertexShaderSources[] = { s_GlslVersionString, s_vertexShaderSource };
 	glShaderSource(s_vertexShader, COUNTOF_ARRAY(vertexShaderSources), vertexShaderSources, NULL);
 	glCompileShader(s_vertexShader); // no return value
 	CheckShader(s_vertexShader);
 
 	s_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	const GLchar* fragmentShaderSources[] = { s_fragmentShaderSource };
+	const GLchar* fragmentShaderSources[] = { s_GlslVersionString, s_fragmentShaderSource };
 	glShaderSource(s_fragmentShader, COUNTOF_ARRAY(fragmentShaderSources), fragmentShaderSources, NULL);
 	glCompileShader(s_fragmentShader); // no return value
 	CheckShader(s_fragmentShader);
@@ -614,6 +614,7 @@ int main(int argc, char** argv)
 #if __APPLE__
 	// GL 3.2 Core + GLSL 150
 	const char* glsl_version = "#version 150";
+	s_GlslVersionString = "#version 150\n";
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -621,6 +622,7 @@ int main(int argc, char** argv)
 #else
 	// GL 3.0 + GLSL 130
 	const char* glsl_version = "#version 130";
+	s_GlslVersionString = "#version 130\n";
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
