@@ -1,4 +1,7 @@
 language: cpp
+os:
+  - linux
+  - osx
 dist: xenial
 sudo: required
 compiler:
@@ -10,14 +13,23 @@ branches:
    - master
 
 before_install:
-  - sudo add-apt-repository ppa:litenstein/sdl2-xenial -y # libsdl2 2.0.8 for xenial https://launchpad.net/~litenstein/+archive/ubuntu/sdl2-xenial
-  - sudo apt-get update -qq
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 
+      sudo add-apt-repository ppa:litenstein/sdl2-xenial -y; # libsdl2 2.0.8 for xenial https://launchpad.net/~litenstein/+archive/ubuntu/sdl2-xenial
+      sudo apt-get update -qq;
+    fi
 
 install:
   # install any dependencies required
-  - sudo apt-get install libsdl2-dev -y
-  - sdl2-config --version
-  - sudo apt-get install libsdl2-mixer-dev -y
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 
+       sudo apt-get install libsdl2-dev -y
+       sdl2-config --version
+       sudo apt-get install libsdl2-mixer-dev -y
+    fi
+  - if [ $TRAVIS_OS_NAME == osx ]; then 
+       brew update;
+       brew install sdl2;
+       brew install sdl2_mixer;
+    fi  
     
 script:
   - ./genie_gmake.sh
