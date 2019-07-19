@@ -164,7 +164,7 @@ static const char s_fragmentShaderSource[] =
 	"out vec4 Out_Color;\n"
 	"void main()\n"
 	"{\n"
-	"	float r = texture2D(sampler0, texCoord).r; // 1 channel texture\n"
+	"	float r = texture(sampler0, texCoord).r; // 1 channel texture\n"
 	"	Out_Color = vec4(r,r,r,1);\n"
 	"}\n";
 
