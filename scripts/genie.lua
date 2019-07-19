@@ -128,9 +128,11 @@ solution "invaders-emulator"
 				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)",
 				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
 			}
-			
-		configuration "linux"
+
+		configuration "gcc"
 			buildoptions_cpp { "-std=c++11" }
+
+		configuration "linux"
 			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-field-initializers" }
@@ -149,7 +151,6 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-empty-body" } -- ImGui GCC release error: suggest braces around empty body in an ‘if’ statement [-Werror=empty-body] (assert related)
 
 		configuration "macosx"
-			buildoptions { "-std=c++11" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-braces" }
 
