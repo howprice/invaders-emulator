@@ -1,7 +1,9 @@
+language: cpp
 dist: xenial
 sudo: required
-language: cpp
-compiler: gcc
+compiler:
+  - gcc
+  - clang
 
 branches:
  only:
