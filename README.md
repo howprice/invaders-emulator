@@ -131,3 +131,4 @@ Cycle-exact emulation is not required.
 - What is the correct point in the frame to generate the interrupts? See machine update function
 - Headless mode (command line arg)
 - What is the purpose of the RAM mirror? (It *is* used)
+
