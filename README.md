@@ -104,12 +104,11 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Fix OSX build
-- Configure travis to build OSX
-- Can travis job results be reported separately? i.e. by configuration and platform?
-- Deploy with travis?
 - Configure travis to build Windows
 - Option to disable VSYNC. Manual (high performance) frame timing instead. Required for Raspberry Pi
+- Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
+- Fix OSX build
+- Deploy with travis?
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
 - Watchpoints (break when memory read/written to)
 - Move debugHook into debugger class/file

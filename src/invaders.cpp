@@ -640,7 +640,11 @@ int main(int argc, char** argv)
 	unsigned int windowWidth = s_zoom * displayWidth;
 	unsigned int windowHeight = s_zoom * displayHeight;
 
-	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+#if !__APPLE__
+	// #TODO: Figure out High DPI on Mac
+	window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+#endif
 	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 
 		window_flags);
 
