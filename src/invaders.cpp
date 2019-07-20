@@ -641,7 +641,7 @@ int main(int argc, char** argv)
 	unsigned int windowHeight = s_zoom * displayHeight;
 
 	Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
-#if !__APPLE__
+#ifndef __APPLE__
 	// #TODO: Figure out High DPI on Mac
 	window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
