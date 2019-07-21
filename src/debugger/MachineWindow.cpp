@@ -23,6 +23,9 @@ void MachineWindow::Update(Machine& machine)
 	if(ImGui::Button("Reset"))
 		ResetMachine(&machine);
 
+	// #TODO: Remove dependency on ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	ImGui::Text("Frame: %u", machine.frameCount);
 	ImGui::Text("Frame cycle count: %u", machine.frameCycleCount);
 	ImGui::Text("Scan line: %u", machine.scanLine);

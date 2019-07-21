@@ -104,11 +104,10 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Manual (high performance) frame time limiting option. Required for Raspberry Pi
 - Main menu Display -> Zoom -> 1x/2x/3x/4x option
-- Main menu Display -> Vsync option (disabled if not available)
 - Maintain aspect ratio (option)
 - Fullscreen
-- Option to disable VSYNC. Manual (high performance) frame timing instead. Required for Raspberry Pi
 - Update README.md to cover Mac OS X and Raspberry Pi
 - Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
 - Deploy with travis?

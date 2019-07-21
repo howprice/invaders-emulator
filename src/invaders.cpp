@@ -190,9 +190,18 @@ static void doMenuBar(Machine* pMachine)
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
 			pDisplay->SetBilinearSampling(bilinearSampling);
 
-		// #TODO: Zoom
+		bool vsyncEnabled = pDisplay->IsVsyncEnabled();
+		if(ImGui::MenuItem("VSync", /*shorcut*/nullptr, /*pSelected*/&vsyncEnabled, /*enabled*/pDisplay->IsVsyncAvailable()))
+		{
+			if(!pDisplay->SetVsyncEnabled(vsyncEnabled))
+			{
+				fprintf(stderr, "Failed to %s VSync\n", vsyncEnabled ? "enable" : "disable");
+			}
+		}
+
 		// #TODO: Fullscreen
-		// #TODO: Vsync
+		// #TODO: Zoom
+
 		ImGui::EndMenu();
 	}
 
