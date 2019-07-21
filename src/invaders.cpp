@@ -8,6 +8,7 @@
 
 #include "machine.h"
 #include "8080.h"
+#include "Renderer.h"
 #include "Display.h"
 #include "Input.h"
 #include "Audio.h"
@@ -382,8 +383,30 @@ int main(int argc, char** argv)
 
 	InitGameAudio();
 
+	// Decide GL+GLSL versions
+#if __APPLE__
+	// GL 3.2 Core + GLSL 150
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+	// GL 3.0 + GLSL 130
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
 	if(!Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, s_zoom, s_rotateDisplay, /*bFullscreen*/false))
 	{
+		fprintf(stderr, "Failed to create display window\n");
+		return EXIT_FAILURE;
+	}
+
+	if(!Renderer::Init())
+	{
+		fprintf(stderr, "Failed to initialise renderer\n");
 		return EXIT_FAILURE;
 	}
 
@@ -495,6 +518,7 @@ int main(int argc, char** argv)
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 
+	Renderer::Shutdown();
 	Display::Destroy();
 
 	// SDL2_mixer

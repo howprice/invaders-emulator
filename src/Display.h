@@ -23,8 +23,8 @@ public:
 	static void SetFullscreen(bool fullscreen);
 	static void ToggleFullscreen();
 	static unsigned int GetRefreshRate();
-	static bool GetBilinearSampling();
-	static void SetBilinearSampling(bool bilinearSampling);
+	static bool GetBilinearSampling() { return s_bilinearSampling;  }
+	static void SetBilinearSampling(bool bilinearSampling) { s_bilinearSampling = bilinearSampling; }
 
 	static void SetByte(unsigned int address, uint8_t value);
 
@@ -46,6 +46,8 @@ private:
 	static GLuint s_texture;
 	static unsigned int s_textureWidth;
 	static unsigned int s_textureHeight;
+
+	static bool s_bilinearSampling;
 };
 
 #endif
