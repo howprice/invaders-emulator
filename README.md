@@ -104,10 +104,12 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Main menu Display -> Zoom -> 1x/2x/3x/4x option
-- Maintain aspect ratio (option)
-- Fullscreen
-- Update README.md to cover Mac OS X and Raspberry Pi
+- Display -> Window Size -> 1x/2x/3x/4x options
+- Display -> Maintain Aspect Ratio option  (letterboxing/pillarboxing)
+- Display -> Full Screen Alt+Enter
+- Update README.md
+  - cover Mac OS X and Raspberry Pi
+  - Explain Debug, Dev, Release builds
 - Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
 - Deploy with travis?
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
