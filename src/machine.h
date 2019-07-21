@@ -41,8 +41,6 @@ struct Machine
 	uint16_t shiftRegisterValue;
 	uint8_t shiftRegisterOffset;        // [0,7]
 
-	uint8_t* pDisplayBuffer;            // w * h * 1 bit per pixel
-
 	uint16_t prevOut3 = 0; // #TODO: Move into Audio?
 	uint16_t prevOut5 = 0; // #TODO: Move into Audio?
 

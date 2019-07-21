@@ -1,4 +1,3 @@
-
 #include "debugger/DebugWindow.h"
 #include "debugger/MachineWindow.h"
 #include "debugger/CpuWindow.h"
@@ -9,6 +8,7 @@
 
 #include "machine.h"
 #include "8080.h"
+#include "Display.h"
 #include "Input.h"
 #include "Audio.h"
 #include "Helpers.h"
@@ -22,19 +22,6 @@
 #include "SDL.h"
 #include "SDL_mixer.h"
 
-// About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually.
-// Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
-// You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h>    // Initialize with glewInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h>  // Initialize with gladLoadGL()
-#else
-#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,15 +30,6 @@ static bool s_startDebugging = false;
 static bool s_verbose = false;
 static unsigned int s_zoom = 3;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
-
-static GLuint s_vertexShader = 0;
-static GLuint s_fragmentShader = 0;
-static GLuint s_program = 0;
-static GLuint s_texture = 0;
-static GLuint s_pointSampler = 0;
-static GLuint s_bilinearSampler = 0;
-static GLuint s_selectedSampler = 0;
-static GLuint s_vao = 0;
 
 static bool s_showDevUI = false;
 static bool s_showMenuBar = true;
@@ -67,7 +45,8 @@ static MemoryEditor s_memoryEditor;
 static Debugger s_debugger; // #TODO: This may become DebuggerContext
 static BreakpointsWindow s_breakpointsWindow;
 
-static const char* s_GlslVersionString = nullptr;
+static Machine* s_pSavedMachine = nullptr;
+static bool s_stateSaved = false;
 
 static void printUsage()
 {
@@ -128,159 +107,6 @@ static void parseCommandLine(int argc, char** argv)
 		}
 	}
 }
-
-static const char s_vertexShaderSource[] =
-	"// Generate single triangle in homogenous clip space that, when clipped, fills the screen\n"
-	"out vec2 texCoord;\n"
-	"\n"
-	"void main()\n"
-	"{\n"
-	"\n"
-	"	// calculate UVs such that screen space [0,1] is covered by triangle and UVs are correct (draw a picture)\n"
-	"\n"
-	"    vec2 position;"
-	"    if(gl_VertexID == 0)\n"
-	"    {\n"
-	"        position = vec2( -1.0f, 1.0f );\n"
-	"        texCoord = vec2( 0.0f, 0.0f );\n"
-	"    }\n"
-	"    else if(gl_VertexID == 1)\n"
-	"    {\n"
-	"        position = vec2( -1.0f, -3.0f );\n"
-	"        texCoord = vec2(  0.0f, 2.0f );\n"
-	"    }\n"
-	"    else\n"
-	"    {\n"
-	"        position = vec2( 3.0f, 1.0f );\n"
-	"        texCoord = vec2( 2.0f, 0.0f );\n"
-	"    }\n"
-	"	 vec4 posPS = vec4(position, 0.0f, 1.0f);\n"
-	"	 gl_Position = posPS;\n"
-	"}\n";
-
-static const char s_fragmentShaderSource[] =
-	"uniform sampler2D sampler0;\n"
-	"in vec2 texCoord;\n"
-	"out vec4 Out_Color;\n"
-	"void main()\n"
-	"{\n"
-	"	float r = texture(sampler0, texCoord).r; // 1 channel texture\n"
-	"	Out_Color = vec4(r,r,r,1);\n"
-	"}\n";
-
-static void CheckShader(GLuint shader)
-{
-	GLint status;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-	if(status == GL_FALSE)
-	{
-		fprintf(stderr, "Failed to compile shader\n");
-		GLint logLength;
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-		if(logLength > 0)
-		{
-			GLchar szLog[1024];
-			GLsizei length;
-			glGetShaderInfoLog(shader, sizeof(szLog), &length, szLog);
-			fprintf(stderr, "%s", szLog);
-		}
-		glDeleteShader(shader);
-		HP_FATAL_ERROR("Shader compilation failed");
-	}
-}
-
-static void CheckProgram(GLuint program)
-{
-	GLint status;
-	glGetProgramiv(program, GL_LINK_STATUS, &status);
-	if(status == GL_FALSE)
-	{
-		GLint infoLogLength;
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-		GLchar* strInfoLog = new GLchar[infoLogLength + 1];
-		glGetProgramInfoLog(program, infoLogLength, NULL, strInfoLog);
-		HP_FATAL_ERROR("GL linker failure: %s\n", strInfoLog);
-	}
-}
-
-static void createOpenGLObjects(unsigned int textureWidth, unsigned int textureHeight)
-{
-	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	const GLchar* vertexShaderSources[] = { s_GlslVersionString, s_vertexShaderSource };
-	glShaderSource(s_vertexShader, COUNTOF_ARRAY(vertexShaderSources), vertexShaderSources, NULL);
-	glCompileShader(s_vertexShader); // no return value
-	CheckShader(s_vertexShader);
-
-	s_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	const GLchar* fragmentShaderSources[] = { s_GlslVersionString, s_fragmentShaderSource };
-	glShaderSource(s_fragmentShader, COUNTOF_ARRAY(fragmentShaderSources), fragmentShaderSources, NULL);
-	glCompileShader(s_fragmentShader); // no return value
-	CheckShader(s_fragmentShader);
-
-	s_program = glCreateProgram();
-	glAttachShader(s_program, s_vertexShader);
-	glAttachShader(s_program, s_fragmentShader);
-	glLinkProgram(s_program);
-	CheckProgram(s_program);
-
-	// No need to keep the shaders attached now that the program is linked
-	glDetachShader(s_program, s_vertexShader);
-	glDetachShader(s_program, s_fragmentShader);
-
-	// When drawing "A non-zero Vertex Array Object must be bound (though no arrays have to be enabled, so it can be a freshly-created vertex array object)."
-	// https://devtalk.nvidia.com/default/topic/561172/opengl/gldrawarrays-without-vao-for-procedural-geometry-using-gl_vertexid-doesn-t-work-in-debug-context/#
-	glGenVertexArrays(1, &s_vao);
-	HP_ASSERT(s_vao != 0);
-
-	// display texture
-	glGenTextures(1, &s_texture);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, s_texture);
-
-	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, textureWidth, textureHeight);
-
-	glGenSamplers(1, &s_pointSampler);
-	glBindSampler(0, s_pointSampler);
-	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glSamplerParameteri(s_pointSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	glGenSamplers(1, &s_bilinearSampler);
-	glBindSampler(1, s_bilinearSampler);
-	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glSamplerParameteri(s_bilinearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	s_selectedSampler = s_bilinearSampler;
-}
-
-static void deleteOpenGLObjects()
-{
-	glDeleteProgram(s_program);
-	s_program = 0;
-
-	glDeleteShader(s_vertexShader);
-	s_vertexShader = 0;
-
-	glDeleteShader(s_fragmentShader);
-	s_fragmentShader = 0;
-
-	glDeleteVertexArrays(1, &s_vao);
-	s_vao = 0;
-
-	glDeleteTextures(1, &s_texture);
-	s_texture = 0;
-
-	glDeleteSamplers(1, &s_pointSampler);
-	s_pointSampler = 0;
-
-	glDeleteSamplers(1, &s_bilinearSampler);
-	s_bilinearSampler = 0;
-}
-
-//------------------------------------------------------------------------------
-
-static Machine* s_pSavedMachine = nullptr;
-static bool s_stateSaved = false;
 
 static void restoreMachineState(Machine& machine)
 {
@@ -357,9 +183,9 @@ static void doMenuBar(Machine* pMachine)
 
 	if(ImGui::BeginMenu("Display"))
 	{
-		bool bilinearSampling = s_selectedSampler == s_bilinearSampler;
+		bool bilinearSampling = Display::GetBilinearSampling();
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
-			s_selectedSampler = bilinearSampling ? s_bilinearSampler : s_pointSampler;
+			Display::SetBilinearSampling(bilinearSampling);
 
 		ImGui::EndMenu();
 	}
@@ -533,60 +359,6 @@ static void debugHook(Machine* pMachine)
 		s_disassemblyWindow.ScrollToPC();
 }
 
-static void updateDisplayTexture(const Machine* pMachine, unsigned int textureWidth, unsigned int textureHeight)
-{
-	if(s_rotateDisplay)
-	{
-		HP_ASSERT(textureHeight == Machine::kDisplayWidth && textureWidth == Machine::kDisplayHeight);
-	}
-	else
-	{
-		HP_ASSERT(textureWidth == Machine::kDisplayWidth && textureHeight == Machine::kDisplayHeight);
-	}
-
-	const uint8_t* pDisplayBuffer = pMachine->pDisplayBuffer; // src - 1 bit per pixel
-	static uint8_t s_texturePixelsR8[Machine::kDisplayWidth * Machine::kDisplayHeight]; // dst - 1 byte per pixel
-	
-	const unsigned int srcBytesPerRow = Machine::kDisplayWidth >> 3; // div 8
-	for(unsigned int srcY = 0; srcY < Machine::kDisplayHeight; srcY++)
-	{
-		for(unsigned int srcX = 0; srcX < Machine::kDisplayWidth; srcX++)
-		{
-			unsigned int srcRowByteIndex = srcX >> 3; // div 8
-			uint8_t byteVal = pDisplayBuffer[(srcY * srcBytesPerRow) + srcRowByteIndex];
-			unsigned int bitIndex = srcX & 7;
-			uint8_t mask = 1 << bitIndex;
-			uint8_t val = (byteVal & mask) ? 255 : 0;
-
-			if(s_rotateDisplay)
-			{
-				// n.b. display is rotated 90 degrees so width and height are deliberately switched
-				unsigned int dstX = srcY;
-				unsigned int dstY = Machine::kDisplayWidth - 1 - srcX;
-				s_texturePixelsR8[dstY * textureWidth + dstX] = val;
-			}
-			else
-			{
-				// unrotated
-				unsigned int dstX = srcX;
-				unsigned int dstY = srcY;
-				s_texturePixelsR8[dstY * textureWidth + dstX] = val;
-			}
-		}
-	}
-
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RED, GL_UNSIGNED_BYTE, &s_texturePixelsR8); // w and h deliberately swapped
-}
-
-static void drawTexture()
-{
-	glBindVertexArray(s_vao);
-	glUseProgram(s_program);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glBindSampler(0, s_selectedSampler);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-}
-
 int main(int argc, char** argv)
 {
 	parseCommandLine(argc, argv);
@@ -610,66 +382,8 @@ int main(int argc, char** argv)
 
 	InitGameAudio();
 
-	// Decide GL+GLSL versions
-#if __APPLE__
-	// GL 3.2 Core + GLSL 150
-	const char* glsl_version = "#version 150";
-	s_GlslVersionString = "#version 150\n";
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#else
-	// GL 3.0 + GLSL 130
-	const char* glsl_version = "#version 130";
-	s_GlslVersionString = "#version 130\n";
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#endif
-
-	// Create window with graphics context
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	
-	const unsigned int displayWidth = s_rotateDisplay ? Machine::kDisplayHeight : Machine::kDisplayWidth;
-	const unsigned int displayHeight = s_rotateDisplay ? Machine::kDisplayWidth : Machine::kDisplayHeight;
-
-	unsigned int windowWidth = s_zoom * displayWidth;
-	unsigned int windowHeight = s_zoom * displayHeight;
-
-	Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
-#ifndef __APPLE__
-	// #TODO: Figure out High DPI on Mac
-	window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-#endif
-	SDL_Window* pWindow = SDL_CreateWindow("invaders-emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 
-		window_flags);
-
-	SDL_GLContext gl_context = SDL_GL_CreateContext(pWindow);
-	SDL_GL_SetSwapInterval(1); // Enable vsync
-	const int swapInterval = SDL_GL_GetSwapInterval();
-	const bool hasVsync = swapInterval > 0;
-	if(hasVsync)
-		printf("Display has VSYNC. SwapInterval=%i\n", swapInterval);
-	else
-		printf("Display does not have VSYNC\n");
-
-	// Initialize OpenGL loader
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-	bool err = gl3wInit() != 0;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-	bool err = glewInit() != GLEW_OK;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-	bool err = gladLoadGL() == 0;
-#else
-	bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader is likely to requires some form of initialization.
-#endif
-	if(err)
+	if(!Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, s_zoom, s_rotateDisplay, /*bFullscreen*/false))
 	{
-		fprintf(stderr, "Failed to initialize OpenGL loader!\n");
 		return EXIT_FAILURE;
 	}
 
@@ -683,9 +397,9 @@ int main(int argc, char** argv)
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(pWindow, gl_context);
-	ImGui_ImplOpenGL3_Init(glsl_version);
+	ImGui_ImplSDL2_InitForOpenGL(Display::s_pWindow, Display::s_sdl_gl_context);
 
+	ImGui_ImplOpenGL3_Init();
 
 	Machine* pMachine = nullptr;
 	if(!CreateMachine(&pMachine))
@@ -701,8 +415,6 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Failed to create save state\n");
 		return EXIT_FAILURE;
 	}
-
-	createOpenGLObjects(displayWidth, displayHeight);
 
 	s_disassemblyWindow.Refresh(*pMachine);
 
@@ -756,7 +468,7 @@ int main(int argc, char** argv)
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(pWindow);
+		ImGui_ImplSDL2_NewFrame(Display::s_pWindow);
 		ImGui::NewFrame();
 
 		StepFrame(pMachine, s_verbose);
@@ -766,21 +478,12 @@ int main(int argc, char** argv)
 
 		// Rendering
 		ImGui::Render();
-		SDL_GL_MakeCurrent(pWindow, gl_context);
-		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		updateDisplayTexture(pMachine, displayWidth, displayHeight);
-		drawTexture();
-
+		Display::Clear();
+		Display::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		SDL_GL_SwapWindow(pWindow);
-
+		Display::Present();
 		frameIndex++;
 	}
-
-	deleteOpenGLObjects();
 
 	DestroyMachine(pMachine);
 	pMachine = nullptr;
@@ -792,10 +495,7 @@ int main(int argc, char** argv)
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 
-	SDL_GL_DeleteContext(gl_context);
-
-	SDL_DestroyWindow(pWindow);
-	pWindow = nullptr;
+	Display::Destroy();
 
 	// SDL2_mixer
 	ShutdownGameAudio();

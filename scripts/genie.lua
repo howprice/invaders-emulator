@@ -64,6 +64,7 @@ solution "invaders-emulator"
 			"../src/Helpers.*",
 			"../src/Audio.*",
 			"../src/Input.*",
+			"../src/Display.*",
 			"../src/imgui/**",
 			"../src/debugger/*",
 			"../3rdParty/gl3w/GL/**"

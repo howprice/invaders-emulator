@@ -120,8 +120,17 @@ static int          g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_Att
 static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
 
 // Functions
-bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
+bool    ImGui_ImplOpenGL3_Init()
 {
+	// Decide GL+GLSL versions
+#if __APPLE__
+	// GL 3.2 Core + GLSL 150
+	const char* glsl_version = "#version 150";
+#else
+	// GL 3.0 + GLSL 130
+	const char* glsl_version = "#version 130";
+#endif
+
     // Setup back-end capabilities flags
     ImGuiIO& io = ImGui::GetIO();
     io.BackendRendererName = "imgui_impl_opengl3";
