@@ -19,6 +19,8 @@ public:
 
 	void GetSize(unsigned int &width, unsigned int &height) const;
 	void SetZoom(unsigned int zoom);
+	void SetRotate(bool rotate);
+	bool GetRotate() const { return m_rotate; }
 	bool IsFullscreen() const;
 	void SetFullscreen(bool fullscreen);
 	void ToggleFullscreen();
@@ -55,10 +57,7 @@ private:
 	bool m_rotate = false; // space invaders 90 degree rotated display
 
 	uint8_t* m_pTexturePixelsR8 = nullptr; // 1 byte per pixel
-	GLuint m_texture = 0;
-	unsigned int m_textureWidth = 0;
-	unsigned int m_textureHeight = 0;
-
+	GLuint m_texture = 0; // same dimensions as display
 	bool m_bilinearSampling = true;
 };
 

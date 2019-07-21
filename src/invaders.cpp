@@ -201,6 +201,10 @@ static void doMainMenuBar(Machine* pMachine)
 			ImGui::EndMenu();
 		}
 
+		bool rotate = pDisplay->GetRotate();
+		if(ImGui::MenuItem("Rotate", /*shortcut*/nullptr, /*selected*/&rotate))
+			pDisplay->SetRotate(rotate);
+
 		bool bilinearSampling = pDisplay->GetBilinearSampling();
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
 			pDisplay->SetBilinearSampling(bilinearSampling);
