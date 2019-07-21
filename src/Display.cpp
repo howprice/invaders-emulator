@@ -104,11 +104,12 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 	const int swapInterval = SDL_GL_GetSwapInterval();
-	m_hasVsync = swapInterval > 0;
-	if(m_hasVsync)
+	m_vsyncAvailable = swapInterval > 0;
+	if(m_vsyncAvailable)
 		printf("Display has VSYNC. SwapInterval=%i\n", swapInterval);
 	else
 		printf("Display does not have VSYNC\n");
+	m_vsyncEnabled = m_vsyncAvailable;
 
 	m_rotate = rotate;
 
@@ -220,6 +221,23 @@ unsigned int Display::GetRefreshRate()
 	}
 
 	return displayMode.refresh_rate;
+}
+
+bool Display::SetVsyncEnabled(bool enabled)
+{
+	HP_ASSERT(m_vsyncAvailable);
+	bool success = false;
+	if(enabled)
+	{
+		success = (SDL_GL_SetSwapInterval(1) == 0); // Enable vsync
+	}
+	else
+	{
+		success = (SDL_GL_SetSwapInterval(0) == 0); // Disable vsync
+	}
+
+	m_vsyncEnabled = SDL_GL_GetSwapInterval() > 0;
+	return success;
 }
 
 void Display::SetByte(unsigned int address, uint8_t value)

@@ -25,6 +25,10 @@ public:
 	bool GetBilinearSampling() { return m_bilinearSampling; }
 	void SetBilinearSampling(bool bilinearSampling) { m_bilinearSampling = bilinearSampling; }
 
+	bool IsVsyncAvailable() const { return m_vsyncAvailable; }
+	bool IsVsyncEnabled() const { return m_vsyncEnabled; }
+	bool SetVsyncEnabled(bool enabled);
+
 	void SetByte(unsigned int address, uint8_t value);
 
 	SDL_Window* GetWindow() { return m_pWindow; }
@@ -46,7 +50,8 @@ private:
 	unsigned int m_height = 0;
 	uint8_t* m_pDisplayBuffer = nullptr; // w * h * 1 bit per pixel
 	unsigned int m_displayBufferSizeBytes = 0;
-	bool m_hasVsync = false;
+	bool m_vsyncAvailable = false;
+	bool m_vsyncEnabled = false;
 	bool m_rotate = false; // space invaders 90 degree rotated display
 
 	uint8_t* m_pTexturePixelsR8 = nullptr; // 1 byte per pixel
