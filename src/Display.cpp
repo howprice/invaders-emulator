@@ -204,25 +204,6 @@ void Display::ToggleFullscreen()
 	}
 }
 
-unsigned int Display::GetRefreshRate()
-{
-	SDL_DisplayMode displayMode;
-	int displayIndex = SDL_GetWindowDisplayIndex(m_pWindow);
-
-	static const unsigned int kDefaultRefreshRate = 60;
-	if(SDL_GetDesktopDisplayMode(displayIndex, &displayMode) != 0)
-	{
-		return kDefaultRefreshRate;
-	}
-
-	if(displayMode.refresh_rate == 0)
-	{
-		return kDefaultRefreshRate;
-	}
-
-	return displayMode.refresh_rate;
-}
-
 bool Display::SetVsyncEnabled(bool enabled)
 {
 	HP_ASSERT(m_vsyncAvailable);

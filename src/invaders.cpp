@@ -31,9 +31,10 @@ static bool s_startDebugging = false;
 static bool s_verbose = false;
 static unsigned int s_zoom = 3;
 static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
+static bool s_limitFrameRate = true;
 
 static bool s_showDevUI = false;
-static bool s_showMenuBar = true;
+static bool s_showMainMenuBar = true;
 static CpuWindow s_cpuWindow;
 static MachineWindow s_machineWindow;
 static DebugWindow s_debugWindow;
@@ -160,9 +161,9 @@ static void saveMachineState(const Machine& machine)
 
 //------------------------------------------------------------------------------
 
-static void doMenuBar(Machine* pMachine)
+static void doMainMenuBar(Machine* pMachine)
 {
-	if(!s_showMenuBar)
+	if(!s_showMainMenuBar)
 		return;
 
 	if(ImGui::BeginMainMenuBar() == false)
@@ -198,6 +199,8 @@ static void doMenuBar(Machine* pMachine)
 				fprintf(stderr, "Failed to %s VSync\n", vsyncEnabled ? "enable" : "disable");
 			}
 		}
+
+		ImGui::MenuItem("Limit frame rate", /*shorcut*/nullptr, /*pSelected*/&s_limitFrameRate, /*enabled*/!pDisplay->IsVsyncEnabled());
 
 		// #TODO: Fullscreen
 		// #TODO: Zoom
@@ -314,13 +317,21 @@ static void doDevUI(Machine* pMachine)
 	if(!s_showDevUI)
 		return;
 
-	doMenuBar(pMachine);
+	doMainMenuBar(pMachine);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
 	s_debugWindow.Update(*pMachine, s_debugger, s_verbose);
 	s_disassemblyWindow.Update(*pMachine, s_debugger);
 	s_breakpointsWindow.Update(s_debugger, pMachine->cpu);
 	doMemoryWindow(pMachine);
+}
+
+static double GetSeconds(Uint64 prevTime, Uint64 currentTime)
+{
+	Uint64 deltaTime = currentTime - prevTime;
+	Uint64 countsPerSecond = SDL_GetPerformanceFrequency();
+	double timeSeconds = (double)deltaTime / countsPerSecond;
+	return timeSeconds;
 }
 
 static void debugHook(Machine* pMachine)
@@ -458,6 +469,7 @@ int main(int argc, char** argv)
 
 	bool bDone = false;
 	uint64_t frameIndex = 0;
+	Uint64 prevTime = SDL_GetPerformanceCounter();
 	while(!bDone)
 	{
 		Input::FrameStart();
@@ -503,6 +515,45 @@ int main(int argc, char** argv)
 			else if(event.type == SDL_CONTROLLERDEVICEREMOVED)
 				Input::OnControllerDeviceRemoved(event.cdevice);
 		}
+
+		Uint64 currentTime = 0;
+		double frameTimeSeconds = 0.0;
+		if(pDisplay->IsVsyncEnabled())
+		{
+			// Measure frame time using SDL2 high performance counters
+			currentTime = SDL_GetPerformanceCounter();
+		}
+		else if(s_limitFrameRate)
+		{
+			// Wait until reached target frame time.
+			unsigned int targetFPS = 60;
+			double targetFrameTime = 1.0 / (double)targetFPS;
+			currentTime = SDL_GetPerformanceCounter();
+			frameTimeSeconds = GetSeconds(prevTime, currentTime);
+			if(frameTimeSeconds < targetFrameTime)
+			{
+				// sleep to free up CPU for other processes
+				Uint32 delayMilliseconds = (Uint32)((targetFrameTime - frameTimeSeconds) * 1000);
+				if(delayMilliseconds > 2)
+				{
+					//printf("Delaying for %u ms\n", delayMilliseconds);
+					SDL_Delay(delayMilliseconds - 1);
+				}
+
+				// busy wait for remaining sub-millisecond time
+				do
+				{
+					currentTime = SDL_GetPerformanceCounter();
+				} while(GetSeconds(prevTime, currentTime) < targetFrameTime);
+			}
+		}
+		else
+		{
+			// run as fast as possible!
+			currentTime = SDL_GetPerformanceCounter();
+		}
+
+		prevTime = currentTime;
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();

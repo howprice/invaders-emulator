@@ -104,7 +104,6 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Manual (high performance) frame time limiting option. Required for Raspberry Pi
 - Main menu Display -> Zoom -> 1x/2x/3x/4x option
 - Maintain aspect ratio (option)
 - Fullscreen
