@@ -187,6 +187,20 @@ static void doMainMenuBar(Machine* pMachine)
 	bool displayMenuEnabled = pDisplay != nullptr;
 	if(ImGui::BeginMenu("Display", displayMenuEnabled))
 	{
+		if(ImGui::BeginMenu("Window Size"))
+		{
+			if(ImGui::MenuItem("1x"))
+				pDisplay->SetZoom(1);
+			if(ImGui::MenuItem("2x"))
+				pDisplay->SetZoom(2);
+			if(ImGui::MenuItem("3x"))
+				pDisplay->SetZoom(3);
+			if(ImGui::MenuItem("4x"))
+				pDisplay->SetZoom(4);
+
+			ImGui::EndMenu();
+		}
+
 		bool bilinearSampling = pDisplay->GetBilinearSampling();
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
 			pDisplay->SetBilinearSampling(bilinearSampling);
@@ -203,7 +217,6 @@ static void doMainMenuBar(Machine* pMachine)
 		ImGui::MenuItem("Limit frame rate", /*shorcut*/nullptr, /*pSelected*/&s_limitFrameRate, /*enabled*/!pDisplay->IsVsyncEnabled());
 
 		// #TODO: Fullscreen
-		// #TODO: Zoom
 
 		ImGui::EndMenu();
 	}

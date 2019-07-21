@@ -104,7 +104,6 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
-- Display -> Window Size -> 1x/2x/3x/4x options
 - Display -> Maintain Aspect Ratio option  (letterboxing/pillarboxing)
 - Display -> Full Screen Alt+Enter
 - Update README.md

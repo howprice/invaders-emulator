@@ -57,6 +57,7 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	m_height = height;
 
 	// Create SDL window
+	m_rotate = rotate;
 	unsigned int windowWidth = rotate ? height : width;
 	unsigned int windowHeight = rotate ? width : height;
 
@@ -92,6 +93,11 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 		return false;
 	}
 
+	if(rotate)
+		SDL_SetWindowMinimumSize(m_pWindow, (int)height, (int)width);
+	else
+		SDL_SetWindowMinimumSize(m_pWindow, (int)width, (int)height);
+
 	m_GLContext = SDL_GL_CreateContext(m_pWindow);
 	SDL_GL_MakeCurrent(m_pWindow, m_GLContext);
 
@@ -110,8 +116,6 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	else
 		printf("Display does not have VSYNC\n");
 	m_vsyncEnabled = m_vsyncAvailable;
-
-	m_rotate = rotate;
 
 	// display buffer
 	HP_ASSERT((width % 8) == 0);
@@ -160,7 +164,7 @@ void Display::Present()
 	SDL_GL_SwapWindow(m_pWindow);
 }
 
-void Display::GetSize(unsigned int &width, unsigned int &height)
+void Display::GetSize(unsigned int &width, unsigned int &height) const
 {
 	int displayWidth, displayHeight;
 	SDL_GetWindowSize(m_pWindow, &displayWidth, &displayHeight);
@@ -168,7 +172,22 @@ void Display::GetSize(unsigned int &width, unsigned int &height)
 	height = (unsigned int)displayHeight;
 }
 
-bool Display::IsFullscreen()
+void Display::SetZoom(unsigned int zoom)
+{
+	HP_ASSERT(zoom > 0);
+	unsigned int windowWidth = m_rotate ? m_height : m_width;
+	unsigned int windowHeight = m_rotate ? m_width : m_height;
+	windowWidth *= zoom;
+	windowHeight *= zoom;
+	SDL_SetWindowSize(m_pWindow, (int)windowWidth, (int)windowHeight);
+
+	int w, h;
+	SDL_GetWindowSize(m_pWindow, &w, &h);
+	HP_ASSERT((unsigned int)w == windowWidth);
+	HP_ASSERT((unsigned int)h == windowHeight);
+}
+
+bool Display::IsFullscreen() const
 {
 	Uint32 windowFlags = SDL_GetWindowFlags(m_pWindow);
 	bool fullScreen = (windowFlags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN;
