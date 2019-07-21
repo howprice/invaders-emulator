@@ -21,7 +21,6 @@ public:
 	bool IsFullscreen();
 	void SetFullscreen(bool fullscreen);
 	void ToggleFullscreen();
-	unsigned int GetRefreshRate();
 	bool GetBilinearSampling() { return m_bilinearSampling; }
 	void SetBilinearSampling(bool bilinearSampling) { m_bilinearSampling = bilinearSampling; }
 
