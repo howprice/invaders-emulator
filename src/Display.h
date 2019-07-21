@@ -6,48 +6,55 @@
 
 #include <GL/gl3w.h>
 
-// #TODO: If there's no need to be a static class, then don't!
 class Display
 {
 public:
 
-	static bool Create(const unsigned int width, const unsigned int height, unsigned int zoom, bool rotate, bool bFullscreen);
-	static void Destroy();
+	static Display* Create(const unsigned int width, const unsigned int height, unsigned int zoom, bool rotate, bool bFullscreen);
+	static void Destroy(Display* pDisplay);
 
-	static void Clear();
-	static void Render();
-	static void Present();
+	void Clear();
+	void Render();
+	void Present();
 
-	static void GetSize(unsigned int &width, unsigned int &height);
-	static bool IsFullscreen();
-	static void SetFullscreen(bool fullscreen);
-	static void ToggleFullscreen();
-	static unsigned int GetRefreshRate();
-	static bool GetBilinearSampling() { return s_bilinearSampling;  }
-	static void SetBilinearSampling(bool bilinearSampling) { s_bilinearSampling = bilinearSampling; }
+	void GetSize(unsigned int &width, unsigned int &height);
+	bool IsFullscreen();
+	void SetFullscreen(bool fullscreen);
+	void ToggleFullscreen();
+	unsigned int GetRefreshRate();
+	bool GetBilinearSampling() { return m_bilinearSampling; }
+	void SetBilinearSampling(bool bilinearSampling) { m_bilinearSampling = bilinearSampling; }
 
-	static void SetByte(unsigned int address, uint8_t value);
+	void SetByte(unsigned int address, uint8_t value);
 
-	static SDL_Window* s_pWindow;
-	static SDL_GLContext s_sdl_gl_context;
+	SDL_Window* GetWindow() { return m_pWindow; }
+	SDL_GLContext GetGLContext() { return m_GLContext; }
 
 private:
 
-	static void updateTexture();
+	Display();
+	~Display();
 
-	static unsigned int s_width;
-	static unsigned int s_height;
-	static uint8_t* s_pDisplayBuffer; // w * h * 1 bit per pixel
-	static unsigned int s_displayBufferSizeBytes;
-	static bool s_hasVsync;
-	static bool s_rotate; // space invaders 90 degree rotated display
+	bool init(const unsigned int width, const unsigned int height, unsigned int zoom, bool rotate, bool bFullscreen);
 
-	static uint8_t* s_pTexturePixelsR8; // 1 byte per pixel
-	static GLuint s_texture;
-	static unsigned int s_textureWidth;
-	static unsigned int s_textureHeight;
+	void updateTexture();
 
-	static bool s_bilinearSampling;
+	SDL_Window* m_pWindow = nullptr;
+	SDL_GLContext m_GLContext = nullptr;
+
+	unsigned int m_width = 0;
+	unsigned int m_height = 0;
+	uint8_t* m_pDisplayBuffer = nullptr; // w * h * 1 bit per pixel
+	unsigned int m_displayBufferSizeBytes = 0;
+	bool m_hasVsync = false;
+	bool m_rotate = false; // space invaders 90 degree rotated display
+
+	uint8_t* m_pTexturePixelsR8 = nullptr; // 1 byte per pixel
+	GLuint m_texture = 0;
+	unsigned int m_textureWidth = 0;
+	unsigned int m_textureHeight = 0;
+
+	bool m_bilinearSampling = true;
 };
 
 #endif

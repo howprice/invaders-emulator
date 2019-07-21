@@ -6,6 +6,7 @@
 #include "8080.h"
 
 struct Machine;
+class Display;
 
 typedef void (*DebugHookFuncPtr)(Machine* pMachine);
 
@@ -34,6 +35,8 @@ struct Machine
 	uint8_t* pMemory;
 	uint32_t memorySizeBytes; // #TODO: Get rid of this. The memory map should allow gaps, so memory should be accessed in chunks
 
+	Display* pDisplay;
+
 	unsigned int frameCount;
 	unsigned int frameCycleCount;
 	unsigned int scanLine;
@@ -56,7 +59,8 @@ struct Machine
 	DebugHookFuncPtr debugHook;
 };
 
-bool CreateMachine(Machine** ppMachine);
+// pDisplay can be null
+bool CreateMachine(Machine** ppMachine, Display* pDisplay);
 void DestroyMachine(Machine* pMachine);
 
 void ResetMachine(Machine* pMachine);
