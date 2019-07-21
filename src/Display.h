@@ -17,11 +17,12 @@ public:
 	void Render();
 	void Present();
 
-	void GetSize(unsigned int &width, unsigned int &height);
-	bool IsFullscreen();
+	void GetSize(unsigned int &width, unsigned int &height) const;
+	void SetZoom(unsigned int zoom);
+	bool IsFullscreen() const;
 	void SetFullscreen(bool fullscreen);
 	void ToggleFullscreen();
-	bool GetBilinearSampling() { return m_bilinearSampling; }
+	bool GetBilinearSampling() const { return m_bilinearSampling; }
 	void SetBilinearSampling(bool bilinearSampling) { m_bilinearSampling = bilinearSampling; }
 
 	bool IsVsyncAvailable() const { return m_vsyncAvailable; }
