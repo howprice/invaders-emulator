@@ -182,12 +182,17 @@ static void doMenuBar(Machine* pMachine)
 		ImGui::EndMenu();
 	}
 
-	if(ImGui::BeginMenu("Display"))
+	Display* pDisplay = pMachine->pDisplay;
+	bool displayMenuEnabled = pDisplay != nullptr;
+	if(ImGui::BeginMenu("Display", displayMenuEnabled))
 	{
-		bool bilinearSampling = Display::GetBilinearSampling();
+		bool bilinearSampling = pDisplay->GetBilinearSampling();
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
-			Display::SetBilinearSampling(bilinearSampling);
+			pDisplay->SetBilinearSampling(bilinearSampling);
 
+		// #TODO: Zoom
+		// #TODO: Fullscreen
+		// #TODO: Vsync
 		ImGui::EndMenu();
 	}
 
@@ -398,7 +403,8 @@ int main(int argc, char** argv)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-	if(!Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, s_zoom, s_rotateDisplay, /*bFullscreen*/false))
+	Display* pDisplay = Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, s_zoom, s_rotateDisplay, /*bFullscreen*/false);
+	if(!pDisplay)
 	{
 		fprintf(stderr, "Failed to create display window\n");
 		return EXIT_FAILURE;
@@ -420,12 +426,12 @@ int main(int argc, char** argv)
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(Display::s_pWindow, Display::s_sdl_gl_context);
+	ImGui_ImplSDL2_InitForOpenGL(pDisplay->GetWindow(), pDisplay->GetGLContext());
 
 	ImGui_ImplOpenGL3_Init();
 
 	Machine* pMachine = nullptr;
-	if(!CreateMachine(&pMachine))
+	if(!CreateMachine(&pMachine, pDisplay))
 	{
 		fprintf(stderr, "Failed to create Machine\n");
 		return EXIT_FAILURE;
@@ -433,7 +439,7 @@ int main(int argc, char** argv)
 
 	pMachine->debugHook = debugHook;
 
-	if(!CreateMachine(&s_pSavedMachine))
+	if(!CreateMachine(&s_pSavedMachine, nullptr))
 	{
 		fprintf(stderr, "Failed to create save state\n");
 		return EXIT_FAILURE;
@@ -491,7 +497,7 @@ int main(int argc, char** argv)
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(Display::s_pWindow);
+		ImGui_ImplSDL2_NewFrame(pDisplay->GetWindow());
 		ImGui::NewFrame();
 
 		StepFrame(pMachine, s_verbose);
@@ -501,10 +507,10 @@ int main(int argc, char** argv)
 
 		// Rendering
 		ImGui::Render();
-		Display::Clear();
-		Display::Render();
+		pDisplay->Clear();
+		pDisplay->Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		Display::Present();
+		pDisplay->Present();
 		frameIndex++;
 	}
 
@@ -519,7 +525,8 @@ int main(int argc, char** argv)
 	ImGui::DestroyContext();
 
 	Renderer::Shutdown();
-	Display::Destroy();
+	Display::Destroy(pDisplay);
+	pDisplay = nullptr;
 
 	// SDL2_mixer
 	ShutdownGameAudio();

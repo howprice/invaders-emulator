@@ -583,11 +583,11 @@ static void copyVideoMemoryToDisplayBuffer(Machine& machine)
 		const uint16_t kVideoAddress = 0x2400;
 		uint16_t address = kVideoAddress + i;
 		uint8_t val = ReadByteFromMemory(&machine, address, /*fatalOnFail*/true);
-		Display::SetByte(i, val);
+		machine.pDisplay->SetByte(i, val);
 	}
 }
 
-bool CreateMachine(Machine** ppMachine)
+bool CreateMachine(Machine** ppMachine, Display* pDisplay)
 {
 	Machine* pMachine = new Machine;
 	*pMachine = {};
@@ -604,6 +604,8 @@ bool CreateMachine(Machine** ppMachine)
 	pMachine->cpu.writeByteToMemory = WriteByteToMemory;
 
 	//	TestMemory(state.pMemory);
+
+	pMachine->pDisplay = pDisplay;
 
 	if(!loadRoms(pMachine->pMemory, pMachine->memorySizeBytes))
 	{
