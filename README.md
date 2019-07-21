@@ -104,6 +104,7 @@ Cycle-exact emulation is not required.
 
 ## TODO
 
+- Update README.md to cover Mac OS X and Raspberry Pi
 - Option to disable VSYNC. Manual (high performance) frame timing instead. Required for Raspberry Pi
 - Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
 - Deploy with travis?
