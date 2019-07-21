@@ -128,6 +128,7 @@ Overlay dimensions (screen rotated 90 degrees anti-clockwise):
 
 #include "machine.h"
 
+#include "Display.h"
 #include "Audio.h"
 #include "Input.h"
 #include "hp_assert.h"
@@ -582,7 +583,7 @@ static void copyVideoMemoryToDisplayBuffer(Machine& machine)
 		const uint16_t kVideoAddress = 0x2400;
 		uint16_t address = kVideoAddress + i;
 		uint8_t val = ReadByteFromMemory(&machine, address, /*fatalOnFail*/true);
-		machine.pDisplayBuffer[i] = val;
+		Display::SetByte(i, val);
 	}
 }
 
@@ -624,12 +625,6 @@ bool CreateMachine(Machine** ppMachine)
 	pMachine->cpu.in = In;
 	pMachine->cpu.out = Out;
 
-	HP_ASSERT((Machine::kDisplayWidth % 8) == 0);
-	const unsigned int bytesPerRow = Machine::kDisplayWidth >> 3; // div 8
-	unsigned int displaySizeBytes = bytesPerRow * Machine::kDisplayHeight;
-	pMachine->pDisplayBuffer = new uint8_t[displaySizeBytes];
-	// #TODO: Zero display buffer?
-
 	*ppMachine = pMachine;
 	return true;
 }
@@ -640,9 +635,6 @@ void DestroyMachine(Machine* pMachine)
 
 	delete[] pMachine->pMemory;
 	pMachine->pMemory = nullptr;
-
-	delete[] pMachine->pDisplayBuffer;
-	pMachine->pDisplayBuffer = nullptr;
 
 	delete pMachine;
 }
