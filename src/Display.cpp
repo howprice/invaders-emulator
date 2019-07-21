@@ -40,8 +40,6 @@ Display::~Display()
 	{
 		glDeleteTextures(1, &m_texture);
 		m_texture = 0;
-		m_textureWidth = 0;
-		m_textureHeight = 0;
 	}
 
 	SDL_GL_DeleteContext(m_GLContext);
@@ -128,9 +126,7 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	glGenTextures(1, &m_texture);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_texture);
-	m_textureWidth = rotate ? m_height : m_width;
-	m_textureHeight = rotate ? m_width : m_height;
-	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, m_textureWidth, m_textureHeight);
+	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, m_width, m_height);
 
 	// texture upload buffer. 1 byte per pixel
 	unsigned int textureSizeBytes = width * height;
@@ -155,7 +151,7 @@ void Display::Clear()
 void Display::Render()
 {
 	updateTexture();
-	Renderer::DrawFullScreenTexture(m_texture, m_bilinearSampling);
+	Renderer::DrawFullScreenTexture(m_texture, m_bilinearSampling, m_rotate);
 }
 
 void Display::Present()
@@ -185,6 +181,24 @@ void Display::SetZoom(unsigned int zoom)
 	SDL_GetWindowSize(m_pWindow, &w, &h);
 	HP_ASSERT((unsigned int)w == windowWidth);
 	HP_ASSERT((unsigned int)h == windowHeight);
+}
+
+void Display::SetRotate(bool rotate)
+{
+	if(rotate == m_rotate)
+		return;
+
+	m_rotate = rotate;
+
+	// swap width and height
+	int windowWidth, windowHeight;
+	SDL_GetWindowSize(m_pWindow, &windowWidth, &windowHeight);
+	SDL_SetWindowSize(m_pWindow, windowHeight, windowWidth);
+
+	if(rotate)
+		SDL_SetWindowMinimumSize(m_pWindow, (int)m_height, (int)m_width);
+	else
+		SDL_SetWindowMinimumSize(m_pWindow, (int)m_width, (int)m_height);
 }
 
 bool Display::IsFullscreen() const
@@ -249,15 +263,6 @@ void Display::SetByte(unsigned int address, uint8_t value)
 
 void Display::updateTexture()
 {
-	if(m_rotate)
-	{
-		HP_ASSERT(m_textureHeight == m_width && m_textureWidth == m_height);
-	}
-	else
-	{
-		HP_ASSERT(m_textureWidth == m_width && m_textureHeight == m_height);
-	}
-
 	// src - 1 bit per pixel
 	HP_ASSERT(m_pDisplayBuffer);
 
@@ -275,22 +280,11 @@ void Display::updateTexture()
 			uint8_t mask = 1 << bitIndex;
 			uint8_t val = (byteVal & mask) ? 255 : 0;
 
-			if(m_rotate)
-			{
-				// n.b. display is rotated 90 degrees so width and height are deliberately switched
-				unsigned int dstX = srcY;
-				unsigned int dstY = m_width - 1 - srcX;
-				m_pTexturePixelsR8[dstY * m_textureWidth + dstX] = val;
-			}
-			else
-			{
-				// unrotated
-				unsigned int dstX = srcX;
-				unsigned int dstY = srcY;
-				m_pTexturePixelsR8[dstY * m_textureWidth + dstX] = val;
-			}
+			unsigned int dstX = srcX;
+			unsigned int dstY = srcY;
+			m_pTexturePixelsR8[dstY * m_width + dstX] = val;
 		}
 	}
 
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_textureWidth, m_textureHeight, GL_RED, GL_UNSIGNED_BYTE, m_pTexturePixelsR8); // w and h deliberately swapped
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RED, GL_UNSIGNED_BYTE, m_pTexturePixelsR8); // w and h deliberately swapped
 }

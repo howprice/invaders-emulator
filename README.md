@@ -107,7 +107,7 @@ Cycle-exact emulation is not required.
 - Display -> Maintain Aspect Ratio option  (letterboxing/pillarboxing)
 - Display -> Full Screen Alt+Enter
 - Update README.md
-  - cover Mac OS X and Raspberry Pi
+  - Cover Mac OS X and Raspberry Pi
   - Explain Debug, Dev, Release builds
 - Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
 - Deploy with travis?

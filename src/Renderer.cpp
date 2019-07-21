@@ -10,15 +10,16 @@
 // file static data
 // #TODO: Get rid of all of this. Make members
 static const char* s_GlslVersionString = nullptr;
-static GLuint s_vertexShader = 0;
+static GLuint s_fullScreenQuadVertexShader = 0;
+static GLuint s_fullScreenQuadRotatedVertexShader = 0;
 static GLuint s_fragmentShader = 0;
-static GLuint s_program = 0;
+static GLuint s_fullScreenQuadProgram = 0;
+static GLuint s_fullScreenQuadRotatedProgram = 0;
 static GLuint s_pointSampler = 0;
 static GLuint s_bilinearSampler = 0;
 static GLuint s_vao = 0;
 
-static const char s_vertexShaderSource[] =
-"// Generate single triangle in homogenous clip space that, when clipped, fills the screen\n"
+static const char s_fullScreenQuadVertexShaderSource[] =
 "out vec2 texCoord;\n"
 "\n"
 "void main()\n"
@@ -34,17 +35,56 @@ static const char s_vertexShaderSource[] =
 "    }\n"
 "    else if(gl_VertexID == 1)\n"
 "    {\n"
-"        position = vec2( -1.0f, -3.0f );\n"
-"        texCoord = vec2(  0.0f, 2.0f );\n"
+"        position = vec2( -1.0f, -1.0f );\n"
+"        texCoord = vec2(  0.0f, 1.0f );\n"
+"    }\n"
+"    else if(gl_VertexID == 2)\n"
+"    {\n"
+"        position = vec2( 1.0f, 1.0f );\n"
+"        texCoord = vec2( 1.0f, 0.0f );\n"
 "    }\n"
 "    else\n"
 "    {\n"
-"        position = vec2( 3.0f, 1.0f );\n"
-"        texCoord = vec2( 2.0f, 0.0f );\n"
+"        position = vec2( 1.0f, -1.0f );\n"
+"        texCoord = vec2( 1.0f, 1.0f );\n"
 "    }\n"
 "	 vec4 posPS = vec4(position, 0.0f, 1.0f);\n"
 "	 gl_Position = posPS;\n"
 "}\n";
+
+static const char s_fullScreenQuadRotatedVertexShaderSource[] =
+"out vec2 texCoord;\n"
+"\n"
+"void main()\n"
+"{\n"
+"\n"
+"	// calculate UVs such that screen space [0,1] is covered by triangle and UVs are correct (draw a picture)\n"
+"\n"
+"    vec2 position;"
+"    if(gl_VertexID == 0)\n"
+"    {\n"
+"        position = vec2( -1.0f, 1.0f );\n"
+"        texCoord = vec2( 1.0f, 0.0f );\n"
+"    }\n"
+"    else if(gl_VertexID == 1)\n"
+"    {\n"
+"        position = vec2( -1.0f, -1.0f );\n"
+"        texCoord = vec2(  0.0f, 0.0f );\n"
+"    }\n"
+"    else if(gl_VertexID == 2)\n"
+"    {\n"
+"        position = vec2( 1.0f, 1.0f );\n"
+"        texCoord = vec2( 1.0f, 1.0f );\n"
+"    }\n"
+"    else\n"
+"    {\n"
+"        position = vec2( 1.0f, -1.0f );\n"
+"        texCoord = vec2( 0.0f, 1.0f );\n"
+"    }\n"
+"	 vec4 posPS = vec4(position, 0.0f, 1.0f);\n"
+"	 gl_Position = posPS;\n"
+"}\n";
+
 
 static const char s_fragmentShaderSource[] =
 "uniform sampler2D sampler0;\n"
@@ -103,11 +143,17 @@ bool Renderer::Init()
 	s_GlslVersionString = "#version 130\n";
 #endif
 
-	s_vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	const GLchar* vertexShaderSources[] = { s_GlslVersionString, s_vertexShaderSource };
-	glShaderSource(s_vertexShader, COUNTOF_ARRAY(vertexShaderSources), vertexShaderSources, NULL);
-	glCompileShader(s_vertexShader); // no return value
-	CheckShader(s_vertexShader);
+	s_fullScreenQuadVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	const GLchar* fullScreenQuadVertexShaderSources[] = { s_GlslVersionString, s_fullScreenQuadVertexShaderSource };
+	glShaderSource(s_fullScreenQuadVertexShader, COUNTOF_ARRAY(fullScreenQuadVertexShaderSources), fullScreenQuadVertexShaderSources, NULL);
+	glCompileShader(s_fullScreenQuadVertexShader); // no return value
+	CheckShader(s_fullScreenQuadVertexShader);
+
+	s_fullScreenQuadRotatedVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	const GLchar* fullScreenQuadRotatedVertexShaderSources[] = { s_GlslVersionString, s_fullScreenQuadRotatedVertexShaderSource };
+	glShaderSource(s_fullScreenQuadRotatedVertexShader, COUNTOF_ARRAY(fullScreenQuadRotatedVertexShaderSources), fullScreenQuadRotatedVertexShaderSources, NULL);
+	glCompileShader(s_fullScreenQuadRotatedVertexShader); // no return value
+	CheckShader(s_fullScreenQuadRotatedVertexShader);
 
 	s_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	const GLchar* fragmentShaderSources[] = { s_GlslVersionString, s_fragmentShaderSource };
@@ -115,15 +161,25 @@ bool Renderer::Init()
 	glCompileShader(s_fragmentShader); // no return value
 	CheckShader(s_fragmentShader);
 
-	s_program = glCreateProgram();
-	glAttachShader(s_program, s_vertexShader);
-	glAttachShader(s_program, s_fragmentShader);
-	glLinkProgram(s_program);
-	CheckProgram(s_program);
+	s_fullScreenQuadProgram = glCreateProgram();
+	glAttachShader(s_fullScreenQuadProgram, s_fullScreenQuadVertexShader);
+	glAttachShader(s_fullScreenQuadProgram, s_fragmentShader);
+	glLinkProgram(s_fullScreenQuadProgram);
+	CheckProgram(s_fullScreenQuadProgram);
 
 	// No need to keep the shaders attached now that the program is linked
-	glDetachShader(s_program, s_vertexShader);
-	glDetachShader(s_program, s_fragmentShader);
+	glDetachShader(s_fullScreenQuadProgram, s_fullScreenQuadVertexShader);
+	glDetachShader(s_fullScreenQuadProgram, s_fragmentShader);
+
+	s_fullScreenQuadRotatedProgram = glCreateProgram();
+	glAttachShader(s_fullScreenQuadRotatedProgram, s_fullScreenQuadRotatedVertexShader);
+	glAttachShader(s_fullScreenQuadRotatedProgram, s_fragmentShader);
+	glLinkProgram(s_fullScreenQuadRotatedProgram);
+	CheckProgram(s_fullScreenQuadRotatedProgram);
+
+	// No need to keep the shaders attached now that the program is linked
+	glDetachShader(s_fullScreenQuadRotatedProgram, s_fullScreenQuadVertexShader);
+	glDetachShader(s_fullScreenQuadRotatedProgram, s_fragmentShader);
 
 	// When drawing "A non-zero Vertex Array Object must be bound (though no arrays have to be enabled, so it can be a freshly-created vertex array object)."
 	// https://devtalk.nvidia.com/default/topic/561172/opengl/gldrawarrays-without-vao-for-procedural-geometry-using-gl_vertexid-doesn-t-work-in-debug-context/#
@@ -145,11 +201,15 @@ bool Renderer::Init()
 
 void Renderer::Shutdown()
 {
-	glDeleteProgram(s_program);
-	s_program = 0;
+	glDeleteProgram(s_fullScreenQuadProgram);
+	s_fullScreenQuadProgram = 0;
+	glDeleteProgram(s_fullScreenQuadRotatedProgram);
+	s_fullScreenQuadRotatedProgram = 0;
 
-	glDeleteShader(s_vertexShader);
-	s_vertexShader = 0;
+	glDeleteShader(s_fullScreenQuadVertexShader);
+	s_fullScreenQuadVertexShader = 0;
+	glDeleteShader(s_fullScreenQuadRotatedVertexShader);
+	s_fullScreenQuadRotatedVertexShader = 0;
 
 	glDeleteShader(s_fragmentShader);
 	s_fragmentShader = 0;
@@ -164,12 +224,17 @@ void Renderer::Shutdown()
 	s_bilinearSampler = 0;
 }
 
-void Renderer::DrawFullScreenTexture(GLuint texture, bool bilinearSampling)
+void Renderer::DrawFullScreenTexture(GLuint texture, bool bilinearSampling, bool rotate)
+{
+	drawFullScreenQuad(texture, bilinearSampling, rotate);
+}
+
+void Renderer::drawFullScreenQuad(GLuint texture, bool bilinearSampling, bool rotate)
 {
 	glBindVertexArray(s_vao);
-	glUseProgram(s_program);
+	glUseProgram(rotate ? s_fullScreenQuadRotatedProgram : s_fullScreenQuadProgram);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBindTexture(GL_TEXTURE_2D, texture); // already bound
 	glBindSampler(0, bilinearSampling ? s_bilinearSampler : s_pointSampler);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
