@@ -1,8 +1,4 @@
-invaders-emulator
-=====
-[![Build Status](https://travis-ci.org/howprice/invaders-emulator.svg?branch=master)](https://travis-ci.org/howprice/invaders-emulator)
-
-## About
+# invaders-emulator [![Build Status](https://travis-ci.org/howprice/invaders-emulator.svg?branch=master)](https://travis-ci.org/howprice/invaders-emulator)
 
 Cross-platform Space Invaders emulator. My first emulator! Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com).
 
