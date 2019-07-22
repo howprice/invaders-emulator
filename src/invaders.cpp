@@ -27,10 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool s_startDebugging = false;
-static bool s_verbose = false;
-static unsigned int s_zoom = 3;
-static bool s_rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
+struct CommandLineArgs
+{
+	bool fullscreen = false;
+	bool startDebugging = false;
+	unsigned int imageScale = 3;
+	bool rotateDisplay = true; // the invaders machine display is rotated 90 degrees anticlockwise
+	bool verbose = false;
+};
+
 static bool s_limitFrameRate = true;
 
 static bool s_showDevUI = false;
@@ -62,7 +67,7 @@ static void printUsage()
 	);
 }
 
-static void parseCommandLine(int argc, char** argv)
+static void parseCommandLine(int argc, char** argv, CommandLineArgs& commandLineArgs)
 {
 	for(int i = 1; i < argc; i++)
 	{
@@ -75,11 +80,11 @@ static void parseCommandLine(int argc, char** argv)
 		}
 		else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
 		{
-			s_startDebugging = true;
+			commandLineArgs.startDebugging = true;
 		}
 		else if(strcmp(arg, "--verbose") == 0)
 		{
-			s_verbose = true;
+			commandLineArgs.verbose = true;
 		}
 		else if(strcmp(arg, "-z") == 0 || strcmp(arg, "--zoom") == 0)
 		{
@@ -90,7 +95,7 @@ static void parseCommandLine(int argc, char** argv)
 			}
 
 			arg = argv[++i];
-			if(!ParseUnsignedInt(arg, s_zoom))
+			if(!ParseUnsignedInt(arg, commandLineArgs.imageScale))
 			{
 				fprintf(stderr, "ERROR: Specified zoom is invalid\n");
 				printUsage();
@@ -99,7 +104,11 @@ static void parseCommandLine(int argc, char** argv)
 		}
 		else if(strcmp(arg, "-r") == 0 || strcmp(arg, "--rotate-display") == 0)
 		{
-			s_rotateDisplay = true;
+			commandLineArgs.rotateDisplay = true;
+		}
+		else if(strcmp(arg, "-f") == 0 || strcmp(arg, "--fullscreen") == 0)
+		{
+			commandLineArgs.fullscreen = true;
 		}
 		else
 		{
@@ -161,7 +170,7 @@ static void saveMachineState(const Machine& machine)
 
 //------------------------------------------------------------------------------
 
-static void doMainMenuBar(Machine* pMachine)
+static void doMainMenuBar(Machine* pMachine, bool verbose)
 {
 	if(!s_showMainMenuBar)
 		return;
@@ -187,6 +196,10 @@ static void doMainMenuBar(Machine* pMachine)
 	bool displayMenuEnabled = pDisplay != nullptr;
 	if(ImGui::BeginMenu("Display", displayMenuEnabled))
 	{
+		bool fullscreen = pDisplay->IsFullscreen();
+		if(ImGui::MenuItem("Full Screen", "Alt+Enter", /*selected*/&fullscreen))
+			pDisplay->SetFullscreen(fullscreen);
+
 		if(ImGui::BeginMenu("Window Scale"))
 		{
 			if(ImGui::MenuItem("1x"))
@@ -283,16 +296,16 @@ static void doMainMenuBar(Machine* pMachine)
 
 		ImGui::Separator();
 		if(ImGui::MenuItem("Step Frame", "F8", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			DebugStepFrame(*pMachine, s_verbose);
+			DebugStepFrame(*pMachine, verbose);
 
 		if(ImGui::MenuItem("Step Into", "F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			StepInto(*pMachine, s_verbose);
+			StepInto(*pMachine, verbose);
 
 		if(ImGui::MenuItem("Step Over", "F10", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			StepOver(*pMachine, s_debugger, s_verbose);
+			StepOver(*pMachine, s_debugger, verbose);
 
 		if(ImGui::MenuItem("Step Out", "Shift+F11", /*pSelcted*/nullptr, /*enabled*/!pMachine->running))
-			StepOut(*pMachine, s_debugger, s_verbose);
+			StepOut(*pMachine, s_debugger, verbose);
 
 		ImGui::EndMenu();
 	}
@@ -340,9 +353,15 @@ static void doMemoryWindow(Machine* pMachine)
 	ImGui::End();
 }
 
-static void doDevUI(Machine* pMachine)
+static void doDevUI(Machine* pMachine, bool verbose)
 {
 	const bool shiftDown = Input::GetKeyState(SDL_SCANCODE_LSHIFT) || Input::GetKeyState(SDL_SCANCODE_RSHIFT);
+
+	if(Input::GetKeyState(SDL_SCANCODE_LALT) && (Input::IsKeyDownThisFrame(SDL_SCANCODE_RETURN) || Input::IsKeyDownThisFrame(SDL_SCANCODE_KP_ENTER)))
+	{
+		if(pMachine->pDisplay)
+			pMachine->pDisplay->ToggleFullscreen();
+	}
 
 	if(Input::IsKeyDownThisFrame(SDL_SCANCODE_TAB))
 		s_showDevUI = !s_showDevUI;
@@ -358,23 +377,23 @@ static void doDevUI(Machine* pMachine)
 			restoreMachineState(*pMachine);
 	}
 	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F8))
-		DebugStepFrame(*pMachine, s_verbose);
+		DebugStepFrame(*pMachine, verbose);
 	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F10))
 	{
 		if(!pMachine->running)
-			StepOver(*pMachine, s_debugger, s_verbose);
+			StepOver(*pMachine, s_debugger, verbose);
 	}
 	else if(Input::IsKeyDownThisFrame(SDL_SCANCODE_F11))
 	{
 		if(shiftDown)
 		{
 			if(!pMachine->running)
-				StepOut(*pMachine, s_debugger, s_verbose);
+				StepOut(*pMachine, s_debugger, verbose);
 		}
 		else
 		{
 			if(!pMachine->running)
-				StepInto(*pMachine, s_verbose);
+				StepInto(*pMachine, verbose);
 		}
 	}
 
@@ -382,10 +401,10 @@ static void doDevUI(Machine* pMachine)
 	if(!s_showDevUI)
 		return;
 
-	doMainMenuBar(pMachine);
+	doMainMenuBar(pMachine, verbose);
 	s_cpuWindow.Update(pMachine->cpu);
 	s_machineWindow.Update(*pMachine);
-	s_debugWindow.Update(*pMachine, s_debugger, s_verbose);
+	s_debugWindow.Update(*pMachine, s_debugger, verbose);
 	s_disassemblyWindow.Update(*pMachine, s_debugger);
 	s_breakpointsWindow.Update(s_debugger, pMachine->cpu);
 	doMemoryWindow(pMachine);
@@ -399,11 +418,15 @@ static double GetSeconds(Uint64 prevTime, Uint64 currentTime)
 	return timeSeconds;
 }
 
+//------------------------------------------------------------------------------
+// #TODO: Move into debugger.cpp
+static bool s_verboseDebugger = false;
+
 static void debugHook(Machine* pMachine)
 {
 	HP_ASSERT(pMachine);
 	
-	if(s_verbose)
+	if(s_verboseDebugger)
 	{
 		Disassemble8080(pMachine->pMemory, pMachine->memorySizeBytes, pMachine->cpu.PC);
 		printf("    ");
@@ -452,7 +475,8 @@ static void debugHook(Machine* pMachine)
 
 int main(int argc, char** argv)
 {
-	parseCommandLine(argc, argv);
+	CommandLineArgs commandLineArgs;
+	parseCommandLine(argc, argv, commandLineArgs);
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
@@ -488,7 +512,7 @@ int main(int argc, char** argv)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-	Display* pDisplay = Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, s_zoom, s_rotateDisplay, /*bFullscreen*/false);
+	Display* pDisplay = Display::Create(Machine::kDisplayWidth, Machine::kDisplayHeight, commandLineArgs.imageScale, commandLineArgs.rotateDisplay, commandLineArgs.fullscreen);
 	if(!pDisplay)
 	{
 		fprintf(stderr, "Failed to create display window\n");
@@ -522,6 +546,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	s_verboseDebugger = commandLineArgs.verbose;
 	pMachine->debugHook = debugHook;
 
 	if(!CreateMachine(&s_pSavedMachine, nullptr))
@@ -625,10 +650,10 @@ int main(int argc, char** argv)
 		ImGui_ImplSDL2_NewFrame(pDisplay->GetWindow());
 		ImGui::NewFrame();
 
-		StepFrame(pMachine, s_verbose);
+		StepFrame(pMachine, commandLineArgs.verbose);
 
 		//ImGui::ShowDemoWindow();
-		doDevUI(pMachine);
+		doDevUI(pMachine, commandLineArgs.verbose);
 
 		// Rendering
 		ImGui::Render();

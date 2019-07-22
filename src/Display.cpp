@@ -68,20 +68,15 @@ bool Display::init(unsigned int zoom, bool rotate, bool bFullscreen)
 	// create window
 	HP_ASSERT(m_pWindow == nullptr);
 	const char* title = "invaders-emulator";
-	if(bFullscreen)
-	{
-		HP_FATAL_ERROR("Test this");
-		m_pWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
-	}
-	else
-	{
-		Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+	Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 #ifndef __APPLE__
-		// #TODO: Figure out High DPI on Mac
-		window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	// #TODO: Figure out High DPI on Mac
+	window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
-		m_pWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, window_flags);
-	}
+	if(bFullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+	m_pWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, window_flags);
 
 	if(m_pWindow == nullptr)
 	{
@@ -286,13 +281,11 @@ void Display::SetFullscreen(bool fullscreen)
 {
 	if(fullscreen)
 	{
-		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
-		SDL_ShowCursor(SDL_DISABLE);
+		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
 	else
 	{
 		SDL_SetWindowFullscreen(m_pWindow, 0);
-		SDL_ShowCursor(SDL_ENABLE);
 	}
 }
 
@@ -302,12 +295,10 @@ void Display::ToggleFullscreen()
 	if(windowFlags & SDL_WINDOW_FULLSCREEN)
 	{
 		SDL_SetWindowFullscreen(m_pWindow, 0);
-		SDL_ShowCursor(SDL_DISABLE);
 	}
 	else
 	{
-		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
-		SDL_ShowCursor(SDL_ENABLE);
+		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
 }
 
