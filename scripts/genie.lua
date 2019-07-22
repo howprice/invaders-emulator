@@ -3,6 +3,25 @@ solution "invaders-emulator"
 	configurations { "Debug", "Dev", "Release" }
 	platforms { "native", "x32", "x64" }
 
+	configuration "windows"		
+					
+		buildoptions { 
+			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
+			"/wd4127", -- conditional expression is constant
+			"/wd4505", -- unreferenced local function has been removed	
+			
+			-- Treat warnings as errors
+			-- TODO: Test gcc/clang equivalent
+			--"/we4061", -- enumerator 'identifier' in switch of enum 'enumeration' is not explicitly handled by a case label. i.e. Warn even if there is a default
+			"/we4062"  -- enumerator 'identifier' in switch of enum 'enumeration' is not handled
+		}
+		
+	configuration "gcc"	
+		buildoptions { 
+			"-Wswitch"        -- warn when switch is missing case
+			--"-Wswitch-enum" -- warn when switch is missing case, even if there is a default
+		}
+		
 	project "disassemble"
 		location "../build"
 		kind "ConsoleApp"
@@ -38,12 +57,7 @@ solution "invaders-emulator"
 			flags { "ReleaseRuntime" }  
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 			
-			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
-			buildoptions { "/wd4127" } -- conditional expression is constant
-			buildoptions { "/wd4505" } -- unreferenced local function has been removed
-			
 		configuration "linux"
-			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-braces" }
 
@@ -101,12 +115,6 @@ solution "invaders-emulator"
 			flags { "ReleaseRuntime" }  
 			links { "SDL2", "SDL2main", "opengl32" }
 			defines { "_CRT_SECURE_NO_WARNINGS" }
-			
-			-- Disable compiler warnings. These end up in the Project Settings -> C/C++ -> Command Line -> Additional Options, rather than C/C++ -> Advanced -> Disable Specific Warnings 
-			buildoptions { 
-				"/wd4127", -- conditional expression is constant
-				"/wd4505" -- unreferenced local function has been removed
-			}
 
 		configuration { "windows", "release" }
 			buildoptions "/wd4390" -- empty controlled statement found; is this the intent? Required for ImGui in release
@@ -136,7 +144,6 @@ solution "invaders-emulator"
 			buildoptions { "-Wno-missing-field-initializers" }
 			
 		configuration "linux"
-			buildoptions { "-Wno-switch" }
 			buildoptions { "-Wno-unused-function" }
 			buildoptions { "-Wno-missing-braces" }
 			
