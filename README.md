@@ -12,11 +12,11 @@ Unzipped invaders ROMs should be placed the 'data' folder. The emulator will not
 
 Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder. The emulator can run without samples present.
 
-## Windows
+### Windows
 
 The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
 
-## Linux
+### Linux
 
 Install using your package manager, e.g.
 
