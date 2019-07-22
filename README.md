@@ -106,6 +106,7 @@ Cycle-exact emulation is not required.
 
 - Display -> Maintain Aspect Ratio option  (letterboxing/pillarboxing)
 - Display -> Full Screen Alt+Enter
+- Save/Load settings e.g. Display options (See SDL2-Asteroids)
 - Update README.md
   - Cover Mac OS X and Raspberry Pi
   - Explain Debug, Dev, Release builds
