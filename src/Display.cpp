@@ -7,8 +7,8 @@
 // static
 Display* Display::Create(const unsigned int width, const unsigned int height, unsigned int zoom, bool rotate, bool bFullscreen)
 {
-	Display* pDisplay = new Display();
-	if(!pDisplay->init(width, height, zoom, rotate, bFullscreen))
+	Display* pDisplay = new Display(width, height);
+	if(!pDisplay->init(zoom, rotate, bFullscreen))
 	{
 		delete pDisplay;
 		pDisplay = nullptr;
@@ -23,9 +23,11 @@ void Display::Destroy(Display* pDisplay)
 	delete pDisplay;
 }
 
-Display::Display()
+Display::Display(unsigned int width, unsigned int height)
+: m_width(width)
+, m_height(height)
 {
-
+	HP_ASSERT(m_width > 0 && m_height > 0);
 }
 
 Display::~Display()
@@ -48,18 +50,14 @@ Display::~Display()
 	m_pWindow = nullptr;
 }
 
-bool Display::init(const unsigned int width, const unsigned int height, unsigned int zoom, bool rotate, bool bFullscreen)
+bool Display::init(unsigned int zoom, bool rotate, bool bFullscreen)
 {
-	HP_ASSERT(width > 0 && height > 0);
-	m_width = width;
-	m_height = height;
+	HP_ASSERT(zoom > 0);
 
 	// Create SDL window
 	m_rotate = rotate;
-	unsigned int windowWidth = rotate ? height : width;
-	unsigned int windowHeight = rotate ? width : height;
-
-	HP_ASSERT(zoom > 0);
+	unsigned int windowWidth = rotate ? m_height : m_width;
+	unsigned int windowHeight = rotate ? m_width : m_height;
 	windowWidth *= zoom;
 	windowHeight *= zoom;
 
@@ -92,9 +90,9 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	}
 
 	if(rotate)
-		SDL_SetWindowMinimumSize(m_pWindow, (int)height, (int)width);
+		SDL_SetWindowMinimumSize(m_pWindow, (int)m_height, (int)m_width);
 	else
-		SDL_SetWindowMinimumSize(m_pWindow, (int)width, (int)height);
+		SDL_SetWindowMinimumSize(m_pWindow, (int)m_width, (int)m_height);
 
 	m_GLContext = SDL_GL_CreateContext(m_pWindow);
 	SDL_GL_MakeCurrent(m_pWindow, m_GLContext);
@@ -116,9 +114,9 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	m_vsyncEnabled = m_vsyncAvailable;
 
 	// display buffer
-	HP_ASSERT((width % 8) == 0);
+	HP_ASSERT((m_width % 8) == 0);
 	const unsigned int bytesPerRow = m_width >> 3; // div 8
-	m_displayBufferSizeBytes = bytesPerRow * height;
+	m_displayBufferSizeBytes = bytesPerRow * m_height;
 	m_pDisplayBuffer = new uint8_t[m_displayBufferSizeBytes];
 	// #TODO: Zero buffer?
 
@@ -129,7 +127,7 @@ bool Display::init(const unsigned int width, const unsigned int height, unsigned
 	glTexStorage2D(GL_TEXTURE_2D, 1/*mipLevels*/, GL_R8, m_width, m_height);
 
 	// texture upload buffer. 1 byte per pixel
-	unsigned int textureSizeBytes = width * height;
+	unsigned int textureSizeBytes = m_width * m_height;
 	m_pTexturePixelsR8 = new uint8_t[textureSizeBytes];
 
 	return true;
@@ -141,7 +139,7 @@ void Display::Clear()
 	SDL_GL_MakeCurrent(m_pWindow, m_GLContext);
 
 	unsigned int width, height;
-	GetSize(width, height);
+	GetWindowClientSize(width, height);
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -151,6 +149,87 @@ void Display::Clear()
 void Display::Render()
 {
 	updateTexture();
+
+	unsigned int windowWidth, windowHeight;
+	GetWindowClientSize(windowWidth, windowHeight);
+
+	// size
+	const unsigned int imageWidth = m_rotate ? m_height : m_width;
+	const unsigned int imageHeight = m_rotate ? m_width : m_height;
+
+	unsigned int viewportW, viewportH;
+	if(m_fitWindow)
+	{
+		if(m_maintainAspectRatio)
+		{
+			HP_ASSERT(imageHeight > 0);
+			const float imageAspectRatio = (float)imageWidth / (float)imageHeight;
+
+			HP_ASSERT(windowHeight > 0);
+			const float windowAspectRatio = (float)windowWidth / (float)windowHeight;
+
+			if(imageAspectRatio == windowAspectRatio)
+			{
+				viewportW = windowWidth;
+				viewportH = windowHeight;
+			}
+			else if(imageAspectRatio > windowAspectRatio)
+			{
+				// letterbox (bars above and below image)
+				viewportW = windowWidth;
+				viewportH = (unsigned int)((float)windowWidth * imageAspectRatio);
+			}
+			else
+			{
+				// pillarbox (bars left and right of image)
+				viewportW = (unsigned int)((float)windowHeight * imageAspectRatio);
+				viewportH = windowHeight;
+			}
+		}
+		else
+		{
+			viewportW = windowWidth;
+			viewportH = windowHeight;
+		}
+	}
+	else
+	{
+		viewportW = imageWidth * m_imageScale;
+		viewportH = imageHeight * m_imageScale;
+	}
+
+	// x
+	int viewportX = 0;
+	switch(m_horizontalAlignment)
+	{
+	case HorizontalAlignment::Left:
+		viewportX = 0;
+		break;
+	case HorizontalAlignment::Centre:
+		viewportX = ((int)windowWidth - (int)viewportW) / 2;
+		break;
+	case HorizontalAlignment::Right:
+		viewportX = (int)windowWidth - (int)viewportW;
+		break;
+	}
+
+	// y
+	int viewportY = 0;
+	switch(m_verticalAlignment)
+	{
+	case VerticalAlignment::Bottom:
+		viewportY = 0;
+		break;
+	case VerticalAlignment::Centre:
+		viewportY = ((int)windowHeight - (int)viewportH) / 2;
+		break;
+	case VerticalAlignment::Top:
+		viewportY = (int)windowHeight - (int)viewportH;
+		break;
+	}
+
+	glViewport((GLint)viewportX, (GLint)viewportY, (GLsizei)viewportW, (GLsizei)viewportH);
+
 	Renderer::DrawFullScreenTexture(m_texture, m_bilinearSampling, m_rotate);
 }
 
@@ -160,7 +239,7 @@ void Display::Present()
 	SDL_GL_SwapWindow(m_pWindow);
 }
 
-void Display::GetSize(unsigned int &width, unsigned int &height) const
+void Display::GetWindowClientSize(unsigned int &width, unsigned int &height) const
 {
 	int displayWidth, displayHeight;
 	SDL_GetWindowSize(m_pWindow, &displayWidth, &displayHeight);
@@ -168,19 +247,14 @@ void Display::GetSize(unsigned int &width, unsigned int &height) const
 	height = (unsigned int)displayHeight;
 }
 
-void Display::SetZoom(unsigned int zoom)
+void Display::SetWindowScale(unsigned int scale)
 {
-	HP_ASSERT(zoom > 0);
+	HP_ASSERT(scale > 0);
 	unsigned int windowWidth = m_rotate ? m_height : m_width;
 	unsigned int windowHeight = m_rotate ? m_width : m_height;
-	windowWidth *= zoom;
-	windowHeight *= zoom;
+	windowWidth *= scale;
+	windowHeight *= scale;
 	SDL_SetWindowSize(m_pWindow, (int)windowWidth, (int)windowHeight);
-
-	int w, h;
-	SDL_GetWindowSize(m_pWindow, &w, &h);
-	HP_ASSERT((unsigned int)w == windowWidth);
-	HP_ASSERT((unsigned int)h == windowHeight);
 }
 
 void Display::SetRotate(bool rotate)
@@ -252,6 +326,12 @@ bool Display::SetVsyncEnabled(bool enabled)
 
 	m_vsyncEnabled = SDL_GL_GetSwapInterval() > 0;
 	return success;
+}
+
+void Display::SetImageScale(unsigned int scale)
+{
+	HP_ASSERT(scale > 0);
+	m_imageScale = scale;
 }
 
 void Display::SetByte(unsigned int address, uint8_t value)

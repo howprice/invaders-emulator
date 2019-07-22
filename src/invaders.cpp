@@ -187,16 +187,62 @@ static void doMainMenuBar(Machine* pMachine)
 	bool displayMenuEnabled = pDisplay != nullptr;
 	if(ImGui::BeginMenu("Display", displayMenuEnabled))
 	{
-		if(ImGui::BeginMenu("Window Size"))
+		if(ImGui::BeginMenu("Window Scale"))
 		{
 			if(ImGui::MenuItem("1x"))
-				pDisplay->SetZoom(1);
+				pDisplay->SetWindowScale(1);
 			if(ImGui::MenuItem("2x"))
-				pDisplay->SetZoom(2);
+				pDisplay->SetWindowScale(2);
 			if(ImGui::MenuItem("3x"))
-				pDisplay->SetZoom(3);
+				pDisplay->SetWindowScale(3);
 			if(ImGui::MenuItem("4x"))
-				pDisplay->SetZoom(4);
+				pDisplay->SetWindowScale(4);
+
+			ImGui::EndMenu();
+		}
+
+		if(ImGui::BeginMenu("Image Scale", /*enabled*/!pDisplay->GetFitWindow()))
+		{
+			if(ImGui::MenuItem("1x"))
+				pDisplay->SetImageScale(1);
+			if(ImGui::MenuItem("2x"))
+				pDisplay->SetImageScale(2);
+			if(ImGui::MenuItem("3x"))
+				pDisplay->SetImageScale(3);
+			if(ImGui::MenuItem("4x"))
+				pDisplay->SetImageScale(4);
+
+			ImGui::EndMenu();
+		}
+
+		bool fitWindow = pDisplay->GetFitWindow();
+		if(ImGui::MenuItem("Fit Window", /*shortcut*/nullptr, /*selected*/&fitWindow))
+			pDisplay->SetFitWindow(fitWindow);
+
+		bool maintainAspectRatio = pDisplay->GetMaintainAspectRatio();
+		if(ImGui::MenuItem("Maintain aspect ratio", /*shortcut*/nullptr, /*selected*/&maintainAspectRatio))
+			pDisplay->SetMaintainAspectRatio(maintainAspectRatio);
+
+		if(ImGui::BeginMenu("HorizontalAlignment"))
+		{
+			if(ImGui::MenuItem("Left", /*shortcut*/nullptr, /*selected*/pDisplay->GetHorizontalAlignment() == HorizontalAlignment::Left))
+				pDisplay->SetHorizontalAlignment(HorizontalAlignment::Left);
+			if(ImGui::MenuItem("Centre", /*shortcut*/nullptr, /*selected*/pDisplay->GetHorizontalAlignment() == HorizontalAlignment::Centre))
+				pDisplay->SetHorizontalAlignment(HorizontalAlignment::Centre);
+			if(ImGui::MenuItem("Right", /*shortcut*/nullptr, /*selected*/pDisplay->GetHorizontalAlignment() == HorizontalAlignment::Right))
+				pDisplay->SetHorizontalAlignment(HorizontalAlignment::Right);
+
+			ImGui::EndMenu();
+		}
+
+		if(ImGui::BeginMenu("VerticalAlignment"))
+		{
+			if(ImGui::MenuItem("Bottom", /*shortcut*/nullptr, /*selected*/pDisplay->GetVerticalAlignment() == VerticalAlignment::Bottom))
+				pDisplay->SetVerticalAlignment(VerticalAlignment::Bottom);
+			if(ImGui::MenuItem("Centre", /*shortcut*/nullptr, /*selected*/pDisplay->GetVerticalAlignment() == VerticalAlignment::Centre))
+				pDisplay->SetVerticalAlignment(VerticalAlignment::Centre);
+			if(ImGui::MenuItem("Top", /*shortcut*/nullptr, /*selected*/pDisplay->GetVerticalAlignment() == VerticalAlignment::Top))
+				pDisplay->SetVerticalAlignment(VerticalAlignment::Top);
 
 			ImGui::EndMenu();
 		}
@@ -208,6 +254,8 @@ static void doMainMenuBar(Machine* pMachine)
 		bool bilinearSampling = pDisplay->GetBilinearSampling();
 		if(ImGui::MenuItem("Bilinear sampling?", /*shorcut*/nullptr, /*pSelected*/&bilinearSampling))
 			pDisplay->SetBilinearSampling(bilinearSampling);
+
+		ImGui::Separator();
 
 		bool vsyncEnabled = pDisplay->IsVsyncEnabled();
 		if(ImGui::MenuItem("VSync", /*shorcut*/nullptr, /*pSelected*/&vsyncEnabled, /*enabled*/pDisplay->IsVsyncAvailable()))
