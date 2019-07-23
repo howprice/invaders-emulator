@@ -12,49 +12,58 @@ Unzipped invaders ROMs should be placed the 'data' folder. The emulator will not
 
 Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data' folder. The emulator can run without samples present.
 
+## Building and Running
+
+This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform. The GENie executables for Windows, Linux, Mac OS X and Raspberry Pi can be found in the [tools](tools) directory for convenience.
+
 ### Windows
 
 The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
 
+Download or clone the repository. Run genie_vs2017.bat or genie_vs2019.bat. This will build the Visual Studio Solution and Project files into the 'build' folder. Build and run from within visual studio.
+
 ### Linux
 
-Install using your package manager, e.g.
+[Download dependencies](https://www.libsdl.org/download-2.0.php) and install from source, or install using a package manager. For example, for Ubuntu and Raspberry Pi:
 
 	$ sudo apt-get install libsdl2-dev
 	$ sudo apt-get install libsdl2-mixer-dev
-	
-or [download](https://www.libsdl.org/download-2.0.php) and install from source
 
-## Building
-
-This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform.
-
-### Windows
-
-Run genie_vs2017.bat or genie_vs2019.bat to build the Visual Studio Solution and projects into the 'build' folder
-
-### Linux
+Clone this repo, build the makefiles and build:
 
 	$ git clone https://github.com/howprice/invaders-emulator
 	$ cd invaders-emulator
-	$ tools/bin/linux/genie gmake  (OR ./genie_gmake.sh) 
+	$ ./genie_gmake.sh  (or ./genie_raspberrypi.sh)
 	$ cd build
 	$ make
 
-n.b. You may need to 'chmod +x' genie executable - I haven't figured out how to make the checked in file executable.
+n.b. You may need to 'chmod +x' genie executable and or .sh shell script files.
 
 `make` with no config specified defaults to the debug config for native architecture (usually 64-bit). Can call `make config=<xxx>` where `xxx` can be `debug`, `dev`, `release`, `debug32`, `dev32`, `release32`, `debug64`, `dev64` or `release64`. Or type `make help` for more info. Make sure you're in the `build` folder.
 
-### Other Platforms
-
-Not yet tested. May require minor fix-up for Raspberry Pi and OSX
-
-## Running
-
-### Linux
+To run the emulator
 
 	$ cd data
-	$ ../bin/debug/emulator
+	$ ../bin/debug/emulator   (or dev or release)
+
+## Mac OS X
+
+[Download dependencies](https://www.libsdl.org/download-2.0.php) and install from source, or install using [Brew](http://brew.sh):
+
+	$ brew install sdl2
+	$ brew install sdl2_mixer
+	
+Clone this repo, build the makefiles for either gcc (aliased to clang on Mac) or Xcode:
+
+	$ ./genie_gmake.sh   // then build and run as Linux above
+	
+or
+
+	$ ./genie_xcode10.sh   // then build and run in XCode
+
+## Cleaning the build files
+
+	$ ./genie_clean.sh
 
 ## Controls
 
