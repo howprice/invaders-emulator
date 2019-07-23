@@ -2,6 +2,8 @@
 
 Cross-platform Space Invaders emulator. My first emulator! Inspired by the excellent tutorial at [Emulator 101](http://emulator101.com).
 
+Repo also includes simple command line disassembler project.
+
 <br><img src="docs/screenshot.png">
 
 ## Dependencies
@@ -15,6 +17,11 @@ Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data'
 ## Building and Running
 
 This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform. The GENie executables for Windows, Linux, Mac OS X and Raspberry Pi can be found in the [tools](tools) directory for convenience.
+
+There are three build configurations:
+- Debug - no optimisations, symbols, asserts
+- Dev - optimisations, symbols, asserts
+- Release - optimisations, no symbols, no asserts
 
 ### Windows
 
@@ -110,9 +117,6 @@ Cycle-exact emulation is not required.
 ## TODO
 
 - Save/Load settings e.g. Display options (See SDL2-Asteroids)
-- Update README.md
-  - Cover Mac OS X and Raspberry Pi
-  - Explain Debug, Dev, Release builds
 - Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
 - Deploy with travis?
 - Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
