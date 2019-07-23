@@ -131,3 +131,6 @@ Cycle-exact emulation is not required.
 - Headless mode (command line arg)
 - What is the purpose of the RAM mirror? (It *is* used)
 
+## License
+
+See the [LICENSE](LICENSE) file for details.
