@@ -37,21 +37,27 @@ solution "invaders-emulator"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
 		debugdir "../data"		-- debugger working directory
+
+		configuration "x64"
+			targetdir "../bin/x64"
+
+		configuration "not x64"
+			targetdir "../bin/x86"
 		
 		configuration "Debug"
 			--defines { "_DEBUG" } Removed this Windows define because using /MD rather than /MDd
 			defines { "DEBUG" }
 			flags { "Symbols" }
-			targetdir "../bin/debug"
+			targetsubdir "debug"
 
 		configuration "Dev"
 			flags { "Optimize", "Symbols" }			
-			targetdir "../bin/dev"
+			targetsubdir "dev"
 	
 		configuration "Release"
 			defines { "NDEBUG", "RELEASE" }
 			flags { "Optimize" }
-			targetdir "../bin/release"
+			targetsubdir "release"
 			
 		configuration "windows"
 			flags { "ReleaseRuntime" }  
@@ -91,21 +97,27 @@ solution "invaders-emulator"
 		flags { "ExtraWarnings", "FatalWarnings" }
 		links { "SDL2_mixer" }  -- not in the string returned by `sdl2-config --links`
 		debugdir "../data"		-- debugger working directory
+
+		configuration "x64"
+			targetdir "../bin/x64"
+
+		configuration "not x64"
+			targetdir "../bin/x86"
 		
 		configuration "Debug"
 			--defines { "_DEBUG" } Removed this Windows define because using /MD rather than /MDd
 			defines { "DEBUG" }
 			flags { "Symbols" }
-			targetdir "../bin/debug"
+			targetsubdir "debug"
 
 		configuration "Dev"
 			flags { "Optimize", "Symbols" }			
-			targetdir "../bin/dev"
+			targetsubdir "dev"
 	
 		configuration "Release"
 			defines { "NDEBUG", "RELEASE" }
 			flags { "Optimize" }
-			targetdir "../bin/release"
+			targetsubdir "release"
 			
 		configuration "windows"
 			includedirs {
