@@ -59,5 +59,8 @@ matrix:
         - MSBuild.exe //p:Platform=x64 //p:Configuration=Release invaders-emulator.sln 
         
 notifications:
-  email: false
+  email:
+    on_success: change # default: change
+    on_failure: always # default: always
+    
   
