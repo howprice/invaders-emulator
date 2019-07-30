@@ -39,7 +39,7 @@ install:
     fi
     
 script:
-  - scripts/genie_gmake.sh
+  - chmod +x scripts/genie_gmake.sh && scripts/genie_gmake.sh
   - cd build
   - make config=debug
   - make config=dev
