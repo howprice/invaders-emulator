@@ -33,8 +33,13 @@ install:
        brew install sdl2_mixer;
     fi  
     
+  # Windows
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then 
+      scripts/install_sdl.bat;
+    fi
+    
 script:
-  - ./genie_gmake.sh
+  - scripts/genie_gmake.sh
   - cd build
   - make config=debug
   - make config=dev
@@ -48,7 +53,7 @@ matrix:
         - MSBUILD_PATH="/C/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/MSBuild/15.0/Bin"
       script:
         - export PATH=$MSBUILD_PATH:$PATH
-        - ./genie_vs2017.bat
+        - scripts/genie_vs2017.bat
         - cd build
           ## n.b. have to use double slash to use Windows style / command line option in Git Bash
         - MSBuild.exe //p:Platform=Win32 //p:Configuration=Debug invaders-emulator.sln 
