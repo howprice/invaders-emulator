@@ -21,6 +21,27 @@ solution "invaders-emulator"
 			"-Wswitch"        -- warn when switch is missing case
 			--"-Wswitch-enum" -- warn when switch is missing case, even if there is a default
 		}
+
+	configuration "x64"
+		targetdir "../bin/x64"
+
+	configuration "not x64"
+		targetdir "../bin/x86"
+
+	configuration "Debug"
+		--defines { "_DEBUG" } Removed this Windows define because using /MD rather than /MDd
+		defines { "DEBUG" }
+		flags { "Symbols" }
+		targetsubdir "debug"
+
+	configuration "Dev"
+		flags { "Optimize", "Symbols" }
+		targetsubdir "dev"		
+	
+	configuration "Release"
+		defines { "NDEBUG", "RELEASE" }
+		flags { "Optimize" }
+		targetsubdir "release"	
 		
 	project "disassemble"
 		location "../build"
@@ -37,28 +58,7 @@ solution "invaders-emulator"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
 		debugdir "../data"		-- debugger working directory
-
-		configuration "x64"
-			targetdir "../bin/x64"
-
-		configuration "not x64"
-			targetdir "../bin/x86"
 		
-		configuration "Debug"
-			--defines { "_DEBUG" } Removed this Windows define because using /MD rather than /MDd
-			defines { "DEBUG" }
-			flags { "Symbols" }
-			targetsubdir "debug"
-
-		configuration "Dev"
-			flags { "Optimize", "Symbols" }			
-			targetsubdir "dev"
-	
-		configuration "Release"
-			defines { "NDEBUG", "RELEASE" }
-			flags { "Optimize" }
-			targetsubdir "release"
-			
 		configuration "windows"
 			flags { "ReleaseRuntime" }  
 			defines { "_CRT_SECURE_NO_WARNINGS" }
@@ -97,28 +97,7 @@ solution "invaders-emulator"
 		flags { "ExtraWarnings", "FatalWarnings" }
 		links { "SDL2_mixer" }  -- not in the string returned by `sdl2-config --links`
 		debugdir "../data"		-- debugger working directory
-
-		configuration "x64"
-			targetdir "../bin/x64"
-
-		configuration "not x64"
-			targetdir "../bin/x86"
-		
-		configuration "Debug"
-			--defines { "_DEBUG" } Removed this Windows define because using /MD rather than /MDd
-			defines { "DEBUG" }
-			flags { "Symbols" }
-			targetsubdir "debug"
-
-		configuration "Dev"
-			flags { "Optimize", "Symbols" }			
-			targetsubdir "dev"
-	
-		configuration "Release"
-			defines { "NDEBUG", "RELEASE" }
-			flags { "Optimize" }
-			targetsubdir "release"
-			
+					
 		configuration "windows"
 			includedirs {
 				"../3rdParty/SDL2-2.0.9/include",
@@ -137,8 +116,8 @@ solution "invaders-emulator"
 				"../3rdParty/SDL2_mixer-2.0.4/lib/x86"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)",
-				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
+				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
 			}
 
 		configuration { "windows", "x64" }		
@@ -147,8 +126,8 @@ solution "invaders-emulator"
 				"../3rdParty/SDL2_mixer-2.0.4/lib/x64"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)",
-				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(ConfigurationName)"
+				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
+				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
 			}
 
 		configuration "gcc"
@@ -202,11 +181,11 @@ newaction
 			
 if _ACTION == "clean" then
 	os.rmdir("../bin")
-	if os.get() == "windows" then
+	if os.get() == "windows" and os.isdir("../build/.vs") then
 		os.outputof("rmdir ..\\build\\.vs /s /q") -- remove the hidden .vs directory
 	end
 	if os.get() == "macosx" then
 		os.outputof("rm -rf build") -- remove the build folder, including hidden .DS_Store file
 	end
-	os.rmdir("../build")			-- this doesn't work because the directory contains .vs folder
+	os.rmdir("../build") -- this doesn't work unless the hidden .vs has been removed from the folder first folder
 end
