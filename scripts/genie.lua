@@ -88,11 +88,11 @@ solution "invaders-emulator"
 			"../src/Renderer.*",
 			"../src/imgui/**",
 			"../src/debugger/*",
-			"../3rdParty/gl3w/GL/**"
+			"../libs/gl3w/GL/**"
 		}
 		includedirs {
 			"../src",
-			"../3rdParty/gl3w"
+			"../libs/gl3w"
 		}
 		flags { "ExtraWarnings", "FatalWarnings" }
 		links { "SDL2_mixer" }  -- not in the string returned by `sdl2-config --links`
@@ -100,8 +100,8 @@ solution "invaders-emulator"
 					
 		configuration "windows"
 			includedirs {
-				"../3rdParty/SDL2-2.0.9/include",
-				"../3rdParty/SDL2_mixer-2.0.4/include"
+				"../libs/SDL2/include",
+				"../libs/SDL2_mixer/include"
 			}
 			flags { "ReleaseRuntime" }  
 			links { "SDL2", "SDL2main", "opengl32" }
@@ -112,22 +112,22 @@ solution "invaders-emulator"
 
 		configuration { "windows", "not x64" }
 			libdirs { 
-				"../3rdParty/SDL2-2.0.9/lib/x86",
-				"../3rdParty/SDL2_mixer-2.0.4/lib/x86"
+				"../libs/SDL2/lib/x86",
+				"../libs/SDL2_mixer/lib/x86"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
-				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
+				"copy ..\\libs\\SDL2\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
+				"copy ..\\libs\\SDL2_mixer\\lib\\x86\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
 			}
 
 		configuration { "windows", "x64" }		
 			libdirs { 
-				"../3rdParty/SDL2-2.0.9/lib/x64",
-				"../3rdParty/SDL2_mixer-2.0.4/lib/x64"
+				"../libs/SDL2/lib/x64",
+				"../libs/SDL2_mixer/lib/x64"
 			}
 			postbuildcommands { 
-				"copy ..\\3rdParty\\SDL2-2.0.9\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
-				"copy ..\\3rdParty\\SDL2_mixer-2.0.4\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
+				"copy ..\\libs\\SDL2\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)",
+				"copy ..\\libs\\SDL2_mixer\\lib\\x64\\*.dll ..\\bin\\$(PlatformTarget)\\$(ConfigurationName)"
 			}
 
 		configuration "gcc"
@@ -181,8 +181,14 @@ newaction
 			
 if _ACTION == "clean" then
 	os.rmdir("../bin")
-	if os.get() == "windows" and os.isdir("../build/.vs") then
-		os.outputof("rmdir ..\\build\\.vs /s /q") -- remove the hidden .vs directory
+	if os.get() == "windows" then
+		if os.isdir("../build/.vs") then
+			os.outputof("rmdir ..\\build\\.vs /s /q") -- remove the hidden .vs directory
+		end
+		-- windows sometimes fails to delete the bin folder...
+		if os.isdir("../bin") then
+			os.outputof("rmdir ..\\bin /s /q")
+		end
 	end
 	if os.get() == "macosx" then
 		os.outputof("rm -rf build") -- remove the build folder, including hidden .DS_Store file
