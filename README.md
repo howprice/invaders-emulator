@@ -25,9 +25,13 @@ There are three build configurations:
 
 ### Windows
 
-The [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) are checked in to 3rdparty for convenience. 
+Either:
+1. Run [install_sdl.bat](scripts/install_sdl.bat) (assumes that [tar and curl are available](https://devblogs.microsoft.com/commandline/tar-and-curl-come-to-windows/))
+2. Download the [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) and the [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/) development library. Unzip to the [libs](libs) folder and remove the version numbers from the folder names.
 
-Download or clone the repository. Run genie_vs2017.bat or genie_vs2019.bat. This will build the Visual Studio Solution and Project files into the 'build' folder. Build and run from within visual studio.
+Run [genie_vs2017.bat](scripts/genie_vs2017.bat) or [genie_vs2019.bat](scripts/genie_vs2019.bat) to generate the Visual Studio Solution and Project files into the 'build' folder.
+
+Build and run from within Visual Studio, or [build from the command line](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=vs-2017) with [MSBuild](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild?view=vs-2017).
 
 ### Linux
 
