@@ -2523,7 +2523,7 @@ static unsigned int executeFB(State8080& state)
 	return 4;
 }
 
-// 0xF3  EI
+// 0xF3  DI
 // disable interrupts
 static unsigned int executeF3(State8080& state)
 {
