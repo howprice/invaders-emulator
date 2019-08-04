@@ -1015,7 +1015,7 @@ static unsigned int execute51(State8080& state)
 // 0x52  MOV D,D
 static unsigned int execute52(State8080& /*state*/)
 {
-	return 7;
+	return 5;
 }
 
 // 0x53  MOV D,E
