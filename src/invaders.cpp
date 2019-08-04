@@ -546,6 +546,9 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	if(commandLineArgs.startDebugging)
+		pMachine->running = false;
+
 	s_verboseDebugger = commandLineArgs.verbose;
 	pMachine->debugHook = debugHook;
 
