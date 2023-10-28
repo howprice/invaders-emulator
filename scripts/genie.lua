@@ -108,7 +108,7 @@ solution "invaders-emulator"
 			defines { "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "windows", "release" }
-			buildoptions "/wd4390" -- empty controlled statement found; is this the intent? Required for ImGui in release
+			buildoptions "/wd4390" -- ImGui Release warning C4390: ';': empty controlled statement found; is this the intent?
 
 		configuration { "windows", "not x64" }
 			libdirs { 

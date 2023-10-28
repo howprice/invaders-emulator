@@ -242,8 +242,23 @@ uint8_t ReadByteFromMemory(const void* userdata, uint16_t address, bool fatalOnF
 	return 0;
 }
 
-#ifndef RELEASE
+static bool s_testMemory = false;
 
+struct Rom
+{
+	const char* fileName;
+	size_t fileSizeBytes;
+};
+
+static const Rom kRoms[] =
+{
+	{"invaders.h", 0x800},
+	{"invaders.g", 0x800},
+	{"invaders.f", 0x800},
+	{"invaders.e", 0x800},
+};
+
+#if HP_ASSERTS_ENABLED
 static void TestMemory(uint8_t* pMemory)
 {
 	HP_ASSERT(pMemory);
@@ -270,21 +285,9 @@ static void TestMemory(uint8_t* pMemory)
 		HP_ASSERT(ReadByteFromMemory(pMemory, address) == val);
 	}
 }
+#else
+static void TestMemory(uint8_t* /*pMemory*/) {}
 #endif
-
-struct Rom
-{
-	const char* fileName;
-	size_t fileSizeBytes;
-};
-
-static const Rom kRoms[] =
-{
-	{"invaders.h", 0x800},
-	{"invaders.g", 0x800},
-	{"invaders.f", 0x800},
-	{"invaders.e", 0x800},
-};
 
 static uint8_t In(uint8_t port, void* userdata)
 {
@@ -603,7 +606,8 @@ bool CreateMachine(Machine** ppMachine, Display* pDisplay)
 	pMachine->cpu.readByteFromMemory = ReadByteFromMemory;
 	pMachine->cpu.writeByteToMemory = WriteByteToMemory;
 
-	//	TestMemory(state.pMemory);
+	if (s_testMemory)
+		TestMemory(pMachine->pMemory);
 
 	pMachine->pDisplay = pDisplay;
 

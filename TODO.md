@@ -1,0 +1,30 @@
+# TODO
+
+- Migrate this list to GitHub Issues
+- Save/Load settings e.g. Display options (See SDL2-Asteroids)
+- Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
+- Deploy with travis?
+- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
+- Watchpoints (break when memory read/written to)
+- Move debugHook into debugger class/file
+- Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
+- Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
+- "Backtrace" Window (Previously executed line(s))
+- Stack Window
+  - Store "stack base" when SP set with LXI SP,<address> instruction
+- Editable registers in CPU Window
+- Trap?
+- Disassembly Window:
+  - Use ImGuiListClipper (see ImGui hex editor code)
+  - Add Autoscroll option
+- Support loading of symbols file
+    - Ref: pasmo docs
+	- Ref: Computer Archaeology annotated disassembly
+- Load different Midway 8080 Black & White compatible ROMs
+  - List in mame\src\mame\drivers\mw8080bw.cpp
+- Cheats
+  - How does MAME handle cheats?
+- Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
+- What is the correct point in the frame to generate the interrupts? See machine update function
+- Headless mode (command line arg)
+- What is the purpose of the RAM mirror? (It *is* used)

@@ -1,17 +1,15 @@
 @echo off
 
-SET script_path=%~dp0
+set SDL2_VERSION=2.28.4
+set SDL2_MIXER_VERSION=2.6.3
+
+set script_path=%~dp0
 pushd %script_path%
 
-REM cd up into repo root
-cd ..
-
-SET SDL2_VERSION=2.0.9
-SET SDL2_MIXER_VERSION=2.0.4
+set ROOT=%cd%
 
 IF NOT EXIST tmp mkdir tmp
 pushd tmp
-
 
 REM SDL2
 SET SDL2_ZIP=SDL2-devel-%SDL2_VERSION%-VC.zip
@@ -22,8 +20,7 @@ IF NOT EXIST %SDL2_ZIP% (
 tar xfz %SDL2_ZIP%
 IF %ERRORLEVEL% NEQ 0 unzip %SDL2_ZIP%
 IF %ERRORLEVEL% NEQ 0 EXIT /B 0
-robocopy /MOVE /S /E SDL2-%SDL2_VERSION% ..\libs\SDL2
-
+robocopy /MOVE /S /E SDL2-%SDL2_VERSION% %ROOT%\libs\SDL2
 
 REM SDL2_mixer
 SET SDL2_MIXER_ZIP=SDL2_mixer-devel-%SDL2_MIXER_VERSION%-VC.zip
@@ -34,11 +31,9 @@ IF NOT EXIST %SDL2_MIXER_ZIP% (
 tar xfz %SDL2_MIXER_ZIP%
 IF %ERRORLEVEL% NEQ 0 unzip %SDL2_MIXER_ZIP%
 IF %ERRORLEVEL% NEQ 0 EXIT /B 0
-robocopy /MOVE /S /E SDL2_mixer-%SDL2_MIXER_VERSION% ..\libs\SDL2_mixer
+robocopy /MOVE /S /E SDL2_mixer-%SDL2_MIXER_VERSION% %ROOT%\libs\SDL2_mixer
 
-
-REM back to repo root
+REM return from tmp
 popd
 
-REM back to original directory
-popd
+EXIT /B 0

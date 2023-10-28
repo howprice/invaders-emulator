@@ -16,20 +16,15 @@ Unzip samples 0.wav .. 8.wav from http://samples.mameworld.info/ into the 'data'
 
 ## Building and Running
 
-This project uses [GENie](https://github.com/bkaradzic/genie) to generate the build files for the target platform. The GENie executables for Windows, Linux, Mac OS X and Raspberry Pi can be found in the [tools](tools) directory for convenience.
-
-There are three build configurations:
-- Debug - no optimisations, symbols, asserts
-- Dev - optimisations, symbols, asserts
-- Release - optimisations, no symbols, no asserts
+This project uses CMake.
 
 ### Windows
 
 Either:
-1. Run [install_sdl.bat](scripts/install_sdl.bat) (assumes that [tar and curl are available](https://devblogs.microsoft.com/commandline/tar-and-curl-come-to-windows/))
+1. Run [update_dependencies.bat](update_dependencies.bat) (assumes that [tar and curl are available](https://devblogs.microsoft.com/commandline/tar-and-curl-come-to-windows/))
 2. Download the [SDL2 Development libraries for Visual C++](https://www.libsdl.org/download-2.0.php) and the [SDL_mixer 2.0](https://www.libsdl.org/projects/SDL_mixer/) development library. Unzip to the [libs](libs) folder and remove the version numbers from the folder names.
 
-Run [genie_vs2017.bat](scripts/genie_vs2017.bat) or [genie_vs2019.bat](scripts/genie_vs2019.bat) to generate the Visual Studio Solution and Project files into the 'build' folder.
+To generate the Visual Studio Solution and project files, run [gensln.bat](gensln.bat) from *Visual Studio Native Tools Command Prompt for VS20xx* (2017, 2019, 2022 supported). The generated files are located in the 'build' folder.
 
 Build and run from within Visual Studio, or [build from the command line](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=vs-2017) with [MSBuild](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild?view=vs-2017).
 
@@ -117,36 +112,6 @@ Cycle-exact emulation is not required.
   - [Disassembled Code as Z80 opcodes](http://computerarcheology.com/Arcade/SpaceInvaders/Code.html)
   - [RAM Usage](http://computerarcheology.com/Arcade/SpaceInvaders/RAMUse.html)
   - [Hardware](http://computerarcheology.com/Arcade/SpaceInvaders/Hardware.html)
-
-## TODO
-
-- Save/Load settings e.g. Display options (See SDL2-Asteroids)
-- Figure out SDL2 Mac High DPI. See SDL_CreateWindow docs. Requires Info.plist?
-- Deploy with travis?
-- Apply coloured overlay (make machine display buffer RGB8 and apply in video RAM copy)
-- Watchpoints (break when memory read/written to)
-- Move debugHook into debugger class/file
-- Get rid of Machine.memorySizeBytes: memory could have gaps, and may not be a contiguous block
-- Update memory window to select Chunk to view, which is guaranteed to be a single contiguous block.
-- "Backtrace" Window (Previously executed line(s))
-- Stack Window
-  - Store "stack base" when SP set with LXI SP,<address> instruction
-- Editable registers in CPU Window
-- Trap?
-- Disassembly Window:
-  - Use ImGuiListClipper (see ImGui hex editor code)
-  - Add Autoscroll option
-- Support loading of symbols file
-    - Ref: pasmo docs
-	- Ref: Computer Archaeology annotated disassembly
-- Load different Midway 8080 Black & White compatible ROMs
-  - List in mame\src\mame\drivers\mw8080bw.cpp
-- Cheats
-  - How does MAME handle cheats?
-- Accurate display buffer generation by copying pixel by pixel as the CPU / raster progresses. 
-- What is the correct point in the frame to generate the interrupts? See machine update function
-- Headless mode (command line arg)
-- What is the purpose of the RAM mirror? (It *is* used)
 
 ## License
 

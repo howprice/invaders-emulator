@@ -1,4 +1,4 @@
-
+.vs
 data/*
 !data/readme.txt
 libs/SDL*
